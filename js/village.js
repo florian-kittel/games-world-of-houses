@@ -57,6 +57,15 @@
     }
     check(b.requires);
     if (b.levelRequires && targetLevel != null) check(b.levelRequires[targetLevel]);
+    // Globale Regel: kein Gebäude darf eine höhere Stufe als die Halle haben
+    // (die Halle selbst ausgenommen). Begrenzt vorzeitiges Hochleveln einzelner
+    // Gebäude — erst die Halle ausbauen, dann ziehen die übrigen nach.
+    if (key !== 'townhall' && targetLevel != null) {
+      var hall = village.buildings.townhall || 0;
+      if (targetLevel > hall) {
+        unmet.push((C.BUILDINGS.townhall ? C.BUILDINGS.townhall.name : 'Halle') + ' ' + targetLevel);
+      }
+    }
     return unmet;
   }
 
@@ -68,20 +77,90 @@
 
   // Produktion pro Spielsekunde für einen Rohstoff.
   // `state` (optional, ab Schritt 5): wenn übergeben, wird der Food-Upkeep
-  // um die Garnison-Pop in zugewiesenen Strukturen erweitert.
-  function productionPerSec(village, res, state) {
-    var level = 0;
+  // um die Garnison-Einheiten in zugewiesenen Strukturen erweitert.
+  // `includeStructures` (Schritt 11c, optional): wenn true, wird die
+  // Direkt-Produktion eroberter eigener Strukturen ebenfalls aufaddiert —
+  // sinnvoll fuer UI-Anzeigen (sonst Doppel-Buchung in applyProduction).
+  function productionPerSec(village, res, state, includeStructures) {
+    // Vereinfachtes Modell: Produktion = Stufe × gebäudespezifisches perLevel
+    // × Standortbonus. (Basiswerte: Holzfäller 3, Steinbruch 2, Eisenmine 1,
+    // Bauernhof 3 — siehe BUILDINGS[k].perLevel in config.js.)
+    var level = 0, perLevel = 0;
     for (var k in C.BUILDINGS) {
-      if (C.BUILDINGS[k].produces === res) { level = village.buildings[k] || 0; break; }
+      if (C.BUILDINGS[k].produces === res) {
+        level = village.buildings[k] || 0;
+        perLevel = C.BUILDINGS[k].perLevel || 0;
+        break;
+      }
     }
-    var base = C.PRODUCTION.base + level * C.PRODUCTION.perLevel;
+    var base = (C.PRODUCTION.base || 0) + level * perLevel;
     var prod = base * (village.bonus[res] || 1);
-    // Nahrung wird durch die Bevölkerung verbraucht (Netto-Ertrag, ggf. negativ).
-    // foodUpkeepPerPop ist pro Anzeige-Sekunde definiert -> auf Spielsekunde umrechnen.
     if (res === 'food') {
-      prod -= populationUsed(village, state) * (C.PRODUCTION.foodUpkeepPerPop || 0) / C.TIME_SCALE;
+      prod -= foodUpkeepFor(village, state);
+    }
+    if (includeStructures && state && state.structures) {
+      for (var i = 0; i < state.structures.length; i++) {
+        var s = state.structures[i];
+        if (s.assignedCastleId !== village.id || s.ownerHouseId !== village.houseId) continue;
+        var meta = C.RESOURCE_STRUCTURES[s.type];
+        if (!meta || meta.res !== res) continue;
+        var lvl = Math.max(1, Math.min(3, s.level || 1));
+        prod += (C.RESOURCE_STRUCTURE_LEVELS.production[lvl - 1] || 0);
+      }
     }
     return prod;
+  }
+
+  // Nahrungs-Upkeep mit Aufschluesselung (Schritt 11).
+  // Zivilbevölkerung = Σ Gebäude-Pop × civilianFoodUpkeep.
+  // Armee = stationierte Einheiten + Trainings-Queue + Garnison (jeweils
+  // × UNITS[k].foodUpkeep).
+  function foodUpkeepBreakdown(village, state) {
+    var civPop = 0, k;
+    for (k in village.buildings) {
+      var b = C.BUILDINGS[k];
+      var pPer = (b && typeof b.popPerLevel === 'number') ? b.popPerLevel : 1;
+      civPop += (village.buildings[k] || 0) * pPer;
+    }
+    var civilians = civPop * (C.POPULATION.civilianFoodUpkeep || 0);
+
+    var army = 0, training = 0, garrison = 0, marching = 0, u;
+    for (k in village.units) {
+      u = C.UNITS[k]; if (!u || !u.foodUpkeep) continue;
+      army += (village.units[k] || 0) * u.foodUpkeep;
+    }
+    (village.trainingQueue || []).forEach(function (q) {
+      u = C.UNITS[q.unit]; if (!u || !u.foodUpkeep) return;
+      training += q.remaining * u.foodUpkeep;
+    });
+    if (state && state.structures) {
+      for (var i = 0; i < state.structures.length; i++) {
+        var s = state.structures[i];
+        if (s.assignedCastleId !== village.id || s.ownerHouseId !== village.houseId) continue;
+        var g = s.garrison || {};
+        for (var gk in g) {
+          u = C.UNITS[gk]; if (!u || !u.foodUpkeep) continue;
+          garrison += (g[gk] || 0) * u.foodUpkeep;
+        }
+      }
+    }
+    // Schritt 11b: wandernde Armee wird ueber die Heimatburg versorgt
+    if (state && state.movements) {
+      for (var mi = 0; mi < state.movements.length; mi++) {
+        var m = state.movements[mi];
+        if (movementHomeId(m) !== village.id) continue;
+        for (var mk in m.units) {
+          u = C.UNITS[mk]; if (!u || !u.foodUpkeep) continue;
+          marching += (m.units[mk] || 0) * u.foodUpkeep;
+        }
+      }
+    }
+    return { civilians: civilians, army: army, training: training, garrison: garrison, marching: marching,
+             total: civilians + army + training + garrison + marching };
+  }
+
+  function foodUpkeepFor(village, state) {
+    return foodUpkeepBreakdown(village, state).total;
   }
 
   function storageCap(village) {
@@ -89,31 +168,42 @@
     return Math.round(C.STORAGE.baseCap * pow(C.STORAGE.perLevel, lvl));
   }
 
-  // Bereitgestellte Bevölkerung (Versorgung).
-  // Basis: Bauernhof-Stufe; Schritt 5: + Bonus aus zugewiesenen eroberten
-  // Rohstoff-Strukturen (`STRUCTURE_POP_BONUS[structure.level]`).
-  // `state` ist optional: ohne state wird nur die Burg-interne Versorgung
-  // berechnet (abwaertskompatibel fuer Aufrufer, die keinen state durchreichen).
+  // Bereitgestellte Bevölkerung — Schritt 11:
+  // - Halle (perTownhallLevel) ist die Hauptquelle.
+  // - Bauernhof (perFarmLevel) gibt zusätzlich Pop.
+  // - Eroberte Strukturen (STRUCTURE_POP_BONUS) zusätzlich.
   function populationCap(village, state) {
-    var base = C.POPULATION.base + (village.buildings.farm || 0) * C.POPULATION.perFarmLevel;
-    if (!state || !state.structures || !C.STRUCTURE_POP_BONUS) return base;
-    var bonus = 0;
+    var pop = C.POPULATION.base
+            + (village.buildings.townhall || 0) * (C.POPULATION.perTownhallLevel || 0)
+            + (village.buildings.farm     || 0) * (C.POPULATION.perFarmLevel     || 0);
+    if (!state || !state.structures || !C.STRUCTURE_POP_BONUS) return pop;
     for (var i = 0; i < state.structures.length; i++) {
       var s = state.structures[i];
       if (s.assignedCastleId !== village.id || s.ownerHouseId !== village.houseId) continue;
       var lvl = Math.max(1, Math.min(3, s.level || 1));
-      bonus += C.STRUCTURE_POP_BONUS[lvl] || 0;
+      pop += C.STRUCTURE_POP_BONUS[lvl] || 0;
     }
-    return base + bonus;
+    return pop;
   }
 
-  // Verbrauchte Bevölkerung: Gebäude + stationierte/ausgebildete Einheiten.
-  // Schritt 5: + Garnison-Einheiten in zugewiesenen eroberten Strukturen
-  // werden ueber die Heimatburg verbucht (Spec: "belegen dort keine
-  // Bevoelkerung mehr; Versorgung laeuft zentral aus dem besitzenden Haus").
+  // Schritt 11b: Bestimmt die Heimatburg eines Movements.
+  // Hinweg (attack/gather/capture/support): fromId = Heimatburg.
+  // Rueckkehr (return): toId = Heimatburg (Truppen kommen heim).
+  function movementHomeId(m) {
+    return m.type === 'return' ? m.toId : m.fromId;
+  }
+
+  // Verbrauchte Bevölkerung — Schritt 11:
+  // Gebäude verbrauchen `popPerLevel × level` Arbeiter; Einheiten nach `pop`-
+  // Faktor (Held 10). Trainings-Queue, zugewiesene Strukturen-Garnison sowie
+  // wandernde Armeen (Schritt 11b) werden mitgerechnet.
   function populationUsed(village, state) {
     var used = 0, k;
-    for (k in village.buildings) used += (village.buildings[k] || 0);
+    for (k in village.buildings) {
+      var b = C.BUILDINGS[k];
+      var pPer = (b && typeof b.popPerLevel === 'number') ? b.popPerLevel : 1;
+      used += (village.buildings[k] || 0) * pPer;
+    }
     for (k in village.units) used += (village.units[k] || 0) * (C.UNITS[k] ? C.UNITS[k].pop : 1);
     (village.trainingQueue || []).forEach(function (q) {
       used += q.remaining * (C.UNITS[q.unit] ? C.UNITS[q.unit].pop : 1);
@@ -126,7 +216,63 @@
         for (var u in g) used += (g[u] || 0) * (C.UNITS[u] ? C.UNITS[u].pop : 1);
       }
     }
+    // Wandernde Armeen (Movements)
+    if (state && state.movements) {
+      for (var mi = 0; mi < state.movements.length; mi++) {
+        var m = state.movements[mi];
+        if (movementHomeId(m) !== village.id) continue;
+        for (var mk in m.units) used += (m.units[mk] || 0) * (C.UNITS[mk] ? C.UNITS[mk].pop : 1);
+      }
+    }
     return used;
+  }
+
+  // Detaillierte Aufschluesselung des Pop-Verbrauchs (fuer Hover-Tooltips).
+  function populationBreakdown(village, state) {
+    var civilians = 0, army = 0, garrison = 0, training = 0, marching = 0;
+    var k;
+    for (k in village.buildings) {
+      var b = C.BUILDINGS[k];
+      var pPer = (b && typeof b.popPerLevel === 'number') ? b.popPerLevel : 1;
+      civilians += (village.buildings[k] || 0) * pPer;
+    }
+    for (k in village.units) army += (village.units[k] || 0) * (C.UNITS[k] ? C.UNITS[k].pop : 1);
+    (village.trainingQueue || []).forEach(function (q) {
+      training += q.remaining * (C.UNITS[q.unit] ? C.UNITS[q.unit].pop : 1);
+    });
+    if (state && state.structures) {
+      for (var i = 0; i < state.structures.length; i++) {
+        var s = state.structures[i];
+        if (s.assignedCastleId !== village.id || s.ownerHouseId !== village.houseId) continue;
+        var g = s.garrison || {};
+        for (var u in g) garrison += (g[u] || 0) * (C.UNITS[u] ? C.UNITS[u].pop : 1);
+      }
+    }
+    if (state && state.movements) {
+      for (var mi = 0; mi < state.movements.length; mi++) {
+        var m = state.movements[mi];
+        if (movementHomeId(m) !== village.id) continue;
+        for (var mk in m.units) marching += (m.units[mk] || 0) * (C.UNITS[mk] ? C.UNITS[mk].pop : 1);
+      }
+    }
+    return { civilians: civilians, army: army, training: training, garrison: garrison, marching: marching,
+             total: civilians + army + training + garrison + marching };
+  }
+  function populationCapBreakdown(village, state) {
+    var fromHall = (village.buildings.townhall || 0) * (C.POPULATION.perTownhallLevel || 0);
+    var fromFarm = (village.buildings.farm     || 0) * (C.POPULATION.perFarmLevel     || 0);
+    var fromStructures = 0;
+    if (state && state.structures && C.STRUCTURE_POP_BONUS) {
+      for (var i = 0; i < state.structures.length; i++) {
+        var s = state.structures[i];
+        if (s.assignedCastleId !== village.id || s.ownerHouseId !== village.houseId) continue;
+        var lvl = Math.max(1, Math.min(3, s.level || 1));
+        fromStructures += C.STRUCTURE_POP_BONUS[lvl] || 0;
+      }
+    }
+    return { base: C.POPULATION.base, hall: fromHall, farm: fromFarm,
+             structures: fromStructures,
+             total: C.POPULATION.base + fromHall + fromFarm + fromStructures };
   }
 
   function canAfford(village, cost) {
@@ -231,6 +377,10 @@
     canAfford: canAfford,
     pay: pay,
     applyProduction: applyProduction,
+    foodUpkeepFor: foodUpkeepFor,
+    foodUpkeepBreakdown: foodUpkeepBreakdown,
+    populationBreakdown: populationBreakdown,
+    populationCapBreakdown: populationCapBreakdown,
     // Schritt 6.5: Belagerung
     wallMaxHP: wallMaxHP,
     towerMaxHP: towerMaxHP,

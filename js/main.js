@@ -44,7 +44,7 @@
     overlay.innerHTML =
       '<div class="start-card">' +
       '<h1>World of Houses</h1>' +
-      '<p class="tagline">Echtzeit-Strategie im Stil von „Die Stämme“ — erhebe dein Haus, baue dein Dorf aus, ' +
+      '<p class="tagline">Echtzeit-Strategie im Stil von „Die Stämme“ — erhebe dein Haus, baue deine Burg aus, ' +
       'erobere das Land. Top-Down-Pixel-Art.</p>' +
       (hasSave ? '<button class="btn big primary" id="btn-continue">Spiel fortsetzen</button>' +
         '<div class="save-info">Gespeichert: ' + new Date(savePayload.savedAt).toLocaleString('de-DE') + '</div>' : '') +

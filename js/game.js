@@ -13,6 +13,18 @@
   // Die UI holt sie hier ab und zeigt das Kampfbericht-Overlay.
   var pendingReports = [];
 
+  // Seed-deterministische Auswahl einer KI-Persönlichkeit pro Haus.
+  // Reproduzierbar (gleicher Seed + gleiche Haus-Id -> gleicher Archetyp).
+  // Wird sowohl beim Spielstart als auch in der Save-Migration genutzt.
+  function pickPersonalityKey(seed, houseId) {
+    var order = (C.PERSONALITY_ORDER && C.PERSONALITY_ORDER.length)
+      ? C.PERSONALITY_ORDER : ['aggressive', 'expansive', 'defensive', 'steamroller'];
+    var h = (seed >>> 0) || 1;
+    var s = String(houseId || '');
+    for (var i = 0; i < s.length; i++) h = (Math.imul(h, 31) + s.charCodeAt(i)) >>> 0;
+    return order[h % order.length];
+  }
+
   // ---------------------------------------------------------------------
   // Neues Spiel erzeugen
   // ---------------------------------------------------------------------
@@ -54,7 +66,7 @@
     var structures = WOH.MapGen.placeResourceStructures(map, rng, spots);
 
     var state = {
-      version: 6,
+      version: 7,
       seed: seed,
       difficulty: diff,
       gameTime: 0,
@@ -89,10 +101,16 @@
     };
     // Strukturen auf das Schritt-2-Schema bringen (Idempotent).
     normalizeStructures(state);
-    // KI-Entscheidungszeitpunkte initialisieren (Schritt 7: + lastAttackTime)
+    // KI-Entscheidungszeitpunkte initialisieren (Schritt 7: + lastAttackTime).
+    // Resourcen-Rework: zusätzlich seed-deterministische Persönlichkeit.
     for (var hid in houseMap) {
       if (!houseMap[hid].isPlayer) {
-        state.ai[hid] = { nextDecisionAt: rng.range(2, 10), lastAttackTime: 0 };
+        state.ai[hid] = {
+          nextDecisionAt: rng.range(2, 10),
+          lastAttackTime: 0,
+          personality: pickPersonalityKey(seed, hid),
+          lastLogisticsAt: 0
+        };
       }
     }
     pushLog(state, 'Die Welt erwacht. Haus ' + houses[playerIdx].surname +
@@ -106,10 +124,12 @@
       townhall: 1, woodcutter: 1, quarry: 1, mine: 1, farm: 1,
       warehouse: 1, barracks: 0, range: 0, wall: 0, tower: 0
     };
-    // KI-Startvorsprung auf Wirtschaft (Halle startet immer auf 1).
+    // KI-Startvorsprung auf Wirtschaft. Die Halle wird mit angehoben, damit die
+    // globale Regel "kein Gebäude über Hallenstufe" bereits beim Start gilt.
     ['woodcutter', 'quarry', 'mine', 'farm', 'warehouse'].forEach(function (k) {
       buildings[k] = Math.min(C.BUILDINGS[k].max, buildings[k] + boost);
     });
+    buildings.townhall = Math.min(C.BUILDINGS.townhall.max, buildings.townhall + boost);
 
     var units = { spear: 0, sword: 0, axe: 0, archer: 0, hero: 0 };
     if (!isPlayer && boost >= 1) {
@@ -187,7 +207,7 @@
         return s + (q.unit === unit ? q.remaining : 0);
       }, 0);
       if ((village.units[unit] || 0) + inQueue + count > 1)
-        return { ok: false, msg: 'Maximal 1 ' + u.name + ' pro Dorf.' };
+        return { ok: false, msg: 'Maximal 1 ' + u.name + ' pro Burg.' };
     }
     var cost = {};
     C.RESOURCES.forEach(function (r) { cost[r] = (u.cost[r] || 0) * count; });
@@ -230,7 +250,12 @@
     return false;
   }
 
-  function sendArmy(state, fromId, toId, units, type) {
+  // resources (optional): { food, wood, stone, iron } — nur für eigene
+  // Burg-Unterstützung (type === 'support', Ziel = eigene Burg). Ein reiner
+  // Versorgungstross (nur Rohstoffe, keine Truppen) ist zulässig und reist mit
+  // MOVEMENT.resourceSpeed. Rohstoffe werden sofort aus der Quelle abgebucht
+  // und bei Ankunft in die Ziel-Burg eingebucht (resolveSupport).
+  function sendArmy(state, fromId, toId, units, type, resources) {
     var from = state.villages[fromId];
     if (!from) return { ok: false, msg: 'Quelle ist keine Burg.' };
     // Ziel darf Burg ODER Struktur sein (Schritt 6).
@@ -241,7 +266,22 @@
       var n = Math.min(units[k] || 0, from.units[k] || 0);
       units[k] = n; if (n > 0) any = true;
     }
-    if (!any) return { ok: false, msg: 'Keine Einheiten ausgewählt.' };
+
+    // Rohstoff-Tross validieren (nur eigene Burg-Unterstützung).
+    var carry = null, carryAny = false;
+    if (resources) {
+      if (type !== 'support' || toEnt.kind !== 'village' || toEnt.ownerHouseId !== from.houseId) {
+        return { ok: false, msg: 'Rohstoffe können nur an eigene Burgen gesendet werden.' };
+      }
+      carry = {};
+      C.RESOURCES.forEach(function (r) {
+        var amt = Math.max(0, Math.floor(resources[r] || 0));
+        amt = Math.min(amt, Math.floor(from.resources[r] || 0));
+        carry[r] = amt; if (amt > 0) carryAny = true;
+      });
+    }
+
+    if (!any && !carryAny) return { ok: false, msg: 'Weder Einheiten noch Rohstoffe ausgewählt.' };
     // Konsistenzcheck Bewegungstyp gegen Ziel-Kind:
     if (toEnt.kind === 'structure' && type !== 'gather' && type !== 'capture' && type !== 'support') {
       return { ok: false, msg: 'Strukturen koennen nicht angegriffen werden — Sammeln, Eroberung oder Unterstuetzung waehlen.' };
@@ -260,14 +300,22 @@
     }
     // Einheiten aus dem Dorf abziehen
     for (var u in units) from.units[u] -= units[u];
+    // Rohstoff-Tross sofort aus der Quelle abbuchen
+    if (carryAny) {
+      C.RESOURCES.forEach(function (r) { from.resources[r] = (from.resources[r] || 0) - (carry[r] || 0); });
+    }
     var dx = from.x - toEnt.x, dy = from.y - toEnt.y;
     var dist = Math.sqrt(dx * dx + dy * dy);
-    var travel = Math.max(C.MOVEMENT.minTravel, dist * Combat.slowestSpeed(units));
+    // Reine Rohstoff-Lieferung (keine Truppen): Fuhrwerk-Tempo.
+    var speed = any ? Combat.slowestSpeed(units)
+                    : (C.MOVEMENT.resourceSpeed || Combat.slowestSpeed(units));
+    var travel = Math.max(C.MOVEMENT.minTravel, dist * speed);
     state.movements.push({
       id: uid('mv'), fromId: fromId, toId: toId, units: units,
       type: type || 'attack', startTime: state.gameTime, arriveTime: state.gameTime + travel,
       ownerHouseId: from.houseId,
-      toKind: toEnt.kind
+      toKind: toEnt.kind,
+      resources: carryAny ? carry : null
     });
     return { ok: true, travel: travel };
   }
@@ -447,6 +495,9 @@
       processTrainQueue(v, dt);
       // Schritt 6.5: Reparatur-Queue abarbeiten
       if (V.processRepairs) V.processRepairs(v, dt, state.gameTime);
+      // Schritt 12: Hunger — wenn Nahrung leer und Saldo negativ, desertieren
+      // Einheiten in der Reihenfolge spear→archer→axe→sword→hero.
+      applyHunger(state, v, dt);
       if (v.loyalty < 100) v.loyalty = Math.min(100, v.loyalty + C.COMBAT.loyaltyRegenPerHour * (dt / 3600));
     }
     // Strukturen: Produktion in eigenes Lager (neutral) bzw. in die Heimatburg (eigen)
@@ -710,7 +761,25 @@
     var toV = state.villages[m.toId];
     if (toV) {
       for (var k in m.units) toV.units[k] = (toV.units[k] || 0) + m.units[k];
-      if (toV.isPlayer) pushLog(state, 'Verstärkung ist in ' + toV.name + ' eingetroffen.', 'good');
+      // Rohstoff-Tross: bei Ankunft ins Burg-Lager einbuchen (Lager-Cap).
+      var hadRes = false;
+      if (m.resources) {
+        var cap = V.storageCap(toV);
+        C.RESOURCES.forEach(function (r) {
+          var amt = m.resources[r] || 0;
+          if (amt > 0) { hadRes = true; toV.resources[r] = Math.min(cap, (toV.resources[r] || 0) + amt); }
+        });
+      }
+      if (toV.isPlayer) {
+        var unitN = WOH.Combat.totalUnits(m.units || {});
+        if (hadRes && unitN <= 0) {
+          pushLog(state, 'Rohstoff-Lieferung ist in ' + toV.name + ' eingetroffen' +
+            (m.resources ? ' (' + lootText(m.resources) + ')' : '') + '.', 'good');
+        } else {
+          pushLog(state, 'Verstärkung ist in ' + toV.name + ' eingetroffen.' +
+            (hadRes ? ' Rohstoffe: ' + lootText(m.resources) + '.' : ''), 'good');
+        }
+      }
       return;
     }
     var toS = findStructureById(state, m.toId);
@@ -842,6 +911,36 @@
     // Strukturen, die diese Burg als Heimatburg hatten, an die naechste eigene
     // Burg des alten Besitzers ueberweisen (oder neutralisieren, wenn keine mehr).
     reassignStructuresAfterCastleLoss(state, oldHouseId, village.id);
+    // Ausstehende Bewegungen der alten Fraktion mit Bezug zu dieser Burg
+    // aufloesen — Einheiten waren an die alte Identitaet gebunden und
+    // gehen nicht an den neuen Besitzer ueber.
+    dissolveMovementsAfterCastleLoss(state, village.id);
+  }
+
+  // Loest alle Movements auf, deren Quelle die eroberte Burg ist (Hinweg-
+  // Aktionen attack/gather/capture/support) sowie Rueckkehrer, die zu ihr
+  // unterwegs waren (type === 'return' und m.toId === village.id).
+  function dissolveMovementsAfterCastleLoss(state, lostCastleId) {
+    if (!state.movements || !state.movements.length) return;
+    var kept = [];
+    var dissolved = 0;
+    for (var i = 0; i < state.movements.length; i++) {
+      var m = state.movements[i];
+      var drop = false;
+      if (m.fromId === lostCastleId &&
+          (m.type === 'attack' || m.type === 'gather' || m.type === 'capture' || m.type === 'support')) {
+        drop = true;
+      } else if (m.type === 'return' && m.toId === lostCastleId) {
+        drop = true;
+      }
+      if (drop) dissolved++;
+      else kept.push(m);
+    }
+    state.movements = kept;
+    if (dissolved > 0) {
+      pushLog(state, dissolved + (dissolved === 1 ? ' ausstehende Bewegung' : ' ausstehende Bewegungen') +
+        ' der eroberten Burg aufgeloest.', 'battle');
+    }
   }
 
   function returnArmy(state, m, units, loot) {
@@ -867,11 +966,11 @@
   function logBattle(state, m, res, attIsPlayer, defIsPlayer) {
     if (!attIsPlayer && !defIsPlayer) return; // KI-vs-KI nicht spammen
     var outcome = res.attackerWins ? 'Sieg des Angreifers' : 'Verteidigung hält';
-    var who = attIsPlayer ? 'Dein Angriff auf ' + res.toName : 'Angriff auf dein Dorf ' + res.toName;
+    var who = attIsPlayer ? 'Dein Angriff auf ' + res.toName : 'Angriff auf deine Burg ' + res.toName;
     var txt = who + ' — ' + outcome +
       ' (Glück ' + (res.luck >= 0 ? '+' : '') + Math.round(res.luck * 100) + '%).';
     if (res.attackerWins && res.loot) txt += ' Beute: ' + lootText(res.loot) + '.';
-    if (res.captured) txt += ' Dorf erobert!';
+    if (res.captured) txt += ' Burg erobert!';
     var kind = res.attackerWins ? (attIsPlayer ? 'good' : 'bad') : (defIsPlayer ? 'good' : 'bad');
     pushLog(state, txt, 'battle');
     state.lastReport = res;
@@ -975,8 +1074,77 @@
     }
   }
 
+  // -----------------------------------------------------------------------
+  // Hunger (Schritt 12): wenn Nahrung 0 ist und der Saldo negativ bleibt,
+  // desertieren Einheiten der Heimatburg — eine pro Spielsekunde — in der
+  // Reihenfolge spear→archer→axe→sword→hero. Stationiert zuerst, dann
+  // unterwegs (Movements mit homeId === village.id).
+  // -----------------------------------------------------------------------
+  var HUNGER_ORDER = ['spear', 'archer', 'axe', 'sword', 'hero'];
+
+  function movementHomeIdLocal(m) {
+    return m.type === 'return' ? m.toId : m.fromId;
+  }
+
+  function removeOneHungerUnit(state, village) {
+    // 1) Stationiert: erste verfuegbare Einheit nach HUNGER_ORDER
+    for (var i = 0; i < HUNGER_ORDER.length; i++) {
+      var k = HUNGER_ORDER[i];
+      if ((village.units[k] || 0) > 0) {
+        village.units[k] -= 1;
+        return { source: 'station', unit: k };
+      }
+    }
+    // 2) Unterwegs: Einheit aus einem Movement der Heimatburg
+    for (var mi = 0; mi < state.movements.length; mi++) {
+      var m = state.movements[mi];
+      if (movementHomeIdLocal(m) !== village.id) continue;
+      for (var j = 0; j < HUNGER_ORDER.length; j++) {
+        var uk = HUNGER_ORDER[j];
+        if ((m.units[uk] || 0) > 0) {
+          m.units[uk] -= 1;
+          // Wenn das Movement leer ist, aufloesen (Bewegung verschwindet)
+          var total = WOH.Combat.totalUnits(m.units);
+          if (total <= 0) state.movements.splice(mi, 1);
+          return { source: 'march', unit: uk, mType: m.type };
+        }
+      }
+    }
+    return null;
+  }
+
+  function applyHunger(state, village, dt) {
+    // Lager voll genug oder Saldo positiv → kein Hunger
+    var food = village.resources.food || 0;
+    var rate = V.productionPerSec(village, 'food', state, true);  // inkl. Strukturen
+    if (food > 0 || rate >= 0) {
+      village._hungerTicker = 0;
+      return;
+    }
+    village._hungerTicker = (village._hungerTicker || 0) + dt;
+    var deserted = 0;
+    while (village._hungerTicker >= 1.0) {
+      // Nach jeder Desertion neu pruefen, ob Saldo wieder positiv ist
+      var newRate = V.productionPerSec(village, 'food', state, true);
+      if (newRate >= 0) break;
+      var removed = removeOneHungerUnit(state, village);
+      if (!removed) break;  // keine Truppen mehr
+      village._hungerTicker -= 1.0;
+      deserted++;
+      // Player-Burg: einzeln loggen, aber gebuendelt im selben Tick zusammenfassen
+    }
+    if (deserted > 0) {
+      var house = state.houses[village.houseId];
+      if (house && house.isPlayer) {
+        pushLog(state, 'Hunger in ' + village.name + ' — ' + deserted +
+          (deserted === 1 ? ' Soldat ist' : ' Soldaten sind') + ' desertiert.', 'bad');
+      }
+    }
+  }
+
   WOH.Game = {
     newGame: newGame,
+    pickPersonalityKey: pickPersonalityKey,
     tick: tick,
     enqueueBuild: enqueueBuild,
     enqueueTrain: enqueueTrain,
@@ -1002,6 +1170,8 @@
     // Schritt 6.5: Belagerung
     startRepair: startRepair,
     // Anti-Duplikat-Versand
-    hasOutboundMovement: hasOutboundMovement
+    hasOutboundMovement: hasOutboundMovement,
+    // Schritt 12: Hunger
+    applyHunger: applyHunger
   };
 })(window.WOH = window.WOH || {});

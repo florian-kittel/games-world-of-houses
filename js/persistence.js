@@ -105,6 +105,13 @@
         if (typeof state.ai[hid].lastAttackTime !== 'number') {
           state.ai[hid].lastAttackTime = state.gameTime || 0;
         }
+        // v7 (Resourcen-Rework): KI-Persönlichkeit + Logistik-Drossel.
+        if (!state.ai[hid].personality && WOH.Game && WOH.Game.pickPersonalityKey) {
+          state.ai[hid].personality = WOH.Game.pickPersonalityKey(state.seed, hid);
+        }
+        if (typeof state.ai[hid].lastLogisticsAt !== 'number') {
+          state.ai[hid].lastLogisticsAt = 0;
+        }
       }
     }
 
@@ -126,7 +133,7 @@
     // Schritt 10b: Auto-Pause bei Kampfbericht-Overlay (Default true).
     if (typeof state.pauseOnReport !== 'boolean') state.pauseOnReport = true;
 
-    state.version = 6;
+    state.version = 7;
     return state;
   }
 

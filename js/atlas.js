@@ -153,6 +153,20 @@ window.WOH.Atlas = {
         7
       ]
     ],
+    "stonemine": [
+      [
+        2,
+        5
+      ],
+      [
+        2,
+        6
+      ],
+      [
+        2,
+        7
+      ]
+    ],
     "farmstead": [
       [
         4,

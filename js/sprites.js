@@ -22,6 +22,7 @@
   var STRUCT = A.structures || {
     castle: [[8, 5], [8, 6], [8, 7]], city: [[12, 5], [12, 6], [12, 7], [12, 8]],
     woodcutter: [[0, 5], [0, 6], [0, 7]], ironmine: [[2, 5], [2, 6], [2, 7]],
+    stonemine: [[2, 5], [2, 6], [2, 7]],
     farmstead: [[4, 5], [4, 6], [4, 7]], sheepfarm: [[6, 5], [6, 6], [6, 7]],
     harbor: [[10, 5], [10, 6], [10, 7]]
   };
@@ -223,6 +224,16 @@
       var cx = Math.round(box.dx + 1), cy = Math.round(box.dy + 1);
       drawCrest(ctx, cx, cy, crestSz, house.sigil);
     }
+    // Garnisons-Schild links unten, wenn Einheiten stationiert sind.
+    var gar = structure.garrison || {};
+    var garTotal = 0;
+    for (var gk in gar) garTotal += (gar[gk] || 0);
+    if (garTotal > 0) {
+      var shSz = Math.max(7, Math.round(size * 0.24));
+      var sx = Math.round(box.dx + 1);
+      var sy = Math.round(box.dy + box.s - shSz - 1);
+      drawGarrisonShield(ctx, sx, sy, shSz);
+    }
     // Selektion: gestrichelter Rahmen wie bei Burg-Marker.
     if (opts.selected) {
       ctx.strokeStyle = '#e8d7a0'; ctx.lineWidth = 2; ctx.setLineDash([4, 3]);
@@ -246,6 +257,35 @@
     ctx.beginPath();
     ctx.moveTo(x, y + sz); ctx.lineTo(x + sz, y); ctx.lineTo(x + sz, y + sz); ctx.closePath();
     ctx.fill();
+  }
+
+  // Garnisons-Schild: kleines rotes Schild mit goldenem Schwert-Kreuz.
+  // Wird neben Strukturen gezeichnet, sobald eine Garnison stationiert ist.
+  function drawGarrisonShield(ctx, x, y, sz) {
+    // Dunkler Outline-Rahmen
+    ctx.fillStyle = '#15110d';
+    ctx.fillRect(x - 1, y - 1, sz + 2, sz + 2);
+    // Schild-Korpus (rotes Rechteck oben)
+    var bodyH = Math.round(sz * 0.70);
+    ctx.fillStyle = '#7d2b2b';
+    ctx.fillRect(x, y, sz, bodyH);
+    // Schild-Spitze (Dreieck unten)
+    ctx.beginPath();
+    ctx.moveTo(x, y + bodyH);
+    ctx.lineTo(x + sz / 2, y + sz);
+    ctx.lineTo(x + sz, y + bodyH);
+    ctx.closePath();
+    ctx.fill();
+    // Goldenes Schwert-Kreuz im Schild (vertikaler Strich + horizontaler Querbalken)
+    ctx.fillStyle = '#e8d7a0';
+    var cx = x + Math.floor(sz / 2);
+    var vTop = y + Math.max(1, Math.round(sz * 0.15));
+    var vBot = y + Math.round(sz * 0.85);
+    ctx.fillRect(cx, vTop, 1, vBot - vTop);
+    // Querbalken (kurz)
+    var bw = Math.max(2, Math.round(sz * 0.45));
+    var by = y + Math.round(sz * 0.40);
+    ctx.fillRect(cx - Math.floor(bw / 2), by, bw, 1);
   }
 
   // ---- Dorf-/Burgmarker (Haus-Sitz) -----------------------------------

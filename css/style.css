@@ -137,6 +137,25 @@ small{color:var(--muted)}
 .bonus-box,.def-box{background:var(--panel);border:1px solid var(--line);
   border-radius:5px;padding:8px 10px;margin-bottom:10px;font-size:13px}
 .def-box.small,.bonus-box.small{font-size:12px;padding:6px 8px}
+.def-breakdown{margin-top:6px;font-size:12px;line-height:1.55}
+.def-breakdown div span:first-child,.def-breakdown div>span{color:var(--text)}
+.def-breakdown .def-total{border-top:1px dashed var(--line);margin-top:4px;padding-top:4px;font-weight:600}
+.def-effect{margin-top:8px;padding-top:8px;border-top:1px solid var(--line);font-size:12px;line-height:1.55}
+.def-effect b{display:block;margin-bottom:3px}
+/* Hover-Info-Popup für Kriegernamen */
+.unit-name{cursor:help;border-bottom:1px dotted var(--muted);outline:none}
+.bld-name{align-self:flex-start}
+.unit-name:hover b,.unit-name:focus b{color:var(--gold)}
+#unit-tip-pop{display:none;position:fixed;z-index:2000;width:280px;padding:9px 11px;
+  font-size:11px;line-height:1.5;text-align:left;pointer-events:none}
+#unit-tip-pop .ut-head{font-size:13px;display:flex;align-items:center;gap:8px;margin-bottom:3px}
+#unit-tip-pop .ut-role{font-size:10px;padding:1px 6px;border-radius:8px;border:1px solid var(--line)}
+#unit-tip-pop .ut-role.off{color:#e08a8a}#unit-tip-pop .ut-role.def{color:#8ab6e0}#unit-tip-pop .ut-role.hero{color:#e8d7a0}
+#unit-tip-pop .ut-desc{color:var(--muted);margin-bottom:5px}
+#unit-tip-pop .ut-stats{display:grid;grid-template-columns:1fr 1fr;gap:2px 10px;margin-bottom:5px}
+#unit-tip-pop .ut-stats span i,#unit-tip-pop .ut-cost i{color:var(--muted);font-style:normal}
+#unit-tip-pop .ut-cost{margin-bottom:4px}
+#unit-tip-pop .ut-note{border-top:1px solid var(--line);padding-top:5px;color:var(--muted)}
 .unit-table{width:100%;border-collapse:collapse;font-size:13px}
 .unit-table th,.unit-table td{padding:5px 6px;border-bottom:1px solid var(--line);text-align:center}
 .unit-table th{color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase}
@@ -199,8 +218,7 @@ small{color:var(--muted)}
 
 /* ---------- Toast ---------- */
 #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
-  background:#0e171f;border:1px solid var(--gold);color:var(--text);padding:10px 18px;
-  border-radius:6px;opacity:0;pointer-events:none;transition:.25s;z-index:200;max-width:80%}
+  padding:10px 18px;opacity:0;pointer-events:none;transition:.25s;z-index:200;max-width:80%}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
 /* ---------- Belagerung (Schritt 6.5): HP-Leisten, Reparatur ---------- */
@@ -308,3 +326,32 @@ small{color:var(--muted)}
   border:1px solid var(--line);border-radius:3px;padding:2px 4px;font-size:12px;
   font-variant-numeric:tabular-nums}
 .mil-area .unit-table .btn.sm{padding:3px 7px}
+
+/* Standortboni / Verteidigungskraft unter Tabelle: Abstand */
+.mil-area + .bonus-box{margin-top:14px}
+.bonus-box + .def-box{margin-top:6px}
+/* Bauzeit neben Einheitenname: normal, dezent */
+.mil-area .unit-table .utime{color:var(--muted);font-weight:400;font-size:12px;
+  font-variant-numeric:tabular-nums}
+
+/* ---------- HUD Hover-Popups (Schritt 11) ---------- */
+.hud-hover{cursor:help;padding:0 4px;border-radius:3px}
+.hud-hover:hover{background:rgba(232,215,160,0.10)}
+/* Gemeinsamer "Goldrand-Popup"-Look (HUD-Popup, alle Tooltips, Toast/Alert). */
+.gold-pop,.hud-popup,#unit-tip-pop,#toast{
+  background:linear-gradient(#16222c,#0e161c);
+  border:1px solid var(--gold);border-radius:6px;color:var(--text);
+  box-shadow:0 8px 24px rgba(0,0,0,0.6)}
+.hud-popup{position:fixed;z-index:120;padding:10px 14px;min-width:260px;
+  max-width:340px;font-size:12px;line-height:1.5;font-variant-numeric:tabular-nums}
+.hud-popup h4{margin:0 0 6px;color:var(--gold);font-size:13px;border-bottom:1px solid var(--line);
+  padding-bottom:4px}
+.hud-popup .hud-section{margin:6px 0 4px}
+.hud-popup .hud-section b{display:block;color:var(--text);font-size:12px;margin-bottom:2px}
+.hud-popup .hud-section div{display:flex;justify-content:space-between;gap:8px;
+  color:var(--muted);padding-left:6px}
+.hud-popup .hud-section div span{color:var(--text);font-weight:500}
+.hud-popup .hud-saldo{margin-top:8px;padding-top:6px;border-top:1px solid var(--line);
+  display:flex;justify-content:space-between;gap:8px}
+.hud-popup .hud-saldo .good{color:var(--green)}
+.hud-popup .hud-saldo .bad{color:var(--red)}
