@@ -1,7 +1,8 @@
 /* =========================================================================
  * World of Houses – KI-Gegner
- * Einfache, regelbasierte KI pro Haus. Drei Schwierigkeitsstufen steuern
- * Wirtschafts-, Ausbildungs- und Angriffsverhalten.
+ * Regelbasierte KI pro Haus. Drei Schwierigkeitsstufen steuern Wirtschafts-,
+ * Ausbildungs- und Angriffsverhalten. Schritt 7: Anti-Turtling (Boredom),
+ * Belagerungs-Tauglichkeit, Expansionsmodus, Angriffe auf Strukturen.
  * ========================================================================= */
 (function (WOH) {
   'use strict';
@@ -15,10 +16,11 @@
     for (var hid in state.ai) {
       var house = state.houses[hid];
       if (!house || house.isPlayer) continue;
-      // Haus könnte komplett erobert worden sein
       var villages = G.villagesOfHouse(state, hid);
       if (!villages.length) continue;
       var brain = state.ai[hid];
+      // Initialisierung (alte Saves, vor Migrationsschritt v5)
+      if (typeof brain.lastAttackTime !== 'number') brain.lastAttackTime = state.gameTime || 0;
       brain.nextDecisionAt -= dt;
       if (brain.nextDecisionAt <= 0) {
         var cfg = C.DIFFICULTY[state.difficulty];
@@ -31,23 +33,38 @@
   function decide(state, hid, villages, cfg) {
     villages.forEach(function (v) {
       manageEconomy(state, v, cfg);
-      manageMilitary(state, v, cfg);
+      manageMilitary(state, v, cfg, state);
     });
-    // Angriffsentscheidung auf Hausebene
-    if (Math.random() < cfg.aggression) considerAttack(state, hid, villages, cfg);
+    // Schritt 8: Defensive Reaktion und Garnison-Stationierung pro Haus
+    manageDefense(state, hid, villages, cfg);
+    manageStructureGarrison(state, hid, villages, cfg);
+    // Aggressions-Schub im Expansionsmodus (alle Burgen weit ausgebaut).
+    var pressure = villages.every(isAtMaxStage) ? (C.AI ? C.AI.pressureMultiplier : 1.0) : 1.0;
+    if (Math.random() < cfg.aggression * pressure) considerAttack(state, hid, villages, cfg);
   }
 
-  // Baue das jeweils niedrigste sinnvolle Gebäude, das bezahlbar ist.
+  // Eine Burg ist auf Max-Stage, wenn Halle = Threshold UND alle wirtschaftlichen
+  // Gebaeude auf min. econ-Stufe stehen.
+  function isAtMaxStage(v) {
+    var th = (C.AI && C.AI.maxStageThreshold) || { townhall: 6, econ: 5 };
+    if ((v.buildings.townhall || 0) < th.townhall) return false;
+    var econKeys = ['woodcutter', 'quarry', 'mine', 'farm', 'warehouse'];
+    return econKeys.every(function (k) { return (v.buildings[k] || 0) >= th.econ; });
+  }
+
+  // Wirtschaft ausbauen + Schritt 8: Reparatur beschaedigter Bauwerke.
   function manageEconomy(state, v, cfg) {
+    // Erst Reparatur: dringend beschaedigte Wall/Tower sollen vor neuem Bau
+    // wieder hochgezogen werden (multiplikativer Schutz lohnt sich am meisten).
+    tryRepair(state, v);
+
     if (v.buildQueue.length >= 2) return;
     if (Math.random() > cfg.econ * 0.9) return;
 
     var candidates = ECON_PRIORITY.slice();
-    // Militärgebäude später ergänzen
     MIL_PRIORITY.forEach(function (k) {
       if (V.meetsRequirements(v, k)) candidates.push(k);
     });
-    // Sortiere nach aktueller Stufe (niedrigste zuerst), Wirtschaft bevorzugt
     candidates.sort(function (a, b) {
       return (v.buildings[a] || 0) - (v.buildings[b] || 0);
     });
@@ -57,46 +74,211 @@
     }
   }
 
-  // Bilde Verteidiger und Angreifer aus. Aggressive Häuser massieren Äxte
-  // (Offensive), behalten aber auch Verteidigung daheim.
+  // Repariert Wall/Tower, wenn HP unter Schwellwert UND Lager reicht.
+  function tryRepair(state, v) {
+    var aic = C.AI || {};
+    var threshold = (typeof aic.repairHPThreshold === 'number') ? aic.repairHPThreshold : 0.5;
+    var order = aic.repairPriority || ['wall', 'tower'];
+    // Sortierung nach HP-Quote: kritischste Komponente zuerst.
+    var jobs = [];
+    order.forEach(function (key) {
+      var lvl = v.buildings[key] || 0;
+      if (lvl < 1) return;
+      var max = key === 'wall' ? V.wallMaxHP(lvl) : V.towerMaxHP(lvl);
+      var hp  = key === 'wall' ? V.wallHP(v)      : V.towerHP(v);
+      if (max <= 0) return;
+      var ratio = hp / max;
+      if (ratio < threshold) jobs.push({ key: key, ratio: ratio });
+    });
+    jobs.sort(function (a, b) { return a.ratio - b.ratio; });
+    for (var i = 0; i < jobs.length; i++) {
+      var r = G.startRepair(state, v, jobs[i].key);
+      if (r.ok) return; // ein Reparatur-Slot pro Tick reicht
+    }
+  }
+
+  // Militaer ausbilden. Schritt 7: hoeherer Bogen-Share bei befestigten
+  // Nachbarn. Schritt 8: KI bildet Helden aus, sobald Kaserne-Schwellwert
+  // erreicht ist und noch kein Held vorhanden ist.
   function manageMilitary(state, v, cfg) {
     if ((v.buildings.barracks || 0) < 1) return;
     if (v.trainingQueue.length >= 2) return;
+
+    // Schritt 8.1: Held-Ausbildung priorisieren
+    var aic = C.AI || {};
+    var heroReq = aic.heroBarracksReq != null ? aic.heroBarracksReq : 4;
+    var heroInQueue = (v.trainingQueue || []).some(function (q) { return q.unit === 'hero'; });
+    var hasHero = (v.units.hero || 0) >= 1;
+    if (!hasHero && !heroInQueue && (v.buildings.barracks || 0) >= heroReq) {
+      var r = G.enqueueTrain(state, v, 'hero', 1);
+      if (r.ok) return; // Held priorisiert, kein weiterer Trainings-Versuch in diesem Tick
+      // Wenn Kosten/Pop nicht reichen, fallback auf normales Truppen-Training
+    }
+
     if (Math.random() > cfg.train) return;
 
     var batch = Math.max(2, Math.round(4 * cfg.train));
     var roll = Math.random();
-    var offShare = 0.4 + cfg.aggression * 0.45; // aggressiv => mehr Äxte
+    var offShare = 0.4 + cfg.aggression * 0.45;
+    var needSiege = hasFortifiedNeighbor(state, v);
+    var archerShare = needSiege ? 0.30 : 0.18;
     var unit;
     if (roll < offShare) unit = 'axe';
     else if (roll < offShare + 0.22) unit = 'spear';
-    else if ((v.buildings.range || 0) >= 1 && roll < offShare + 0.4) unit = 'archer';
+    else if ((v.buildings.range || 0) >= 1 && roll < offShare + 0.22 + archerShare) unit = 'archer';
     else unit = 'sword';
     G.enqueueTrain(state, v, unit, batch);
   }
 
-  // Greife nur an, wenn die Angriffskraft die Verteidigung deutlich übersteigt.
-  // So massiert die KI Truppen und vermeidet aussichtslose Angriffe auf starke Burgen.
+  function hasFortifiedNeighbor(state, v) {
+    for (var id in state.villages) {
+      var t = state.villages[id];
+      if (t.houseId === v.houseId) continue;
+      if (G.distance(v, t) > 18) continue;
+      if ((t.buildings.wall || 0) >= 3) return true;
+    }
+    return false;
+  }
+
+  // Truppensumme einer Burg (ohne Held — Held wird separat behandelt).
+  function totalDefenders(v) {
+    var n = 0; var u = v.units || {};
+    n += (u.spear || 0) + (u.sword || 0) + (u.axe || 0) + (u.archer || 0);
+    return n;
+  }
+
+  // Schritt 8.4: Defensive Reaktion. Wenn eine eigene Burg eine eingehende
+  // hostile Bewegung sieht und die Verteidigung schwach gegenueber der
+  // Angreifer-Kraft ist, schickt eine andere eigene Burg mit Truppen-
+  // ueberschuss Verstaerkung. Quellburg behaelt mindestens castleDefenseMinimum.
+  function manageDefense(state, hid, villages, cfg) {
+    var aic = C.AI || {};
+    var minDef = aic.castleDefenseMinimum != null ? aic.castleDefenseMinimum : 30;
+    var supThresh = aic.supportThreshold != null ? aic.supportThreshold : 1.2;
+
+    villages.forEach(function (v) {
+      // Eingehende Bedrohung?
+      var threat = 0;
+      for (var i = 0; i < state.movements.length; i++) {
+        var m = state.movements[i];
+        if (m.toId !== v.id) continue;
+        if (m.type !== 'attack' && m.type !== 'gather' && m.type !== 'capture') continue;
+        if (m.ownerHouseId === hid) continue;
+        threat += WOH.Combat.attackPower(m.units);
+      }
+      if (threat <= 0) return;
+
+      // Eigene Verteidigung gegen die Bedrohung
+      var defenders = WOH.Combat.defensePower(v.units, v.buildings.wall || 0, v.buildings.tower || 0);
+      if (defenders >= threat * supThresh) return; // ausreichend stark
+
+      // Nachbar-Burg mit Truppen-Ueberschuss suchen
+      var best = null, bestSurplus = 0;
+      villages.forEach(function (s) {
+        if (s.id === v.id) return;
+        var surplus = totalDefenders(s) - minDef;
+        if (surplus <= 5) return;
+        if (G.distance(s, v) > 22) return;
+        if (G.hasOutboundMovement(state, s.id, v.id)) return; // schon unterwegs
+        if (surplus > bestSurplus) { bestSurplus = surplus; best = s; }
+      });
+      if (!best) return;
+
+      // Bis zur Haelfte des Ueberschusses entsenden (verteilt auf vorhandene Truppen)
+      var send = {};
+      var quota = Math.min(50, Math.max(5, Math.floor(bestSurplus / 2)));
+      var sent = 0;
+      ['spear', 'sword', 'axe', 'archer'].forEach(function (u) {
+        var avail = best.units[u] || 0;
+        if (sent >= quota || avail <= 0) return;
+        var take = Math.min(avail, quota - sent);
+        send[u] = take; sent += take;
+      });
+      if (sent <= 0) return;
+      G.sendArmy(state, best.id, v.id, send, 'support');
+    });
+  }
+
+  // Schritt 8.3: KI fuellt Garnisons eigener eroberter Strukturen auf.
+  // Quelle ist die zugewiesene Heimatburg; nur wenn Heimatburg mindestens
+  // castleDefenseMinimum behaelt und die Struktur unter Garnison-Ziel ist.
+  function manageStructureGarrison(state, hid, villages, cfg) {
+    if (!state.structures || !state.structures.length) return;
+    var aic = C.AI || {};
+    var target = aic.structureGarrisonTarget != null ? aic.structureGarrisonTarget : 50;
+    var minDef = aic.castleDefenseMinimum != null ? aic.castleDefenseMinimum : 30;
+
+    for (var i = 0; i < state.structures.length; i++) {
+      var s = state.structures[i];
+      if (s.ownerHouseId !== hid) continue;
+      var current = 0; var g = s.garrison || {};
+      for (var k in g) current += (g[k] || 0);
+      if (current >= target) continue;
+
+      var castle = state.villages[s.assignedCastleId];
+      if (!castle || castle.houseId !== hid) continue;
+      var surplus = totalDefenders(castle) - minDef;
+      if (surplus < 10) continue; // Burg nicht plundern
+
+      // Bis zu 20 Speer/Schwert vorrangig stationieren (Bogen lieber daheim).
+      var need = Math.min(target - current, 20, surplus);
+      var units = {};
+      ['spear', 'sword'].forEach(function (u) {
+        if (need <= 0) return;
+        var avail = castle.units[u] || 0;
+        var take = Math.min(avail, need);
+        if (take > 0) { units[u] = take; need -= take; }
+      });
+      if (Object.keys(units).length === 0) continue;
+      G.stationGarrison(state, castle, s, units);
+    }
+  }
+
+  // Aktuellen Boredom-Margin der KI berechnen: 2.0 sinkt mit Stillstandszeit
+  // bis zum AI.marginFloor.
+  function currentMargin(state, hid) {
+    var brain = state.ai[hid] || {};
+    var ai = C.AI || { boredomFactor: { normal: 0.001 }, marginFloor: 1.0 };
+    var bf = (ai.boredomFactor && ai.boredomFactor[state.difficulty]) || 0.001;
+    var dtSinceAttack = Math.max(0, (state.gameTime || 0) - (brain.lastAttackTime || 0));
+    var margin = 2.0 - bf * dtSinceAttack;
+    return Math.max(ai.marginFloor || 1.0, margin);
+  }
+
+  // Benoetigte Bogenanzahl fuer eine erfolgreiche Belagerung des Ziels.
+  function archersNeededFor(t) {
+    var w = t.buildings ? (t.buildings.wall || 0) : 0;
+    var tw = t.buildings ? (t.buildings.tower || 0) : 0;
+    var siegeScore = w * 2 + tw * 1.5;
+    var ratio = (C.AI && C.AI.archerToSiegeRatio) || 20;
+    return Math.ceil(siegeScore * ratio);
+  }
+
   function considerAttack(state, hid, villages, cfg) {
-    // Stärkstes Offensiv-Dorf (meiste Äxte) als Ausgangspunkt.
     var best = null, bestAxe = 0;
     villages.forEach(function (v) {
       var a = v.units.axe || 0;
       if (a > bestAxe) { bestAxe = a; best = v; }
     });
-    if (!best || bestAxe < 10) return; // erst eine echte Armee aufbauen
+    if (!best || bestAxe < 10) return;
 
     var axes = best.units.axe || 0;
     var swords = best.units.sword || 0;
-    // Mitgeschickte Schwerter (Begleitung) in die Angriffskraft einrechnen.
+    var archers = best.units.archer || 0;
     var escort = Math.floor(swords * 0.25);
-    var atkPower = WOH.Combat.attackPower({ axe: axes, sword: escort });
+    var hero = (best.units.hero || 0) >= 1 ? 1 : 0;
 
-    // Klarer Sieg gefordert: Angriffskraft >= MARGIN × Verteidigung
-    // (deckt Glücks-Schwankungen ab und hält die eigenen Verluste niedrig).
-    var MARGIN = 2.0;
+    // Truppmix inkl. Bogen (Schritt 7): Bogen helfen Belagerung + leichte
+    // Hauptkampf-Beteiligung. Held nur fuer Eroberungs-Trupp.
+    var attackUnits = { axe: axes, sword: escort, archer: archers };
+    var atkPower = WOH.Combat.attackPower(attackUnits);
+    var MARGIN = currentMargin(state, hid);
 
-    var target = null, score = -Infinity;
+    // Strukturen-Ziele bewerten (Sammeln/Erobern)
+    var structureTarget = pickStructureTarget(state, hid, best);
+
+    // Burg-Ziele bewerten
+    var burgTarget = null, score = -Infinity;
     for (var id in state.villages) {
       var t = state.villages[id];
       if (t.houseId === hid) continue;
@@ -104,22 +286,79 @@
       if (dist > 18) continue;
       var def = WOH.Combat.defensePower(t.units, t.buildings.wall || 0, t.buildings.tower || 0);
       if (def < 1) def = 1;
-      if (atkPower < def * MARGIN) continue; // nicht überzeugend gewinnbar -> meiden
+      // Bogen-Suppression naehrt die Erfolgschance bei Wall.
+      var sup = C.SIEGE ? Math.min(C.SIEGE.wallSuppressionMax, archers * C.SIEGE.wallSuppressionPerArcher) : 0;
+      var defAdj = def * (1 - sup * 0.5); // Heuristik: KI rechnet 50% der Suppression ein
+      if (atkPower < defAdj * MARGIN) continue;
+      // Belagerungs-Tauglichkeit: bei stark befestigten Zielen pruefen, ob
+      // genug Bogenschuetzen verfuegbar sind. Sonst spaeter angreifen.
+      var needArch = archersNeededFor(t);
+      if (needArch > 0 && archers < needArch * 0.5) continue;
       var value = 0; for (var b in t.buildings) value += t.buildings[b];
-      // Lohnende, nahe, schwächere Ziele bevorzugen; Spieler leicht bevorzugt.
-      var s = value * 4 - dist * 2 + (t.isPlayer ? 25 : 0) + (atkPower / def) * 6;
-      if (s > score) { score = s; target = t; }
+      var s = value * 4 - dist * 2 + (t.isPlayer ? 25 : 0) + (atkPower / defAdj) * 6;
+      if (s > score) { score = s; burgTarget = t; }
     }
-    if (!target) return; // kein überzeugend besiegbares Ziel -> weiter aufrüsten
 
-    // Volle Axt-Armee + Begleitung entsenden (Verteidiger bleiben daheim).
-    var send = { axe: axes, sword: escort };
-    var r = G.sendArmy(state, best.id, target.id, send, 'attack');
-    if (r.ok && target.isPlayer) {
-      G.pushLog(state, 'Späher melden: ' + state.houses[hid].name +
-        ' entsendet eine große Armee (' + axes + ' Axtkämpfer) auf ' + target.name + '!', 'bad');
+    // Entscheidung: Burg vor Struktur (groesserer Effekt), Struktur als Fallback.
+    if (burgTarget) {
+      var send = { axe: axes, sword: escort, archer: archers };
+      // Held mitgeben bei moeglicher Eroberung — falls Trupp ueberwaeltigend stark.
+      if (hero && atkPower > WOH.Combat.defensePower(burgTarget.units,
+          burgTarget.buildings.wall || 0, burgTarget.buildings.tower || 0) * (MARGIN + 0.5)) {
+        send.hero = 1;
+      }
+      var r = G.sendArmy(state, best.id, burgTarget.id, send, 'attack');
+      if (r.ok) {
+        state.ai[hid].lastAttackTime = state.gameTime;
+        if (burgTarget.isPlayer) {
+          G.pushLog(state, 'Späher melden: ' + state.houses[hid].name +
+            ' entsendet eine große Armee (' + axes + ' Axt, ' + archers + ' Bogen) auf ' +
+            burgTarget.name + '!', 'bad');
+        }
+      }
+      return;
+    }
+
+    if (structureTarget) {
+      var attackType = (hero && structureTarget.canCapture) ? 'capture' : 'gather';
+      var send2 = { axe: Math.min(axes, 50), sword: Math.min(escort, 20), archer: Math.min(archers, 30) };
+      if (attackType === 'capture') send2.hero = 1;
+      var r2 = G.sendArmy(state, best.id, structureTarget.struct.id, send2, attackType);
+      if (r2.ok) state.ai[hid].lastAttackTime = state.gameTime;
     }
   }
 
-  WOH.AI = { update: update };
+  // Suche eine lohnende Strukturen-Aktion: gut gefuelltes Lager
+  // (Sammeln) oder schwache Garnison + verfuegbarer Held (Eroberung).
+  function pickStructureTarget(state, hid, src) {
+    if (!state.structures || !state.structures.length) return null;
+    var heroAvailable = (src.units.hero || 0) >= 1;
+    var best = null, bestScore = -1;
+    for (var i = 0; i < state.structures.length; i++) {
+      var s = state.structures[i];
+      if (s.ownerHouseId === hid) continue; // eigene meiden
+      var dist = Math.sqrt((src.x - s.x) * (src.x - s.x) + (src.y - s.y) * (src.y - s.y));
+      if (dist > 18) continue;
+      var garrisonN = 0; var g = s.garrison || {};
+      for (var k in g) garrisonN += (g[k] || 0);
+      // Bei zu starker Garnison: skip
+      if (garrisonN > 50) continue;
+      var meta = C.RESOURCE_STRUCTURES[s.type];
+      var storeLevel = s.storage && meta ? (s.storage[meta.res] || 0) : 0;
+      // Score: Lager-Volumen, Garnisonsschwaeche, Heimatburg-Bonus
+      var score = storeLevel * 0.1 - garrisonN * 5 - dist * 2;
+      var canCapture = heroAvailable && s.ownerHouseId == null; // primaer neutrale erobern
+      if (canCapture) score += 50;
+      if (score > bestScore) { bestScore = score; best = { struct: s, canCapture: canCapture }; }
+    }
+    return best;
+  }
+
+  WOH.AI = {
+    update: update,
+    // Exports fuer Tests / Debugging
+    currentMargin: currentMargin,
+    isAtMaxStage: isAtMaxStage,
+    archersNeededFor: archersNeededFor
+  };
 })(window.WOH = window.WOH || {});

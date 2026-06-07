@@ -7,9 +7,11 @@
   'use strict';
 
   // --- Globaler Zeit-Skalierungsfaktor ---------------------------------
-  // Spielsekunden vergehen schneller als Echtzeit, damit ein Prototyp
-  // angenehm spielbar bleibt. 1 Echtsekunde = TIME_SCALE Spielsekunden.
-  var TIME_SCALE = 6;
+  // Basis-Skalierung: 1 Spielsekunde = 1 Echtsekunde, wenn der Spieler-
+  // Geschwindigkeitsregler auf 1x steht (siehe state.speedMultiplier).
+  // Der Spieler kann ueber den HUD-Regler 1x/2x/4x/8x waehlen oder
+  // pausieren. Tick: dt = realMs/1000 * TIME_SCALE * speedMultiplier.
+  var TIME_SCALE = 1;
 
   // --- Karte -----------------------------------------------------------
   var MAP = {
@@ -255,6 +257,53 @@
   // Index 0 = unerobert/neutral (kein Bonus), 1/2/3 = Strukturstufe.
   var STRUCTURE_POP_BONUS = [0, 20, 40, 60];
 
+  // --- Belagerung (Schritt 6.5) ----------------------------------------
+  // Palisade und Wachturm besitzen je Stufe HitPoints. Vor der eigentlichen
+  // Kampfauflösung verursacht der Angreifer Belagerungs-Schaden; sinkt die
+  // HP auf <=0, fällt die Stufe um 1 und der Überschuss wirkt weiter.
+  // Reparatur kostet einen Bruchteil der Bau-Kosten der aktuellen Stufe.
+  // Bogenschützen reduzieren zusätzlich den Mauer-Multiplikator dieses
+  // Kampfes (multiplikativ, ohne baseFlat zu beeinflussen).
+  var SIEGE = {
+    // Index 0 unbenutzt — Stufen 1..6
+    wallMaxHP:  [null, 220, 340, 500,  700,  940, 1220],
+    towerMaxHP: [null, 180, 260, 360,  480,  620,  780],
+    // Belagerungs-Schaden je Einheit pro Trupp-Stueck
+    unitSiegeWall:  { spear: 0.5, sword: 1.0, axe: 2.5, archer: 5.0, hero: 20.0 },
+    unitSiegeTower: { spear: 0.5, sword: 0.5, axe: 1.5, archer: 6.0, hero: 20.0 },
+    // Mauer-Bonus-Reduktion durch Bogenschuetzen im Hauptkampf (temporaer)
+    wallSuppressionPerArcher: 0.003,  // 0,3 % Bonus-Reduktion je Bogen
+    wallSuppressionMax: 0.5,          // max. -50 % auf wallMult
+    // Reparatur: Anteil der Bau-Kosten/-Zeit der jeweils aktuellen Stufe
+    repairCostFactor: 0.3,
+    repairTimeFactor: 0.4,
+    repairQueueMax: 2
+  };
+
+  // --- KI-Heuristik (Schritt 7) ----------------------------------------
+  // boredomFactor: Senkung des MARGIN-Schwellwerts pro Spielsekunde seit
+  // dem letzten eigenen Angriff. Schluesselgleich zu DIFFICULTY-Keys
+  // (easy/normal/hard), nicht zum 'name'-Feld der Stufe.
+  // marginFloor: minimaler Schwellwert, unter dem die KI nie angreift
+  // (Selbstmord-Schutz). archerToSiegeRatio: benoetigte Bogen pro
+  // Belagerungspunkt (wall*2 + tower*1.5). maxStageThreshold: Schwellen
+  // fuer Expansionsmodus. pressureMultiplier: Aggressions-Schub im
+  // Expansionsmodus.
+  var AI = {
+    boredomFactor:  { easy: 0.0005, normal: 0.001, hard: 0.002 },
+    marginFloor: 1.0,
+    archerToSiegeRatio: 20,
+    maxStageThreshold: { townhall: 6, econ: 5 },
+    pressureMultiplier: 1.2,
+    // Schritt 8: KI-Polishing
+    heroBarracksReq: 4,           // Kaserne-Stufe ab der Helden ausgebildet werden
+    repairHPThreshold: 0.5,       // unter dieser Quote (HP/maxHP) repariert die KI
+    repairPriority: ['wall', 'tower'],
+    structureGarrisonTarget: 50,  // KI fuellt eigene Strukturen-Garnison bis hierhin auf
+    castleDefenseMinimum: 30,     // Burg behaelt mindestens diese Truppensumme als Verteidigung
+    supportThreshold: 1.2         // bei Bedrohung > defenders*supportThreshold wird Hilfe geholt
+  };
+
   var SAVE = {
     dbName: 'world-of-houses',
     storeName: 'saves',
@@ -268,6 +317,7 @@
     RESOURCE_STRUCTURE_LEVELS: RESOURCE_STRUCTURE_LEVELS,
     STRUCTURE_GARRISON_CAP: STRUCTURE_GARRISON_CAP,
     STRUCTURE_POP_BONUS: STRUCTURE_POP_BONUS,
+    SIEGE: SIEGE,
     TIME_SCALE: TIME_SCALE,
     MAP: MAP,
     RESOURCES: RESOURCES,
@@ -282,6 +332,7 @@
     COMBAT: COMBAT,
     MOVEMENT: MOVEMENT,
     DIFFICULTY: DIFFICULTY,
+    AI: AI,
     SAVE: SAVE
   };
 })(window.WOH = window.WOH || {});

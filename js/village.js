@@ -67,7 +67,9 @@
   function maxLevel(key) { return C.BUILDINGS[key].max; }
 
   // Produktion pro Spielsekunde für einen Rohstoff.
-  function productionPerSec(village, res) {
+  // `state` (optional, ab Schritt 5): wenn übergeben, wird der Food-Upkeep
+  // um die Garnison-Pop in zugewiesenen Strukturen erweitert.
+  function productionPerSec(village, res, state) {
     var level = 0;
     for (var k in C.BUILDINGS) {
       if (C.BUILDINGS[k].produces === res) { level = village.buildings[k] || 0; break; }
@@ -77,7 +79,7 @@
     // Nahrung wird durch die Bevölkerung verbraucht (Netto-Ertrag, ggf. negativ).
     // foodUpkeepPerPop ist pro Anzeige-Sekunde definiert -> auf Spielsekunde umrechnen.
     if (res === 'food') {
-      prod -= populationUsed(village) * (C.PRODUCTION.foodUpkeepPerPop || 0) / C.TIME_SCALE;
+      prod -= populationUsed(village, state) * (C.PRODUCTION.foodUpkeepPerPop || 0) / C.TIME_SCALE;
     }
     return prod;
   }
@@ -87,19 +89,43 @@
     return Math.round(C.STORAGE.baseCap * pow(C.STORAGE.perLevel, lvl));
   }
 
-  // Bereitgestellte Bevölkerung (Versorgung) durch Bauernhof.
-  function populationCap(village) {
-    return C.POPULATION.base + (village.buildings.farm || 0) * C.POPULATION.perFarmLevel;
+  // Bereitgestellte Bevölkerung (Versorgung).
+  // Basis: Bauernhof-Stufe; Schritt 5: + Bonus aus zugewiesenen eroberten
+  // Rohstoff-Strukturen (`STRUCTURE_POP_BONUS[structure.level]`).
+  // `state` ist optional: ohne state wird nur die Burg-interne Versorgung
+  // berechnet (abwaertskompatibel fuer Aufrufer, die keinen state durchreichen).
+  function populationCap(village, state) {
+    var base = C.POPULATION.base + (village.buildings.farm || 0) * C.POPULATION.perFarmLevel;
+    if (!state || !state.structures || !C.STRUCTURE_POP_BONUS) return base;
+    var bonus = 0;
+    for (var i = 0; i < state.structures.length; i++) {
+      var s = state.structures[i];
+      if (s.assignedCastleId !== village.id || s.ownerHouseId !== village.houseId) continue;
+      var lvl = Math.max(1, Math.min(3, s.level || 1));
+      bonus += C.STRUCTURE_POP_BONUS[lvl] || 0;
+    }
+    return base + bonus;
   }
 
   // Verbrauchte Bevölkerung: Gebäude + stationierte/ausgebildete Einheiten.
-  function populationUsed(village) {
+  // Schritt 5: + Garnison-Einheiten in zugewiesenen eroberten Strukturen
+  // werden ueber die Heimatburg verbucht (Spec: "belegen dort keine
+  // Bevoelkerung mehr; Versorgung laeuft zentral aus dem besitzenden Haus").
+  function populationUsed(village, state) {
     var used = 0, k;
     for (k in village.buildings) used += (village.buildings[k] || 0);
     for (k in village.units) used += (village.units[k] || 0) * (C.UNITS[k] ? C.UNITS[k].pop : 1);
     (village.trainingQueue || []).forEach(function (q) {
       used += q.remaining * (C.UNITS[q.unit] ? C.UNITS[q.unit].pop : 1);
     });
+    if (state && state.structures) {
+      for (var i = 0; i < state.structures.length; i++) {
+        var s = state.structures[i];
+        if (s.assignedCastleId !== village.id || s.ownerHouseId !== village.houseId) continue;
+        var g = s.garrison || {};
+        for (var u in g) used += (g[u] || 0) * (C.UNITS[u] ? C.UNITS[u].pop : 1);
+      }
+    }
     return used;
   }
 
@@ -116,13 +142,80 @@
   }
 
   // Wende Produktion über dt Spielsekunden an, begrenzt durch Lagerkapazität.
-  // Nahrung ist nicht durch das Lager gedeckelt? -> doch, zur Einfachheit gleich.
-  function applyProduction(village, dtSec) {
+  // `state` ist optional und wird an `productionPerSec` weitergereicht, damit
+  // der Food-Upkeep die Garnison in zugewiesenen Strukturen mitzaehlt.
+  function applyProduction(village, dtSec, state) {
     var cap = storageCap(village);
     C.RESOURCES.forEach(function (r) {
-      var add = productionPerSec(village, r) * dtSec;
+      var add = productionPerSec(village, r, state) * dtSec;
       village.resources[r] = Math.max(0, Math.min(cap, (village.resources[r] || 0) + add));
     });
+  }
+
+  // -----------------------------------------------------------------------
+  // Belagerung (Schritt 6.5): HP-Helpers + Reparatur-Queue
+  // -----------------------------------------------------------------------
+  function wallMaxHP(level) {
+    var lvl = level | 0;
+    if (lvl < 1) return 0;
+    var arr = (C.SIEGE && C.SIEGE.wallMaxHP) || [];
+    return arr[Math.min(lvl, arr.length - 1)] || 0;
+  }
+  function towerMaxHP(level) {
+    var lvl = level | 0;
+    if (lvl < 1) return 0;
+    var arr = (C.SIEGE && C.SIEGE.towerMaxHP) || [];
+    return arr[Math.min(lvl, arr.length - 1)] || 0;
+  }
+  // Liefert aktuelle HP; bei undefinierten Feldern Default = maxHP der Stufe.
+  function wallHP(v) {
+    var lvl = v.buildings.wall || 0;
+    if (lvl < 1) return 0;
+    if (typeof v.wallHP !== 'number') v.wallHP = wallMaxHP(lvl);
+    return v.wallHP;
+  }
+  function towerHP(v) {
+    var lvl = v.buildings.tower || 0;
+    if (lvl < 1) return 0;
+    if (typeof v.towerHP !== 'number') v.towerHP = towerMaxHP(lvl);
+    return v.towerHP;
+  }
+
+  // Reparaturkosten/-zeit der aktuellen Stufe (Bruchteil der Baukosten/-zeit).
+  function repairCost(v, key) {
+    var lvl = v.buildings[key] || 0;
+    if (lvl < 1) return { food: 0, wood: 0, stone: 0, iron: 0 };
+    var base = buildingCost(key, lvl - 1); // Kosten der ZURZEIT stehenden Stufe
+    var f = (C.SIEGE && C.SIEGE.repairCostFactor) || 0.3;
+    var cost = {};
+    C.RESOURCES.forEach(function (r) {
+      cost[r] = Math.round((base[r] || 0) * f);
+    });
+    return cost;
+  }
+  function repairTime(v, key) {
+    var lvl = v.buildings[key] || 0;
+    if (lvl < 1) return 0;
+    var t = buildTime(v, key, lvl - 1);
+    var f = (C.SIEGE && C.SIEGE.repairTimeFactor) || 0.4;
+    return Math.max(4, t * f);
+  }
+
+  // Tick: schliesst abgelaufene Reparatur-Eintraege ab.
+  function processRepairs(village, dtSec, gameTime) {
+    if (!village.repairQueue || !village.repairQueue.length) return;
+    var remaining = [];
+    for (var i = 0; i < village.repairQueue.length; i++) {
+      var r = village.repairQueue[i];
+      if (gameTime >= r.endsAt) {
+        // Reparatur abgeschlossen: HP auf max der aktuellen Stufe.
+        if (r.key === 'wall') village.wallHP = wallMaxHP(village.buildings.wall || 0);
+        else if (r.key === 'tower') village.towerHP = towerMaxHP(village.buildings.tower || 0);
+      } else {
+        remaining.push(r);
+      }
+    }
+    village.repairQueue = remaining;
   }
 
   WOH.Village = {
@@ -137,6 +230,14 @@
     populationUsed: populationUsed,
     canAfford: canAfford,
     pay: pay,
-    applyProduction: applyProduction
+    applyProduction: applyProduction,
+    // Schritt 6.5: Belagerung
+    wallMaxHP: wallMaxHP,
+    towerMaxHP: towerMaxHP,
+    wallHP: wallHP,
+    towerHP: towerHP,
+    repairCost: repairCost,
+    repairTime: repairTime,
+    processRepairs: processRepairs
   };
 })(window.WOH = window.WOH || {});

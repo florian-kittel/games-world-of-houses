@@ -12,13 +12,17 @@
   var terrainCanvas = null;
   var activeVillageId = null;   // im Overlay angezeigtes Dorf
   var targetVillageId = null;   // angeklicktes Zieldorf (Karte)
-  var selectedStructureId = null; // angeklickte Rohstoff-Struktur (Karte); Wiring in Schritt 6
+  var selectedStructureId = null; // angeklickte Rohstoff-Struktur (Karte)
+  var hoverStructureId = null;  // Mauszeiger ueber Struktur (Hover-Highlight)
   var overlayOpen = false;
   var reportOpen = false;
   var panelTimer = 0;
   var trainCounts = {};         // gemerkte Ausbildungsmengen je Einheit (überlebt Neuaufbau)
   var sendCounts = {};          // gemerkte Truppenmengen fürs Angriffs-/Unterstützungsformular
   var sendFromId = null;        // gewähltes Quell-Dorf für den Angriff
+  var garrisonCounts = {};      // Mengen fuer Garnison-Stationierung
+  var supportCounts = {};       // Mengen fuer Support-Picker (Einheiten + Rohstoffe)
+  var supportSourceId = null;   // gewaehlte Quelle (Burg- oder Struktur-Id)
 
   function $(id) { return document.getElementById(id); }
   function el(tag, cls, html) {
@@ -159,12 +163,18 @@
       cam.moved = false;
     });
     window.addEventListener('mousemove', function (e) {
-      if (!cam.drag) return;
-      var dx = e.clientX - cam.drag.sx, dy = e.clientY - cam.drag.sy;
-      if (Math.abs(dx) + Math.abs(dy) > 4) cam.moved = true;
-      cam.x = cam.drag.cx - dx / cam.zoom;
-      cam.y = cam.drag.cy - dy / cam.zoom;
-      clampCam();
+      if (cam.drag) {
+        var dx = e.clientX - cam.drag.sx, dy = e.clientY - cam.drag.sy;
+        if (Math.abs(dx) + Math.abs(dy) > 4) cam.moved = true;
+        cam.x = cam.drag.cx - dx / cam.zoom;
+        cam.y = cam.drag.cy - dy / cam.zoom;
+        clampCam();
+        return;
+      }
+      // Hover-Highlight ueber Strukturen (nur wenn nicht gedraggt)
+      if (e.target !== cv) { hoverStructureId = null; return; }
+      var st = structureAtEvent(e);
+      hoverStructureId = st ? st.id : null;
     });
     window.addEventListener('mouseup', function (e) {
       if (cam.drag && !cam.moved) handleMapClick(e);
@@ -204,11 +214,56 @@
     return (best && bestD < ts * 0.9) ? best : null;
   }
 
+  // Hit-Test fuer Rohstoff-Strukturen (analog villageAtEvent, etwas
+  // kleinerer Trefferradius).
+  function structureAtEvent(e) {
+    var rect = dom.canvas.getBoundingClientRect();
+    var w = screenToWorld(e.clientX - rect.left, e.clientY - rect.top);
+    var ts = C.MAP.tileSize;
+    var best = null, bestD = 1e9;
+    var structs = state.structures || [];
+    for (var i = 0; i < structs.length; i++) {
+      var s = structs[i];
+      var cx = s.x * ts + ts / 2, cy = s.y * ts + ts / 2;
+      var d = Math.hypot(cx - w.x, cy - w.y);
+      if (d < bestD) { bestD = d; best = s; }
+    }
+    return (best && bestD < ts * 0.75) ? best : null;
+  }
+
   function handleMapClick(e) {
-    var best = villageAtEvent(e);
-    if (!best) return;
-    if (best.houseId === state.playerHouseId) { activeVillageId = best.id; }
-    targetVillageId = best.id;
+    // Klick-Prioritaet: das geometrisch naehere Element gewinnt (Burg oder
+    // Struktur). Dadurch koennen Strukturen direkt neben Burgen sauber
+    // selektiert werden.
+    var rect = dom.canvas.getBoundingClientRect();
+    var w = screenToWorld(e.clientX - rect.left, e.clientY - rect.top);
+    var v = villageAtEvent(e);
+    var s = structureAtEvent(e);
+    var pickStructure = false;
+    if (v && s) {
+      var ts = C.MAP.tileSize;
+      var dV = Math.hypot(v.x * ts + ts / 2 - w.x, v.y * ts + ts / 2 - w.y);
+      var dS = Math.hypot(s.x * ts + ts / 2 - w.x, s.y * ts + ts / 2 - w.y);
+      pickStructure = dS < dV;
+    } else if (s) {
+      pickStructure = true;
+    }
+    if (pickStructure) {
+      selectedStructureId = s.id;
+      targetVillageId = null;       // andere Selektion clear
+      sendCounts = {}; garrisonCounts = {}; supportCounts = {}; supportSourceId = null;
+      renderSidebar();
+      return;
+    }
+    if (v) {
+      selectedStructureId = null;
+      if (v.houseId === state.playerHouseId) { activeVillageId = v.id; }
+      targetVillageId = v.id;
+      renderSidebar();
+      return;
+    }
+    // Klick ins Leere: Selektionen zuruecksetzen
+    selectedStructureId = null;
     renderSidebar();
   }
 
@@ -225,6 +280,50 @@
     }
     panelTimer += dtMs;
     if (panelTimer > 400) { panelTimer = 0; refreshDynamic(); }
+    // Schritt 8.5: Sieg/Niederlage-Overlay zeigen
+    if (state.gameOver && !endScreenShown) showEndScreen();
+  }
+
+  var endScreenShown = false;
+
+  function showEndScreen() {
+    endScreenShown = true;
+    var existing = document.getElementById('end-screen');
+    if (existing) existing.remove();
+    var victory = state.gameOver === 'victory';
+    var st = state.stats || {};
+    var lossList = '';
+    if (st.unitLosses) {
+      lossList = C.UNIT_ORDER.filter(function (k) { return (st.unitLosses[k] || 0) > 0; })
+        .map(function (k) { return '<li>' + C.UNITS[k].name + ': ' + st.unitLosses[k] + '</li>'; }).join('');
+    }
+    if (!lossList) lossList = '<li class="muted">keine</li>';
+
+    var div = el('div'); div.id = 'end-screen';
+    div.innerHTML =
+      '<div class="end-card ' + (victory ? 'victory' : 'defeat') + '">' +
+      '<h1>' + (victory ? '🏰 Sieg!' : '⚑ Niederlage') + '</h1>' +
+      '<p class="end-sub">' + (victory ?
+        'Alle gegnerischen Häuser sind ausgelöscht. Das Land gehört Eurem Haus.' :
+        'Eure letzte Burg ist gefallen. Das Spiel ist verloren.') + '</p>' +
+      '<div class="end-stats">' +
+      '<div><b>Spielzeit:</b> ' + fmtTime(state.gameEndedAt || state.gameTime) + '</div>' +
+      '<div><b>Eroberte Burgen:</b> ' + (st.capturedCastles || 0) + '</div>' +
+      '<div><b>Eroberte Strukturen:</b> ' + (st.capturedStructures || 0) + '</div>' +
+      '<div><b>Schlachten gewonnen / verloren:</b> ' + (st.battlesWon || 0) + ' / ' + (st.battlesLost || 0) + '</div>' +
+      '<div><b>Eigene Verluste:</b><ul class="loss-list">' + lossList + '</ul></div>' +
+      '</div>' +
+      '<div class="end-actions">' +
+      '<button class="btn big primary" id="end-new">Neue Welt</button>' +
+      '<button class="btn big ghost" id="end-load">Spielstand laden</button>' +
+      '</div>' +
+      '</div>';
+    document.body.appendChild(div);
+    document.getElementById('end-new').onclick = function () {
+      if (WOH.Persistence) WOH.Persistence.clear().then(function () { location.reload(); });
+      else location.reload();
+    };
+    document.getElementById('end-load').onclick = function () { location.reload(); };
   }
 
   function renderMap() {
@@ -237,9 +336,21 @@
     ctx.scale(cam.zoom, cam.zoom);
     // Terrain
     if (terrainCanvas) ctx.drawImage(terrainCanvas, 0, 0);
-    // Bewegungslinien
+    // Bewegungslinien — Burgen UND Strukturen als Ziel/Quelle.
+    // entityById liefert {x,y,ownerHouseId} fuer Burg oder Struktur einheitlich.
+    var threatenedStructIds = {};  // fuer Ziel-Highlight unten
     state.movements.forEach(function (m) {
-      var from = state.villages[m.fromId], to = state.villages[m.toId];
+      var from = G.entityById ? G.entityById(state, m.fromId) : null;
+      var to   = G.entityById ? G.entityById(state, m.toId)   : null;
+      // Fallback wenn entityById fehlt (sollte nicht passieren)
+      if (!from && state.villages[m.fromId]) {
+        var fv = state.villages[m.fromId];
+        from = { x: fv.x, y: fv.y, ownerHouseId: fv.houseId, kind: 'village' };
+      }
+      if (!to && state.villages[m.toId]) {
+        var tv = state.villages[m.toId];
+        to = { x: tv.x, y: tv.y, ownerHouseId: tv.houseId, kind: 'village' };
+      }
       if (!from || !to) return;
       var prog = (state.gameTime - m.startTime) / (m.arriveTime - m.startTime);
       prog = Math.max(0, Math.min(1, prog));
@@ -247,7 +358,11 @@
       var tx = to.x * ts + ts / 2, ty = to.y * ts + ts / 2;
       var px = fx + (tx - fx) * prog, py = fy + (ty - fy) * prog;
       var isPlayerAtt = m.ownerHouseId === state.playerHouseId;
-      var incoming = to.houseId === state.playerHouseId && m.type === 'attack';
+      // Eingehend = feindliches Movement gegen eigenes Asset (Burg ODER Struktur).
+      var hostile = (m.type === 'attack' || m.type === 'gather' || m.type === 'capture');
+      var incoming = hostile && !isPlayerAtt && to.ownerHouseId === state.playerHouseId;
+      // Struktur-Highlight notieren
+      if (incoming && to.kind === 'structure') threatenedStructIds[m.toId] = true;
       ctx.strokeStyle = incoming ? 'rgba(210,70,70,0.7)' : (isPlayerAtt ? 'rgba(110,207,151,0.6)' : 'rgba(150,150,160,0.25)');
       ctx.lineWidth = 1.5 / cam.zoom;
       ctx.setLineDash([6 / cam.zoom, 4 / cam.zoom]);
@@ -259,14 +374,26 @@
     });
     // Neutrale und eroberte Rohstoff-Strukturen (unter den Dörfern)
     var structs = state.structures || [];
+    var threatened = threatenedStructIds;  // lokal aus dem Movement-Loop oben
     for (var si = 0; si < structs.length; si++) {
       var st = structs[si];
       var ownerHouse = st.ownerHouseId ? state.houses[st.ownerHouseId] : null;
+      var isSel = st.id === selectedStructureId;
+      var isHov = !isSel && st.id === hoverStructureId;
       S.drawResourceStructure(ctx,
         st.x * ts + ts / 2, st.y * ts + ts / 2, ts * 0.95,
         st,
-        { selected: st.id === selectedStructureId },
+        { selected: isSel, hover: isHov },
         ownerHouse);
+      // Bedroht: roter, pulsierender Ring (analog Burg-Bedrohung in Sidebar)
+      if (threatened[st.id]) {
+        var pulse = 0.5 + 0.5 * Math.sin(state.gameTime * 4);
+        ctx.strokeStyle = 'rgba(210,70,70,' + (0.55 + 0.35 * pulse).toFixed(2) + ')';
+        ctx.lineWidth = 2 / cam.zoom;
+        ctx.beginPath();
+        ctx.arc(st.x * ts + ts / 2, st.y * ts + ts / 2, ts * 0.7, 0, Math.PI * 2);
+        ctx.stroke();
+      }
     }
     // Dörfer
     for (var id in state.villages) {
@@ -354,9 +481,51 @@
     var manageBtn = el('button', 'tab active', '⌂ Dorf verwalten');
     manageBtn.onclick = function () { openVillage(activeVillageId); };
     right.appendChild(manageBtn);
+    // Schritt 10: Geschwindigkeits-Regler (Pause/1x/2x/4x/8x)
+    var speedBox = el('span', 'tb-speed');
+    speedBox.id = 'tb-speed';
+    speedBox.innerHTML = buildSpeedButtonsHtml();
+    right.appendChild(speedBox);
     right.appendChild(el('span', 'tb-clock', '⏱ <span id="game-clock">0:00</span>'));
     dom.topbar.appendChild(right);
     updateVillageSelect();
+    attachSpeedButtons();
+  }
+
+  // Schritt 10: Speed-Buttons im HUD.
+  var SPEED_OPTIONS = [
+    { val: 0, label: '⏸',  title: 'Pause' },
+    { val: 1, label: '1×', title: 'Normale Geschwindigkeit' },
+    { val: 2, label: '2×', title: 'Doppelte Geschwindigkeit' },
+    { val: 4, label: '4×', title: 'Vierfache Geschwindigkeit' },
+    { val: 8, label: '8×', title: 'Achtfache Geschwindigkeit (für lange Wartephasen)' }
+  ];
+  function buildSpeedButtonsHtml() {
+    var active = (state && typeof state.speedMultiplier === 'number') ? state.speedMultiplier : 1;
+    return SPEED_OPTIONS.map(function (o) {
+      var cls = 'speed-btn' + (o.val === active ? ' active' : '');
+      return '<button class="' + cls + '" data-speed="' + o.val + '" title="' + o.title + '">' + o.label + '</button>';
+    }).join('');
+  }
+  function attachSpeedButtons() {
+    Array.prototype.forEach.call(document.querySelectorAll('#tb-speed .speed-btn'), function (btn) {
+      btn.addEventListener('click', function () {
+        var v = parseInt(btn.getAttribute('data-speed'), 10);
+        if (!state || isNaN(v)) return;
+        state.speedMultiplier = v;
+        api.requestSave();
+        refreshSpeedButtons();
+      });
+    });
+  }
+  function refreshSpeedButtons() {
+    var box = $('tb-speed');
+    if (!box) return;
+    var active = (state && typeof state.speedMultiplier === 'number') ? state.speedMultiplier : 1;
+    Array.prototype.forEach.call(box.querySelectorAll('.speed-btn'), function (btn) {
+      var v = parseInt(btn.getAttribute('data-speed'), 10);
+      btn.classList.toggle('active', v === active);
+    });
   }
 
   function updateHUD() {
@@ -367,18 +536,28 @@
       C.RESOURCES.forEach(function (r) {
         var cell = resBox.querySelector('.res[data-r="' + r + '"]');
         if (!cell) return;
-        var rate = V.productionPerSec(v, r) * C.TIME_SCALE;
+        var rate = V.productionPerSec(v, r, state) * C.TIME_SCALE;
         var val = v.resources[r];
         cell.classList.toggle('full', val >= cap);
         var valEl = cell.querySelector('.res-val');
         if (valEl) valEl.innerHTML = fmt(val) + '<small>/' + fmt(cap) + ' · ' +
           (rate >= 0 ? '+' : '') + rate.toFixed(1) + '/s</small>';
       });
-      var pop = V.populationUsed(v), popCap = V.populationCap(v);
+      // Pop-Anzeige mit Strukturen-Bonus-Aufschluesselung (Schritt 6)
+      var pop = V.populationUsed(v, state);
+      var capBase = V.populationCap(v);             // Burg-intern (Bauernhof)
+      var capTotal = V.populationCap(v, state);     // inkl. Strukturen-Bonus
+      var bonusFromStructs = capTotal - capBase;
       var popEl = resBox.querySelector('.pop-val');
-      if (popEl) popEl.textContent = fmt(pop) + '/' + fmt(popCap);
+      if (popEl) {
+        var detail = bonusFromStructs > 0 ? (' (Burg ' + fmt(capBase) + ' + Strukturen ' + fmt(bonusFromStructs) + ')') : '';
+        popEl.innerHTML = fmt(pop) + '/' + fmt(capTotal) + '<small>' + detail + '</small>';
+      }
     }
     var clk = $('game-clock'); if (clk) clk.textContent = fmtTime(state.gameTime);
+    // Schritt 10: Pause-Hinweis an der Uhr, wenn speedMultiplier === 0
+    var clkBox = clk && clk.parentElement;
+    if (clkBox) clkBox.classList.toggle('paused', state.speedMultiplier === 0);
   }
 
   function openVillage(id) {
@@ -402,6 +581,8 @@
   function closeBattle() {
     reportOpen = false;
     dom.battleOverlay.style.display = 'none';
+    // Schritt 10b: Pause aufheben
+    if (state) state._reportPaused = false;
   }
 
   function battleSideHtml(label, house, villageName, units, surv, loss, power, sym) {
@@ -426,14 +607,34 @@
   function showBattleReport(res) {
     reportOpen = true;
     var role = res.playerRole, aWin = res.attackerWins, cls, txt;
+    var isStruct = res.targetKind === 'structure';
     if (role === 'defender') {
-      if (aWin) { cls = 'bad'; txt = res.captured ? 'Dein Dorf wurde EROBERT!' : 'Dein Dorf wurde geplündert!'; }
-      else { cls = 'good'; txt = 'Angriff abgewehrt!'; }
+      if (aWin) {
+        cls = 'bad';
+        if (isStruct) txt = res.captured ? 'Deine Struktur wurde EROBERT!' : 'Deine Struktur wurde geplündert!';
+        else          txt = res.captured ? 'Dein Dorf wurde EROBERT!'      : 'Dein Dorf wurde geplündert!';
+      } else {
+        cls = 'good';
+        txt = isStruct ? 'Strukturen-Verteidigung gehalten!' : 'Angriff abgewehrt!';
+      }
     } else {
-      if (aWin) { cls = 'good'; txt = res.captured ? 'Dorf EROBERT!' : 'Sieg – Beute erobert!'; }
-      else { cls = 'bad'; txt = 'Niederlage – Armee verloren.'; }
+      if (aWin) {
+        cls = 'good';
+        if (isStruct) {
+          if (res.captured) txt = 'Struktur EROBERT!';
+          else if (res.loot && C.RESOURCES.some(function (r) { return res.loot[r] > 0; })) txt = 'Sammelaktion erfolgreich – Beute erbeutet!';
+          else txt = 'Sammelaktion erfolgreich – Lager war leer.';
+        } else {
+          txt = res.captured ? 'Dorf EROBERT!' : 'Sieg – Beute erobert!';
+        }
+      } else {
+        cls = 'bad'; txt = 'Niederlage – Armee verloren.';
+      }
     }
-    dom.battleTitle.textContent = 'Kampfbericht: ' + (res.attackerHouse ? res.attackerHouse.surname : '?') + ' → ' + res.toName;
+    var titlePrefix = isStruct
+      ? (res.action === 'capture' ? 'Eroberungs-Versuch: ' : 'Sammelaktion: ')
+      : 'Kampfbericht: ';
+    dom.battleTitle.textContent = titlePrefix + (res.attackerHouse ? res.attackerHouse.surname : '?') + ' → ' + res.toName;
     var html = '<div class="battle-banner ' + cls + '">' + txt + '</div>';
     html += '<div class="battle-meta">Glück ' + (res.luck >= 0 ? '+' : '') + Math.round(res.luck * 100) +
       '% · Moral ' + Math.round(res.morale * 100) + '%</div>';
@@ -443,19 +644,44 @@
     html += battleSideHtml('Verteidiger', res.defenderHouse, res.toName, res.defenderUnits,
       res.defenderSurvivors, res.defenderLosses, res.defensePower, '⛨');
     html += '</div>';
+    // Schritt 6.5: Belagerungs-Block (vor Verteidigungs-Aufschluesselung)
+    if (res.siegeResult) {
+      var sg = res.siegeResult;
+      var parts = [];
+      if (sg.wallDamage > 0) {
+        var wTransition = (sg.wallLevelAfter !== sg.wallLevelBefore)
+          ? (' (Stufe ' + sg.wallLevelBefore + ' → ' + sg.wallLevelAfter + ')')
+          : ' (Stufe hält)';
+        parts.push('Palisade −' + fmt(sg.wallDamage) + ' HP' + wTransition);
+      }
+      if (sg.towerDamage > 0) {
+        var tTransition = (sg.towerLevelAfter !== sg.towerLevelBefore)
+          ? (' (Stufe ' + sg.towerLevelBefore + ' → ' + sg.towerLevelAfter + ')')
+          : ' (Stufe hält)';
+        parts.push('Turm −' + fmt(sg.towerDamage) + ' HP' + tTransition);
+      }
+      if (res.wallSuppression && res.wallSuppression > 0) {
+        parts.push('Bogen-Suppression −' + Math.round(res.wallSuppression * 100) + '% wallMult');
+      }
+      if (parts.length) html += '<div class="battle-siege"><b>Belagerung:</b> ' + parts.join(' · ') + '</div>';
+    }
     // Verteidigungs-Aufschlüsselung: Einheiten / Palisade / Turm / Held
     var bd = res.defBreakdown;
     if (bd) {
-      var parts = ['Einheiten ' + fmt(bd.units)];
-      parts.push('Palisade (St. ' + (res.defWallLevel || 0) + ') +' + fmt(bd.wall));
-      parts.push('Turm (St. ' + (res.defTowerLevel || 0) + ') +' + fmt(bd.tower));
-      if (bd.hero > 0) parts.push('davon Held +' + fmt(bd.hero));
-      html += '<div class="battle-breakdown"><b>Verteidigung:</b> ' + parts.join(' · ') + '</div>';
+      var parts2 = ['Einheiten ' + fmt(bd.units)];
+      parts2.push('Palisade (St. ' + (res.defWallLevel || 0) + ') +' + fmt(bd.wall));
+      parts2.push('Turm (St. ' + (res.defTowerLevel || 0) + ') +' + fmt(bd.tower));
+      if (bd.hero > 0) parts2.push('davon Held +' + fmt(bd.hero));
+      html += '<div class="battle-breakdown"><b>Verteidigung:</b> ' + parts2.join(' · ') + '</div>';
     }
     if (res.loot && C.RESOURCES.some(function (r) { return res.loot[r] > 0; })) {
       html += '<div class="battle-loot"><b>Beute:</b> ' + C.RESOURCES.filter(function (r) { return res.loot[r] > 0; })
         .map(function (r) { return '<span class="costtag">' + resIcoTag(r, 22) + Math.round(res.loot[r]) + '</span>'; }).join(' ') + '</div>';
     }
+    // Schritt 10b: Toggle „Zeit beim Bericht anhalten"
+    var pauseChecked = state.pauseOnReport ? 'checked' : '';
+    html += '<label class="battle-pause-toggle"><input type="checkbox" class="pause-on-report" ' + pauseChecked + '> ' +
+      'Zeit beim Kampfbericht anhalten</label>';
     html += '<button class="btn full battle-ok">Schließen</button>';
     dom.battleBody.innerHTML = html;
     paintResIcons(dom.battleBody);
@@ -465,6 +691,17 @@
     });
     var okb = dom.battleBody.querySelector('.battle-ok');
     if (okb) okb.addEventListener('click', closeBattle);
+    // Schritt 10b: Toggle „Zeit anhalten" — Preference im state speichern.
+    // Aenderungen wirken sofort: wenn deaktiviert, wird _reportPaused
+    // sofort geloest, der Tick laeuft trotz geoeffnetem Bericht weiter.
+    var pcb = dom.battleBody.querySelector('.pause-on-report');
+    if (pcb) pcb.addEventListener('change', function () {
+      state.pauseOnReport = pcb.checked;
+      state._reportPaused = state.pauseOnReport;  // reagiert sofort waehrend offenem Bericht
+      api.requestSave();
+    });
+    // Pause bei Anzeige aktivieren, falls Toggle aktiv
+    state._reportPaused = !!state.pauseOnReport;
     dom.battleOverlay.style.display = 'flex';
     dom.battleOverlay.style.top = dom.topbar.offsetHeight + 'px';
   }
@@ -510,12 +747,16 @@
       v.name + villageTag(v) + ' — ' + house.name + ' · Treue ' + Math.round(v.loyalty) + '%';
     var html = '';
     html += '<div class="vv-grid">';
+    // Gebäude-Spalte: Bau-Warteschlange LINKS neben dem Gebäude-Grid
     html += '<div class="vv-col"><h2>Gebäude</h2>';
+    html += '<div class="bld-area">';
+    html += '<div class="queue-col">' + buildQueueListHtml(v) + '</div>';
     html += '<div class="bld-grid">';
     Object.keys(C.BUILDINGS).forEach(function (key) { html += buildingCardHtml(v, key); });
     html += '</div>';
-    html += buildQueueHtml(v);
     html += '</div>';
+    html += '</div>';
+    // Militär-Spalte: Trainings-Warteschlange RECHTS neben dem Kaserne-HUD
     html += '<div class="vv-col"><h2>Kaserne &amp; Verteidigung</h2>';
     html += militaryHtml(v);
     html += '</div>';
@@ -524,12 +765,39 @@
     attachVillageEvents(v);
   }
 
-  function buildQueueHtml(v) {
-    if (!v.buildQueue.length) return '';
-    var html = '<div class="queue"><b>Bau-Warteschlange:</b> ';
-    html += v.buildQueue.map(function (q) {
-      return C.BUILDINGS[q.key].name + ' →' + q.target + ' (' + fmtTime(q.timeLeft) + ')';
-    }).join(' · ');
+  // Bau-Warteschlange als vertikale Listendarstellung. Ein Eintrag pro
+  // Auftrag: Gebäudename als Zeile 1, Stufe und Restzeit als Zeile 2.
+  function buildQueueListHtml(v) {
+    var html = '<div class="queue-list"><h3>Bau-Warteschlange</h3>';
+    if (!v.buildQueue || !v.buildQueue.length) {
+      html += '<div class="queue-empty">— leer —</div>';
+    } else {
+      v.buildQueue.forEach(function (q, idx) {
+        var name = (C.BUILDINGS[q.key] && C.BUILDINGS[q.key].name) || q.key;
+        html += '<div class="queue-item' + (idx === 0 ? ' active' : '') + '">' +
+          '<div class="qi-name">' + name + '</div>' +
+          '<div class="qi-meta">→ Stufe ' + q.target + ' · ' + fmtTime(q.timeLeft) + '</div>' +
+          '</div>';
+      });
+    }
+    html += '</div>';
+    return html;
+  }
+
+  // Trainings-Warteschlange analog (rechts neben Kaserne-HUD).
+  function trainQueueListHtml(v) {
+    var html = '<div class="queue-list"><h3>Ausbildungs-Warteschlange</h3>';
+    if (!v.trainingQueue || !v.trainingQueue.length) {
+      html += '<div class="queue-empty">— leer —</div>';
+    } else {
+      v.trainingQueue.forEach(function (q, idx) {
+        var name = (C.UNITS[q.unit] && C.UNITS[q.unit].name) || q.unit;
+        html += '<div class="queue-item' + (idx === 0 ? ' active' : '') + '">' +
+          '<div class="qi-name">' + name + '</div>' +
+          '<div class="qi-meta">× ' + q.remaining + ' · ' + fmtTime(q.timeLeft) + '</div>' +
+          '</div>';
+      });
+    }
     html += '</div>';
     return html;
   }
@@ -558,6 +826,34 @@
     var html = '<div class="bld-card' + (active ? ' updating' : '') + '" title="' + b.desc + '">';
     html += '<div class="bld-top"><canvas class="bld-ico" width="40" height="40" data-bld="' + key + '"></canvas>';
     html += '<div class="bld-meta"><b>' + b.name + '</b><span class="lvl">Stufe ' + lvl + (maxed ? ' · max' : '') + '</span></div></div>';
+    // Schritt 6.5: HP-Leiste fuer Wall/Tower (falls Bauwerk vorhanden)
+    if ((key === 'wall' || key === 'tower') && lvl >= 1) {
+      var hp  = (key === 'wall') ? V.wallHP(v) : V.towerHP(v);
+      var max = (key === 'wall') ? V.wallMaxHP(lvl) : V.towerMaxHP(lvl);
+      var pct = max > 0 ? Math.max(0, Math.min(100, Math.round(100 * hp / max))) : 0;
+      var inRepair = (v.repairQueue || []).find ? (v.repairQueue||[]).find(function(q){return q.key===key;}) :
+        (v.repairQueue || []).filter(function(q){return q.key===key;})[0];
+      html += '<div class="hp-row" title="HP der ' + b.name + '">';
+      html += '<div class="hp-bar"><div class="hp-fill" style="width:' + pct + '%"></div></div>';
+      html += '<span class="hp-val">' + fmt(hp) + '/' + fmt(max) + '</span>';
+      html += '</div>';
+      if (inRepair) {
+        var left = Math.max(0, inRepair.endsAt - (state.gameTime || 0));
+        html += '<div class="repair-active">Reparatur läuft… (' + fmtTime(left) + ')</div>';
+      } else if (hp < max) {
+        var rc = V.repairCost(v, key);
+        var rt = V.repairTime(v, key);
+        var rcStr = C.RESOURCES.filter(function (r) { return rc[r] > 0; }).map(function (r) {
+          var lack = v.resources[r] < rc[r];
+          return '<span class="costtag ' + (lack ? 'lack' : '') + '">' +
+            resIcoTag(r, 22) + fmt(rc[r]) + '</span>';
+        }).join(' ');
+        var afford = V.canAfford(v, rc);
+        html += '<div class="repair-box">' + rcStr +
+          '<button class="btn sm repair-btn" data-repair="' + key + '" ' + (afford ? '' : 'disabled') + '>' +
+          'Reparieren <small>' + fmtTime(rt) + '</small></button></div>';
+      }
+    }
     html += prodTxt + reqTxt;
     if (!maxed) {
       html += '<div class="bld-cost">' + costStr + '</div>';
@@ -570,25 +866,9 @@
 
   function militaryHtml(v) {
     var html = '';
-    var bonusTxt = C.RESOURCES.map(function (r) {
-      var b = v.bonus[r];
-      var cls = b > 1.25 ? 'good' : (b < 0.95 ? 'bad' : '');
-      return '<span class="' + cls + '">' + C.RESOURCE_META[r].name + ' ×' + b.toFixed(2) + '</span>';
-    }).join(' · ');
-    html += '<div class="bonus-box"><b>Standortboni:</b> ' + bonusTxt + '</div>';
-
-    // Verteidigungsübersicht
-    var def = WOH.Combat.defensePower(v.units, v.buildings.wall || 0, v.buildings.tower || 0);
-    html += '<div class="def-box"><b>Verteidigungskraft:</b> ' + fmt(def) +
-      ' &nbsp;|&nbsp; Palisade ' + (v.buildings.wall || 0) + ' · Turm ' + (v.buildings.tower || 0) + '</div>';
-
-    // Ausbildung
-    if (v.trainingQueue.length) {
-      html += '<div class="queue"><b>Ausbildung:</b> ' + v.trainingQueue.map(function (q) {
-        return C.UNITS[q.unit].name + ' ×' + q.remaining + ' (' + fmtTime(q.timeLeft) + ')';
-      }).join(' · ') + '</div>';
-    }
-
+    // Mil-Area zuerst: Kaserne-Tabelle links, Trainings-Warteschlange rechts.
+    html += '<div class="mil-area">';
+    html += '<div class="unit-table-wrap">';
     html += '<table class="unit-table"><thead><tr><th></th><th>Einheit</th><th>Angr.</th><th>Vert.</th><th>Tempo</th><th>Anzahl</th><th>Ausbilden</th></tr></thead><tbody>';
     C.UNIT_ORDER.forEach(function (key) {
       var u = C.UNITS[key];
@@ -617,6 +897,21 @@
       html += '</tr>';
     });
     html += '</tbody></table>';
+    html += '</div>';   // .unit-table-wrap schliessen
+    html += '<div class="queue-col">' + trainQueueListHtml(v) + '</div>';
+    html += '</div>';   // .mil-area schliessen
+
+    // Standortboni und Verteidigungskraft jetzt UNTER der Tabelle.
+    var bonusTxt = C.RESOURCES.map(function (r) {
+      var b = v.bonus[r];
+      var cls = b > 1.25 ? 'good' : (b < 0.95 ? 'bad' : '');
+      return '<span class="' + cls + '">' + C.RESOURCE_META[r].name + ' ×' + b.toFixed(2) + '</span>';
+    }).join(' · ');
+    html += '<div class="bonus-box"><b>Standortboni:</b> ' + bonusTxt + '</div>';
+    var def = WOH.Combat.defensePower(v.units, v.buildings.wall || 0, v.buildings.tower || 0);
+    html += '<div class="def-box"><b>Verteidigungskraft:</b> ' + fmt(def) +
+      ' &nbsp;|&nbsp; Palisade ' + (v.buildings.wall || 0) + ' · Turm ' + (v.buildings.tower || 0) + '</div>';
+
     html += '<p class="hint">Off-Einheiten (rot) für Angriffe, Def-Einheiten (blau) zur Verteidigung. ' +
       'Speer = günstiger Allrounder, Schwert = harter Standverteidiger, Axt = reine Offensive, Bogenschütze = stark hinter Mauern.</p>';
     return html;
@@ -655,6 +950,19 @@
         renderVillageView();
       });
     });
+    // Schritt 6.5: Reparatur-Buttons
+    Array.prototype.forEach.call(dom.villageBody.querySelectorAll('[data-repair]'), function (btn) {
+      btn.addEventListener('click', function () {
+        var key = btn.getAttribute('data-repair');
+        var r = G.startRepair(state, v, key);
+        if (!r.ok) { toast(r.msg); return; }
+        api.requestSave();
+        var costStr = C.RESOURCES.filter(function (rr) { return r.cost[rr] > 0; })
+          .map(function (rr) { return Math.round(r.cost[rr]) + ' ' + C.RESOURCE_META[rr].short; }).join(' / ');
+        toast('Reparatur ' + C.BUILDINGS[key].name + ' begonnen — Dauer ' + fmtTime(r.time) + ', Kosten ' + costStr + '.');
+        renderVillageView();
+      });
+    });
   }
 
   // ---------------------------------------------------------------------
@@ -672,8 +980,11 @@
   // Dynamischer Teil (Bewegungen, Ziel/Angriff) – darf häufig neu gebaut werden.
   function renderSideTop() {
     ensureSidebarStructure();
-    dom.sideTop.innerHTML = incomingHtml() + outgoingHtml() + targetHtml();
+    // Wenn Struktur selektiert: Struktur-Panel statt klassischem Ziel-Panel.
+    var middle = selectedStructureId ? structurePanelHtml() : targetHtml();
+    dom.sideTop.innerHTML = incomingHtml() + outgoingHtml() + middle;
     attachSidebarEvents();
+    if (selectedStructureId) attachStructureEvents();
   }
   // Chronik – nur neu rendern, wenn ein neues Ereignis vorliegt (kein Flackern).
   function renderSideLog(force) {
@@ -690,7 +1001,27 @@
     renderSideLog(true);
   }
 
-  // Eigene Bewegungen: Angriffe/Unterstützung unterwegs sowie Rückkehrer.
+  // Hilfsfunktion: lesbarer Ziel-Name (Burg oder Struktur).
+  function targetLabel(m) {
+    var v = state.villages[m.toId];
+    if (v) return v.name + villageTag(v);
+    var s = G.findStructureById ? G.findStructureById(state, m.toId) : null;
+    if (s) {
+      var meta = C.RESOURCE_STRUCTURES[s.type];
+      return (meta ? meta.name : s.type) + ' (' + s.x + ',' + s.y + ')';
+    }
+    return '—';
+  }
+  // Symbol + Text fuer einen Bewegungstyp.
+  function movementSym(type) {
+    if (type === 'attack')  return '⚔ Angriff';
+    if (type === 'support') return '⛨ Hilfe';
+    if (type === 'gather')  return '⛏ Sammeln';
+    if (type === 'capture') return '⚑ Eroberung';
+    return '↩ Rückkehr';
+  }
+
+  // Eigene Bewegungen: Angriffe/Sammeln/Eroberungen/Unterstützung sowie Rückkehrer.
   function outgoingHtml() {
     var mine = state.movements.filter(function (m) {
       return m.ownerHouseId === state.playerHouseId;
@@ -698,10 +1029,9 @@
     if (!mine.length) return '';
     var html = '<div class="panel"><h3>↗ Eigene Bewegungen (' + mine.length + ')</h3>';
     mine.forEach(function (m) {
-      var to = state.villages[m.toId];
       var eta = m.arriveTime - state.gameTime;
-      var sym = m.type === 'attack' ? '⚔ Angriff' : (m.type === 'support' ? '⛨ Hilfe' : '↩ Rückkehr');
-      var dest = to ? (to.name + villageTag(to)) : '—';
+      var sym = movementSym(m.type);
+      var dest = targetLabel(m);
       var lootStr = (m.loot && C.RESOURCES.some(function (r) { return m.loot[r] > 0; }))
         ? ' · Beute: ' + C.RESOURCES.filter(function (r) { return m.loot[r] > 0; })
           .map(function (r) { return Math.round(m.loot[r]) + ' ' + C.RESOURCE_META[r].name; }).join(', ')
@@ -714,20 +1044,30 @@
     return html;
   }
 
+  // Eingehende feindliche Bewegungen: Angriff, Sammeln, Eroberung — egal ob
+  // Ziel eine eigene Burg oder eigene Struktur ist.
   function incomingHtml() {
-    var own = {};
-    G.villagesOfHouse(state, state.playerHouseId).forEach(function (v) { own[v.id] = v; });
+    var ownVillages = {};
+    G.villagesOfHouse(state, state.playerHouseId).forEach(function (v) { ownVillages[v.id] = v; });
+    var ownStructs = {};
+    (state.structures || []).forEach(function (s) {
+      if (s.ownerHouseId === state.playerHouseId) ownStructs[s.id] = s;
+    });
     var incoming = state.movements.filter(function (m) {
-      return m.type === 'attack' && own[m.toId];
+      var hostile = (m.type === 'attack' || m.type === 'gather' || m.type === 'capture');
+      if (!hostile) return false;
+      return ownVillages[m.toId] || ownStructs[m.toId];
     }).sort(function (a, b) { return a.arriveTime - b.arriveTime; });
     if (!incoming.length) return '<div class="panel"><h3>Eingehende Angriffe</h3><p class="muted">Keine. Das Land ist ruhig.</p></div>';
-    var html = '<div class="panel danger"><h3>⚔ Eingehende Angriffe (' + incoming.length + ')</h3>';
+    var html = '<div class="panel danger"><h3>⚔ Eingehende Bedrohungen (' + incoming.length + ')</h3>';
     incoming.forEach(function (m) {
       var from = state.villages[m.fromId];
       var house = from ? state.houses[from.houseId] : null;
       var eta = m.arriveTime - state.gameTime;
-      html += '<div class="incoming"><b>' + (house ? house.name : '?') + '</b><br>' +
-        '→ ' + state.villages[m.toId].name + villageTag(state.villages[m.toId]) + '<br>' +
+      var sym = movementSym(m.type);
+      var target = targetLabel(m);
+      html += '<div class="incoming"><b>' + (house ? house.name : '?') + '</b> · ' + sym + '<br>' +
+        '→ ' + target + '<br>' +
         '<span class="eta">Ankunft in ' + fmtTime(eta) + '</span></div>';
     });
     html += '</div>';
@@ -746,7 +1086,12 @@
       house.sigil.p + ' 0 50%,' + house.sigil.s + ' 50% 100%)"></span> ' + house.name + '</div>';
     html += '<div class="muted small">Entfernung ' + dist.toFixed(1) + ' Felder · Treue ' + Math.round(t.loyalty) + '%</div>';
     if (isOwn) {
-      html += '<div class="def-box small">Garnison — ' + unitsInline(t.units) + '</div></div>';
+      html += '<div class="def-box small">Garnison — ' + unitsInline(t.units) + '</div>';
+      // Unterstuetzung anfordern (Schritt 6, auch fuer Burgen)
+      html += '<div class="support-req-box"><b>Unterstuetzung anfordern</b><br>' +
+        '<button class="btn sm support-open-castle">Quelle waehlen…</button></div>';
+      if (supportSourceId) html += castleSupportPickerHtml(t);
+      html += '</div>';
       return html;
     }
     if (!src) { html += '<p class="muted">Kein eigenes Dorf.</p></div>'; return html; }
@@ -770,10 +1115,276 @@
         '<input class="send-n" type="number" min="0" max="' + have + '" value="' + scVal + '" data-unit="' + key + '"></label>';
     });
     html += '<div class="send-eta muted small" id="send-eta"></div>';
-    html += '<button class="btn full attack-btn">⚔ Angriff entsenden</button>';
+    // Anti-Duplikat: wenn aus dieser Quelle bereits ein hostile Trupp zum Ziel
+    // unterwegs ist, Angriffs-Button disablen mit erklaerender Beschriftung.
+    var busy = G.hasOutboundMovement && G.hasOutboundMovement(state, src.id, t.id);
+    var btnTitle = busy ? ' title="Trupp ist bereits unterwegs zu diesem Ziel" disabled' : '';
+    var btnText = busy ? '⚔ Trupp bereits unterwegs' : '⚔ Angriff entsenden';
+    html += '<button class="btn full attack-btn"' + btnTitle + '>' + btnText + '</button>';
     html += '<button class="btn full ghost support-btn">⛨ Unterstützung senden</button>';
     html += '<div class="muted small" style="margin-top:6px">Held mitschicken ⇒ Eroberung bei Sieg (Held geht verloren).</div>';
     html += '</div></div>';
+    return html;
+  }
+
+  // -----------------------------------------------------------------------
+  // Strukturen-Panel (Schritt 6): Info + Aktionen abhaengig vom Besitzer.
+  // -----------------------------------------------------------------------
+  function selectedStructure() {
+    return G.findStructureById(state, selectedStructureId);
+  }
+  function structureMeta(s) { return C.RESOURCE_STRUCTURES[s.type] || { name: s.type, res: 'wood' }; }
+  function garrisonTotal(s) {
+    var n = 0, g = s.garrison || {};
+    for (var k in g) n += (g[k] || 0);
+    return n;
+  }
+
+  function structurePanelHtml() {
+    var s = selectedStructure();
+    if (!s) return '';
+    var meta = structureMeta(s);
+    var lvl = s.level || 1;
+    var levels = C.RESOURCE_STRUCTURE_LEVELS;
+    var isOwn = s.ownerHouseId === state.playerHouseId;
+    var isNeutral = !s.ownerHouseId;
+    var ownerHouse = s.ownerHouseId ? state.houses[s.ownerHouseId] : null;
+    var resKey = meta.res;
+    var src = sourceVillage();
+    var dist = src ? Math.sqrt((src.x - s.x) * (src.x - s.x) + (src.y - s.y) * (src.y - s.y)) : 0;
+
+    // Header
+    var ownerLine;
+    if (isNeutral) ownerLine = '<span class="muted">neutral</span>';
+    else if (isOwn) ownerLine = '<span class="good">eigene Struktur</span>';
+    else ownerLine = '<span class="bad">' + (ownerHouse ? ownerHouse.name : 'fremd') + '</span>';
+
+    var html = '<div class="panel"><h3>⌂ ' + meta.name + ' (Stufe ' + lvl + ')</h3>';
+    html += '<div class="muted small">Pos. ' + s.x + ',' + s.y + ' · ' + ownerLine +
+      ' · Entfernung ' + dist.toFixed(1) + ' Felder</div>';
+
+    // Lager-Anzeige
+    var cap = levels.capacity[lvl - 1] || 0;
+    var prod = levels.production[lvl - 1] || 0;
+    if (isOwn) {
+      var castle = state.villages[s.assignedCastleId];
+      var castleName = castle ? (castle.name + villageTag(castle)) : '?';
+      html += '<div class="def-box small">';
+      html += 'Heimatburg: <b>' + castleName + '</b><br>';
+      html += 'Produktion fliesst direkt in das Burg-Lager (+' +
+        (prod * C.TIME_SCALE).toFixed(0) + ' ' + C.RESOURCE_META[resKey].name + '/s)<br>';
+      html += 'Pop-Bonus: +' + (C.STRUCTURE_POP_BONUS[lvl] || 0) + '<br>';
+      html += 'Garnison: ' + garrisonTotal(s) + '/' + C.STRUCTURE_GARRISON_CAP + ' — ' + unitsInline(s.garrison || {});
+      html += '</div>';
+    } else {
+      var inStore = Math.floor(s.storage && s.storage[resKey] || 0);
+      html += '<div class="def-box small">';
+      html += 'Lager: <b>' + fmt(inStore) + ' / ' + fmt(cap) + ' ' + C.RESOURCE_META[resKey].name + '</b><br>';
+      html += 'Garnison: ' + garrisonTotal(s) + ' — ' + unitsInline(s.garrison || {});
+      html += '</div>';
+    }
+
+    // Aktionen
+    if (isOwn) {
+      html += structureOwnActionsHtml(s);
+    } else {
+      html += structureAttackActionsHtml(s);
+    }
+
+    html += '</div>';
+    return html;
+  }
+
+  // Aktionen fuer neutrale oder fremde Strukturen: Sammeln / Eroberung.
+  function structureAttackActionsHtml(s) {
+    var src = sourceVillage();
+    if (!src) return '<p class="muted">Keine eigene Burg als Quelle vorhanden.</p>';
+    var own = G.villagesOfHouse(state, state.playerHouseId);
+    var html = '';
+    if (own.length > 1) {
+      own.sort(function (a, b) { return villageOrdinal(a) - villageOrdinal(b); });
+      html += '<label class="send-from-row">Von: <select class="send-from">' +
+        own.map(function (o) {
+          return '<option value="' + o.id + '"' + (o.id === src.id ? ' selected' : '') + '>' +
+            o.name + villageTag(o) + ' (Axt ' + (o.units.axe || 0) + ', Held ' + (o.units.hero || 0) + ')</option>';
+        }).join('') + '</select></label>';
+    }
+    html += '<div class="muted small">Garnison ' + src.name + villageTag(src) + ': ' + unitsInline(src.units) + '</div>';
+    html += '<div class="send-form">';
+    C.UNIT_ORDER.forEach(function (key) {
+      var have = src.units[key] || 0;
+      var scVal = (sendCounts[key] != null ? sendCounts[key] : 0);
+      html += '<label class="send-row"><canvas class="unit-ico" width="24" height="30" data-unit="' + key + '"></canvas>' +
+        C.UNITS[key].name + ' <small>(' + have + ')</small>' +
+        '<input class="send-n" type="number" min="0" max="' + have + '" value="' + scVal + '" data-unit="' + key + '"></label>';
+    });
+    html += '<div class="send-eta muted small" id="send-eta-struct"></div>';
+    // Anti-Duplikat: aus derselben Quell-Burg darf nur ein hostile Trupp pro
+    // Ziel-Struktur gleichzeitig laufen.
+    var sBusy = G.hasOutboundMovement && G.hasOutboundMovement(state, src.id, selectedStructureId);
+    var sAttr = sBusy ? ' title="Trupp ist bereits unterwegs zu diesem Ziel" disabled' : '';
+    var sLabelGather = sBusy ? '⛏ Trupp bereits unterwegs' : '⛏ Sammeln (Trupp ohne Held)';
+    var sLabelCapt   = sBusy ? '⚑ Trupp bereits unterwegs' : '⚑ Eroberung (Held erforderlich)';
+    html += '<button class="btn full gather-btn"' + sAttr + '>' + sLabelGather + '</button>';
+    html += '<button class="btn full capture-btn"' + sAttr + '>' + sLabelCapt + '</button>';
+    html += '<div class="muted small" style="margin-top:6px">Sammeln raubt Rohstoffe aus dem Lager. ' +
+      'Eroberung wechselt den Besitzer (Held wird verbraucht).</div>';
+    html += '</div>';
+    return html;
+  }
+
+  // Aktionen fuer eigene Strukturen: Upgrade / Garnison verwalten /
+  // Heimatburg aendern / Unterstuetzung anfordern.
+  function structureOwnActionsHtml(s) {
+    var lvl = s.level || 1;
+    var levels = C.RESOURCE_STRUCTURE_LEVELS;
+    var castle = state.villages[s.assignedCastleId];
+    var html = '<div class="own-actions">';
+
+    // Upgrade — Schritt 9.1: zeigt laufende Upgrade-Queue, sonst Upgrade-Button
+    var inUpgrade = Array.isArray(s.upgradeQueue) && s.upgradeQueue.length > 0;
+    if (inUpgrade) {
+      var q = s.upgradeQueue[0];
+      var left = Math.max(0, q.endsAt - (state.gameTime || 0));
+      html += '<div class="upgrade-box"><b>Upgrade auf Stufe ' + q.targetLevel + ' läuft</b><br>' +
+        '<small>Restzeit: ' + fmtTime(left) + '</small></div>';
+    } else if (lvl < 3) {
+      var cost = levels.upgradeCost[lvl - 1];
+      var costStr = C.RESOURCES.filter(function (r) { return cost[r] > 0; }).map(function (r) {
+        var lack = castle && castle.resources[r] < cost[r];
+        return '<span class="costtag ' + (lack ? 'lack' : '') + '">' + resIcoTag(r, 22) + fmt(cost[r]) + '</span>';
+      }).join(' ');
+      var afford = castle && C.RESOURCES.every(function (r) { return (castle.resources[r] || 0) >= (cost[r] || 0); });
+      html += '<div class="upgrade-box"><b>Upgrade auf Stufe ' + (lvl + 1) + '</b><br>' + costStr +
+        '<br><small>' + fmtTime(levels.upgradeTime[lvl - 1]) + ' Bauzeit (zahlt aus ' + (castle ? castle.name : '?') + ')</small><br>' +
+        '<button class="btn sm upgrade-btn" ' + (afford ? '' : 'disabled') + '>Upgrade ausführen</button></div>';
+    } else {
+      html += '<div class="upgrade-box muted">Maximale Stufe erreicht.</div>';
+    }
+
+    // Garnison verwalten — stationieren & zurueckziehen
+    if (castle) {
+      var garrFree = C.STRUCTURE_GARRISON_CAP - garrisonTotal(s);
+      html += '<div class="garrison-box"><b>Garnison verwalten</b> ' +
+        '<small>(frei: ' + garrFree + ')</small>';
+      html += '<table class="unit-table small"><tbody>';
+      ['spear', 'sword', 'axe', 'archer'].forEach(function (k) {
+        var inCastle = castle.units[k] || 0;
+        var inGarr = (s.garrison && s.garrison[k]) || 0;
+        var gv = (garrisonCounts[k] != null ? garrisonCounts[k] : 0);
+        html += '<tr><td><b>' + C.UNITS[k].name + '</b></td>' +
+          '<td>Burg: ' + inCastle + '</td>' +
+          '<td>Garnison: ' + inGarr + '</td>' +
+          '<td><input class="garr-n" type="number" min="0" value="' + gv + '" data-unit="' + k + '"></td></tr>';
+      });
+      html += '</tbody></table>';
+      html += '<button class="btn sm garr-station">→ Stationieren</button> ' +
+        '<button class="btn sm garr-withdraw">← Zurueckziehen</button></div>';
+    }
+
+    // Heimatburg aendern
+    var ownCastles = G.villagesOfHouse(state, state.playerHouseId);
+    if (ownCastles.length > 1) {
+      html += '<div class="home-box"><b>Heimatburg</b> ' +
+        '<select class="home-select">' +
+        ownCastles.map(function (c) {
+          return '<option value="' + c.id + '"' + (c.id === s.assignedCastleId ? ' selected' : '') + '>' +
+            c.name + villageTag(c) + '</option>';
+        }).join('') + '</select> <button class="btn sm home-apply">Aendern</button></div>';
+    }
+
+    // Unterstuetzung anfordern
+    html += '<div class="support-req-box"><b>Unterstuetzung anfordern</b><br>' +
+      '<button class="btn sm support-open">Quelle waehlen…</button></div>';
+
+    // Bei geoeffnetem Support-Picker: Auswahl + Truppen + Senden
+    if (supportSourceId) html += structureSupportPickerHtml(s);
+
+    html += '</div>';
+    return html;
+  }
+
+  // Support-Picker fuer eigene Burg (Ziel ist Burg, Quelle Burg oder Struktur).
+  function castleSupportPickerHtml(targetCastle) {
+    var src = G.entityById(state, supportSourceId);
+    if (!src || src.ownerHouseId !== state.playerHouseId) { supportSourceId = null; return ''; }
+    var ownVillages = G.villagesOfHouse(state, state.playerHouseId).filter(function (c) { return c.id !== targetCastle.id; });
+    var ownStructs = (state.structures || []).filter(function (st) { return st.ownerHouseId === state.playerHouseId; });
+    var html = '<div class="support-picker"><b>Unterstuetzung von:</b> ';
+    html += '<select class="support-source-sel">';
+    ownVillages.forEach(function (v) {
+      html += '<option value="' + v.id + '"' + (v.id === supportSourceId ? ' selected' : '') + '>Burg: ' + v.name + villageTag(v) + '</option>';
+    });
+    ownStructs.forEach(function (st) {
+      var nm = (C.RESOURCE_STRUCTURES[st.type] ? C.RESOURCE_STRUCTURES[st.type].name : st.type) + ' (' + st.x + ',' + st.y + ')';
+      html += '<option value="' + st.id + '"' + (st.id === supportSourceId ? ' selected' : '') + '>Struktur: ' + nm + '</option>';
+    });
+    html += '</select>';
+    var availUnits = {};
+    if (src.kind === 'village') {
+      ['spear','sword','axe','archer','hero'].forEach(function (k) { availUnits[k] = src.ref.units[k] || 0; });
+    } else {
+      ['spear','sword','axe','archer'].forEach(function (k) { availUnits[k] = (src.ref.garrison && src.ref.garrison[k]) || 0; });
+      availUnits.hero = 0;
+    }
+    html += '<div class="send-form">';
+    C.UNIT_ORDER.forEach(function (k) {
+      var have = availUnits[k] || 0;
+      var v = (supportCounts['u_' + k] != null ? supportCounts['u_' + k] : 0);
+      html += '<label class="send-row"><canvas class="unit-ico" width="24" height="30" data-unit="' + k + '"></canvas>' +
+        C.UNITS[k].name + ' <small>(' + have + ')</small>' +
+        '<input class="sup-n" type="number" min="0" max="' + have + '" value="' + v + '" data-unit="' + k + '"></label>';
+    });
+    html += '</div>';
+    html += '<button class="btn full support-send-castle">⛨ Unterstuetzung entsenden</button>';
+    html += '<button class="btn ghost sm support-cancel">Abbrechen</button>';
+    html += '</div>';
+    return html;
+  }
+
+  function structureSupportPickerHtml(targetStruct) {
+    var src = G.entityById(state, supportSourceId);
+    if (!src || src.ownerHouseId !== state.playerHouseId) {
+      supportSourceId = null;
+      return '';
+    }
+    var ownVillages = G.villagesOfHouse(state, state.playerHouseId);
+    var ownStructs = (state.structures || []).filter(function (st) {
+      return st.ownerHouseId === state.playerHouseId && st.id !== targetStruct.id;
+    });
+    var html = '<div class="support-picker"><b>Unterstuetzung von:</b> ';
+    html += '<select class="support-source-sel">';
+    ownVillages.forEach(function (v) {
+      html += '<option value="' + v.id + '"' + (v.id === supportSourceId ? ' selected' : '') + '>Burg: ' + v.name + villageTag(v) + '</option>';
+    });
+    ownStructs.forEach(function (st) {
+      var nm = structureMeta(st).name + ' (' + st.x + ',' + st.y + ')';
+      html += '<option value="' + st.id + '"' + (st.id === supportSourceId ? ' selected' : '') + '>Struktur: ' + nm + '</option>';
+    });
+    html += '</select>';
+
+    // Verfuegbare Einheiten ermitteln
+    var availUnits = {};
+    if (src.kind === 'village') {
+      ['spear','sword','axe','archer','hero'].forEach(function (k) { availUnits[k] = src.ref.units[k] || 0; });
+    } else {
+      // Struktur als Quelle: Garnison schickt (Held nicht in Garnison moeglich)
+      ['spear','sword','axe','archer'].forEach(function (k) { availUnits[k] = (src.ref.garrison && src.ref.garrison[k]) || 0; });
+      availUnits.hero = 0;
+    }
+    html += '<div class="send-form">';
+    C.UNIT_ORDER.forEach(function (k) {
+      var have = availUnits[k] || 0;
+      var v = (supportCounts['u_' + k] != null ? supportCounts['u_' + k] : 0);
+      html += '<label class="send-row"><canvas class="unit-ico" width="24" height="30" data-unit="' + k + '"></canvas>' +
+        C.UNITS[k].name + ' <small>(' + have + ')</small>' +
+        '<input class="sup-n" type="number" min="0" max="' + have + '" value="' + v + '" data-unit="' + k + '"></label>';
+    });
+    html += '</div>';
+
+    html += '<button class="btn full support-send">⛨ Unterstuetzung entsenden</button>';
+    html += '<button class="btn ghost sm support-cancel">Abbrechen</button>';
+    html += '</div>';
     return html;
   }
 
@@ -831,6 +1442,34 @@
     var sup = dom.sidebar.querySelector('.support-btn');
     if (sup) sup.addEventListener('click', function () { send('support'); });
 
+    // Unterstuetzung anfordern fuer eigene Burgen (Ziel = Burg)
+    var soc = dom.sidebar.querySelector('.support-open-castle');
+    if (soc) soc.addEventListener('click', function () {
+      var t = state.villages[targetVillageId];
+      if (!t) return;
+      var own = G.villagesOfHouse(state, state.playerHouseId).filter(function (c) { return c.id !== t.id; });
+      supportSourceId = (own[0] && own[0].id) || null;
+      supportCounts = {};
+      refreshPanels();
+    });
+    var sca = dom.sidebar.querySelector('.support-cancel');
+    if (sca) sca.addEventListener('click', function () {
+      supportSourceId = null; supportCounts = {}; refreshPanels();
+    });
+    var ssel = dom.sidebar.querySelector('.support-source-sel');
+    if (ssel) ssel.addEventListener('change', function () {
+      supportSourceId = ssel.value; supportCounts = {}; refreshPanels();
+    });
+    Array.prototype.forEach.call(dom.sidebar.querySelectorAll('input.sup-n'), function (inp) {
+      inp.addEventListener('input', function () { supportCounts['u_' + inp.getAttribute('data-unit')] = inp.value; });
+    });
+    var ssc = dom.sidebar.querySelector('.support-send-castle');
+    if (ssc) ssc.addEventListener('click', function () {
+      var t = state.villages[targetVillageId];
+      if (!t) return;
+      sendSupportToTarget(t, 'village');
+    });
+
     function send(type) {
       var units = collect();
       var src = sourceVillage();
@@ -841,6 +1480,210 @@
       toast((type === 'attack' ? 'Angriff' : 'Unterstützung') + ' entsandt — Marschzeit ' + fmtTime(r.travel) + '.');
       refreshPanels();
     }
+  }
+
+  // -----------------------------------------------------------------------
+  // Event-Handler fuer Strukturen-Panel (Schritt 6)
+  // -----------------------------------------------------------------------
+  function attachStructureEvents() {
+    var s = selectedStructure();
+    if (!s) return;
+    // Unit-Icons in Inputs zeichnen
+    Array.prototype.forEach.call(dom.sidebar.querySelectorAll('canvas[data-unit]'), function (c) {
+      var ctx = c.getContext('2d'); ctx.imageSmoothingEnabled = false;
+      S.drawUnitIcon(ctx, 2, 0, 3, c.getAttribute('data-unit'));
+    });
+    paintResIcons(dom.sidebar);
+
+    // Quelldorf-Selector (analog Angriff)
+    var fromSel = dom.sidebar.querySelector('.send-from');
+    if (fromSel) fromSel.addEventListener('change', function () {
+      sendFromId = fromSel.value; renderSidebar();
+    });
+
+    // Truppen-Mengen merken
+    Array.prototype.forEach.call(dom.sidebar.querySelectorAll('input.send-n'), function (inp) {
+      inp.addEventListener('input', function () { sendCounts[inp.getAttribute('data-unit')] = inp.value; });
+    });
+
+    function collectSend() {
+      var u = {};
+      C.UNIT_ORDER.forEach(function (k) { u[k] = Math.max(0, parseInt(sendCounts[k], 10) || 0); });
+      return u;
+    }
+
+    // Sammeln
+    var gb = dom.sidebar.querySelector('.gather-btn');
+    if (gb) gb.addEventListener('click', function () {
+      var src = sourceVillage();
+      if (!src) { toast('Keine Quell-Burg.'); return; }
+      var units = collectSend();
+      // Held wird bei gather nicht mitgeschickt (Spec: gather = ohne Eroberung).
+      units.hero = 0;
+      var r = G.sendArmy(state, src.id, s.id, units, 'gather');
+      if (!r.ok) { toast(r.msg); return; }
+      api.requestSave();
+      sendCounts = {};
+      toast('Sammeltrupp entsandt — Marschzeit ' + fmtTime(r.travel) + '.');
+      refreshPanels();
+    });
+
+    // Eroberung
+    var cb = dom.sidebar.querySelector('.capture-btn');
+    if (cb) cb.addEventListener('click', function () {
+      var src = sourceVillage();
+      if (!src) { toast('Keine Quell-Burg.'); return; }
+      var units = collectSend();
+      if ((units.hero || 0) < 1) { toast('Eroberung erfordert einen Helden im Trupp.'); return; }
+      var r = G.sendArmy(state, src.id, s.id, units, 'capture');
+      if (!r.ok) { toast(r.msg); return; }
+      api.requestSave();
+      sendCounts = {};
+      toast('Eroberungstrupp entsandt — Marschzeit ' + fmtTime(r.travel) + '.');
+      refreshPanels();
+    });
+
+    // Upgrade
+    var ub = dom.sidebar.querySelector('.upgrade-btn');
+    if (ub) ub.addEventListener('click', function () {
+      var r = G.upgradeStructure(state, s);
+      if (!r.ok) { toast(r.msg); return; }
+      api.requestSave();
+      toast('Struktur auf Stufe ' + r.newLevel + ' ausgebaut.');
+      refreshPanels();
+    });
+
+    // Garnison verwalten
+    Array.prototype.forEach.call(dom.sidebar.querySelectorAll('input.garr-n'), function (inp) {
+      inp.addEventListener('input', function () { garrisonCounts[inp.getAttribute('data-unit')] = inp.value; });
+    });
+    function collectGarr() {
+      var u = {};
+      ['spear', 'sword', 'axe', 'archer'].forEach(function (k) {
+        u[k] = Math.max(0, parseInt(garrisonCounts[k], 10) || 0);
+      });
+      return u;
+    }
+    var stb = dom.sidebar.querySelector('.garr-station');
+    if (stb) stb.addEventListener('click', function () {
+      var castle = state.villages[s.assignedCastleId];
+      if (!castle) { toast('Heimatburg fehlt.'); return; }
+      var r = G.stationGarrison(state, castle, s, collectGarr());
+      if (!r.ok) { toast(r.msg); return; }
+      api.requestSave();
+      garrisonCounts = {};
+      toast('Einheiten stationiert.');
+      refreshPanels();
+    });
+    var wdb = dom.sidebar.querySelector('.garr-withdraw');
+    if (wdb) wdb.addEventListener('click', function () {
+      var r = G.withdrawGarrison(state, s, collectGarr());
+      if (!r.ok) { toast(r.msg); return; }
+      api.requestSave();
+      garrisonCounts = {};
+      toast('Einheiten zurueckgezogen.');
+      refreshPanels();
+    });
+
+    // Heimatburg aendern
+    var ha = dom.sidebar.querySelector('.home-apply');
+    if (ha) ha.addEventListener('click', function () {
+      var sel2 = dom.sidebar.querySelector('.home-select');
+      var newId = sel2 ? sel2.value : null;
+      if (!newId) return;
+      var r = G.reassignHomeCastle(state, s, newId);
+      if (!r.ok) { toast(r.msg); return; }
+      api.requestSave();
+      toast('Heimatburg geaendert.');
+      refreshPanels();
+    });
+
+    // Unterstuetzung anfordern: Picker oeffnen/abbrechen
+    var sop = dom.sidebar.querySelector('.support-open');
+    if (sop) sop.addEventListener('click', function () {
+      // Default: erste eigene Burg (nicht diese Struktur) als Quelle
+      var own = G.villagesOfHouse(state, state.playerHouseId);
+      supportSourceId = (own[0] && own[0].id) || null;
+      supportCounts = {};
+      refreshPanels();
+    });
+    var sca = dom.sidebar.querySelector('.support-cancel');
+    if (sca) sca.addEventListener('click', function () {
+      supportSourceId = null; supportCounts = {}; refreshPanels();
+    });
+    var ssel = dom.sidebar.querySelector('.support-source-sel');
+    if (ssel) ssel.addEventListener('change', function () {
+      supportSourceId = ssel.value; supportCounts = {}; refreshPanels();
+    });
+    Array.prototype.forEach.call(dom.sidebar.querySelectorAll('input.sup-n'), function (inp) {
+      inp.addEventListener('input', function () { supportCounts['u_' + inp.getAttribute('data-unit')] = inp.value; });
+    });
+    var ssend = dom.sidebar.querySelector('.support-send');
+    if (ssend) ssend.addEventListener('click', function () {
+      sendSupport(s);
+    });
+  }
+
+  // Unterstuetzung an Struktur entsenden (genutzt vom Struktur-Panel).
+  function sendSupport(target) { sendSupportToTarget(target, 'structure'); }
+
+  // Schritt 9.2: Unterstuetzung laeuft jetzt durchgehend ueber Marschzeit.
+  // sendArmy benoetigt eine Burg als Quelle — Strukturen als Quelle bleiben
+  // instantaner Transfer (Strukturen koennen keine Bewegungen erzeugen).
+  function sendSupportToTarget(target, targetKind) {
+    var srcEnt = G.entityById(state, supportSourceId);
+    if (!srcEnt || srcEnt.ownerHouseId !== state.playerHouseId) {
+      toast('Quelle ist nicht eigen.'); return;
+    }
+    var units = {};
+    C.UNIT_ORDER.forEach(function (k) { units[k] = Math.max(0, parseInt(supportCounts['u_' + k], 10) || 0); });
+    units.hero = 0; // Held nicht supportbar
+    var total = 0; for (var k in units) total += units[k];
+    if (total <= 0) { toast('Keine Einheiten ausgewaehlt.'); return; }
+
+    // Verfuegbarkeit
+    var avail = srcEnt.kind === 'village' ? srcEnt.ref.units : (srcEnt.ref.garrison || {});
+    for (var k0 in units) {
+      if ((units[k0] || 0) > (avail[k0] || 0)) { toast('Nicht genug ' + C.UNITS[k0].name + ' in der Quelle.'); return; }
+    }
+
+    if (srcEnt.kind === 'village') {
+      // Burg -> beliebiges Ziel: durchgaengig per sendArmy + Marschzeit
+      var r = G.sendArmy(state, srcEnt.id, target.id, units, 'support');
+      if (!r.ok) { toast(r.msg); return; }
+      api.requestSave();
+      supportCounts = {}; supportSourceId = null;
+      toast('Unterstuetzung entsandt — Marschzeit ' + fmtTime(r.travel) + '.');
+      refreshPanels();
+      return;
+    }
+
+    // Quelle ist Struktur: instantaner Garnisons-Transfer (Strukturen haben
+    // keine eigene Bewegungs-Identitaet im Movement-System).
+    var srcGar = srcEnt.ref.garrison || {};
+    if (targetKind === 'structure') {
+      var tg = target.garrison || { spear: 0, sword: 0, axe: 0, archer: 0 };
+      var curr = 0; for (var tk in tg) curr += tg[tk] || 0;
+      var sum = 0; for (var sk in units) sum += units[sk];
+      if (curr + sum > C.STRUCTURE_GARRISON_CAP) {
+        toast('Garnisons-Cap des Ziels wuerde ueberschritten.'); return;
+      }
+      for (var su in units) {
+        srcGar[su] = (srcGar[su] || 0) - units[su];
+        tg[su] = (tg[su] || 0) + units[su];
+      }
+      target.garrison = tg;
+    } else {
+      for (var su2 in units) {
+        srcGar[su2] = (srcGar[su2] || 0) - units[su2];
+        target.units[su2] = (target.units[su2] || 0) + units[su2];
+      }
+    }
+    srcEnt.ref.garrison = srcGar;
+    api.requestSave();
+    supportCounts = {}; supportSourceId = null;
+    toast('Garnison von ' + structureMeta(srcEnt.ref).name + ' uebertragen.');
+    refreshPanels();
   }
 
   // ---------------------------------------------------------------------

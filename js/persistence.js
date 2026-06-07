@@ -75,5 +75,60 @@
     });
   }
 
-  WOH.Persistence = { save: save, load: load, clear: clear };
+  // ---------------------------------------------------------------------
+  // Schema-Migration beim Laden (idempotent).
+  // ---------------------------------------------------------------------
+  // - v3 -> v4: state.structures normalisieren (Schritt 2-Schema).
+  // - v4 -> v5: Burgen erhalten wallHP/towerHP/repairQueue;
+  //             KI-State erhaelt lastAttackTime (Schritt 7).
+  function migrate(state) {
+    if (!state) return state;
+    // Strukturen normalisieren (idempotent)
+    if (WOH.Game && WOH.Game.normalizeStructures) WOH.Game.normalizeStructures(state);
+
+    // Burg-Defaults fuer Belagerung
+    var SIEGE = C.SIEGE || {};
+    var maxHPArrW = SIEGE.wallMaxHP || [];
+    var maxHPArrT = SIEGE.towerMaxHP || [];
+    for (var id in state.villages) {
+      var v = state.villages[id];
+      var wl = v.buildings && v.buildings.wall || 0;
+      var tl = v.buildings && v.buildings.tower || 0;
+      if (typeof v.wallHP !== 'number')  v.wallHP  = wl >= 1 ? (maxHPArrW[Math.min(wl, maxHPArrW.length - 1)] || 0) : 0;
+      if (typeof v.towerHP !== 'number') v.towerHP = tl >= 1 ? (maxHPArrT[Math.min(tl, maxHPArrT.length - 1)] || 0) : 0;
+      if (!Array.isArray(v.repairQueue)) v.repairQueue = [];
+    }
+
+    // KI-State: lastAttackTime (Schritt 7-Vorbereitung)
+    if (state.ai) {
+      for (var hid in state.ai) {
+        if (typeof state.ai[hid].lastAttackTime !== 'number') {
+          state.ai[hid].lastAttackTime = state.gameTime || 0;
+        }
+      }
+    }
+
+    // v6 (Schritt 9.1): Strukturen-Upgrade-Queue, Spielende-Status,
+    // Statistik-Felder. normalizeStructures haengt upgradeQueue an;
+    // Spielende-Defaults sicher belegen.
+    if (state.gameOver === undefined) state.gameOver = null;
+    if (state.gameEndedAt === undefined) state.gameEndedAt = null;
+    if (!state.stats) state.stats = {
+      capturedStructures: 0, capturedCastles: 0,
+      battlesWon: 0, battlesLost: 0,
+      unitLosses: { spear: 0, sword: 0, axe: 0, archer: 0, hero: 0 }
+    };
+    // Schritt 10: Spielgeschwindigkeit (Default 4 = 4 Spielsek pro Echtsek).
+    // Alte Saves vor Schritt 10 hatten TIME_SCALE 6 hartcodiert; der
+    // Default-Multiplier 4 ist die naehrungsweise Entsprechung in der
+    // neuen Verdopplungs-Skala (0/1/2/4/8). Spieler kann anpassen.
+    if (typeof state.speedMultiplier !== 'number') state.speedMultiplier = 4;
+    // Schritt 10b: Auto-Pause bei Kampfbericht-Overlay (Default true).
+    if (typeof state.pauseOnReport !== 'boolean') state.pauseOnReport = true;
+
+    state.version = 6;
+    return state;
+  }
+
+  WOH.Persistence = { save: save, load: load, clear: clear, migrate: migrate };
 })(window.WOH = window.WOH || {});

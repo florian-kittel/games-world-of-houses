@@ -3,6 +3,12 @@
 Lebendes Designdokument. Dient als Ankerpunkt, um die Entwicklung fortzusetzen
 und zu verfeinern. Stand: laufend gepflegt.
 
+**Aktueller Save-Schema-Stand:** `version: 6` — beinhaltet
+`state.structures[]` mit Garnison/Heimatburg/`upgradeQueue`, Burg-HP-Felder
+(`wallHP`/`towerHP`/`repairQueue`), KI-Feld `lastAttackTime`, sowie
+`state.gameOver` und `state.stats`. Migration älterer Stände erfolgt
+idempotent in `js/persistence.js` (`migrate()`).
+
 ## Vision
 
 Echtzeit-Strategie im Stil von „Die Stämme" als Top-Down-Pixel-Art mit
@@ -83,14 +89,128 @@ kein Server). Speicherung in IndexedDB (Auto-Save, nicht-blockierend).
   öffnet sich ein Bericht (Angreifer/Verteidiger, Einheiten, Stärken, Verluste,
   Glück/Moral, Beute, Ergebnis).
 
+### Belagerungs-Phase (Wall/Tower-HP)
+
+Vor jedem Hauptkampf gegen eine Burg läuft eine Belagerungs-Phase
+(`Combat.applySiege` in `js/combat.js`):
+
+- Palisade (`wall`) und Wachturm (`tower`) tragen je eine **HP-Leiste** pro
+  Stufe. Default-Werte (in `config.js`, Sektion `SIEGE` justierbar):
+
+  | Stufe | Wall maxHP | Tower maxHP |
+  |-------|-----------:|------------:|
+  |   1   |        220 |         180 |
+  |   2   |        340 |         260 |
+  |   3   |        500 |         360 |
+  |   4   |        700 |         480 |
+  |   5   |        940 |         620 |
+  |   6   |      1 220 |         780 |
+
+- Jede angreifende Einheit verursacht Belagerungs-Schaden gemäß
+  `SIEGE.unitSiegeWall` und `SIEGE.unitSiegeTower` (Default-Balancing):
+
+  | Einheit | siegeWall | siegeTower |
+  |---------|----------:|-----------:|
+  | spear   |       0,5 |        0,5 |
+  | sword   |       1,0 |        0,5 |
+  | axe     |       2,5 |        1,5 |
+  | archer  |       5,0 |        6,0 |
+  | hero    |      20,0 |       20,0 |
+
+- Bei `HP ≤ 0` fällt die Bauwerks-Stufe um **1**; der überschüssige Schaden
+  wirkt sofort weiter auf die nächst-tiefere Stufe. Stufe 0 bedeutet
+  „Bauwerk zerstört" — die Hauptkampf-Verteidigungsformel rechnet dann
+  ohne Wall/Tower-Multiplikator.
+- Strukturen tragen keine Mauer/Turm; die Belagerungs-Phase ist für sie
+  ein No-Op (Guard in `applySiege`).
+
+### Bogenschützen-Suppression im Hauptkampf
+
+- Angreifende Bogenschützen reduzieren in derselben Schlacht zusätzlich
+  den Mauer-Multiplikator (`wallMult`) **temporär**, ohne den `baseFlat`
+  zu beeinflussen.
+- Default-Formel: `reduction = min(SIEGE.wallSuppressionMax, archers ×
+  SIEGE.wallSuppressionPerArcher) = min(0,5; archers × 0,003)` —
+  100 Bogen → −30 %, 167+ Bogen → Cap bei −50 %.
+- Damit erfüllt der Bogenschütze eine klare **Doppelrolle**:
+  Verteidigungs-Eckpfeiler hinter eigenen Mauern und
+  Belagerungs-Spezialist im Angriff.
+
+### Reparatur
+
+- Verlorene HP lassen sich durch eine **Reparatur** zurückgewinnen.
+  Reparatur startet pro Klick im Dorfansichts-Overlay; Kosten und
+  Dauer skalieren mit der aktuellen Stufe.
+- Default-Faktoren (`SIEGE.repairCostFactor = 0,3`,
+  `SIEGE.repairTimeFactor = 0,4`): Reparatur kostet 30 % der
+  Stufen-Bau-Kosten und dauert 40 % der Stufen-Bauzeit.
+- Maximal **2 parallele** Reparaturen pro Burg
+  (`SIEGE.repairQueueMax`); doppelte Reparatur derselben Komponente wird
+  abgelehnt.
+- Reparatur belegt einen separaten Slot und blockiert die normale
+  `buildQueue` nicht.
+- Bei Bau-Abschluss einer neuen Wall/Tower-Stufe wird HP automatisch
+  auf den `maxHP[level]`-Wert der neuen Stufe gesetzt.
+
 ## KI
 
 - Pro Haus, drei Stufen (Knappe/Ritter/Kriegsherr): Wirtschaft, Ausbildung,
   Angriffe; Aggression/Tempo/Startvorsprung skaliert.
-- **Angriffe massiert:** greift erst an, wenn die Angriffskraft ≥ 2× der
-  Zielverteidigung ist (klarer Sieg, geringe Verluste), schickt dann die volle
-  Axt-Armee. Meidet zu starke Burgen, wählt lohnende/nahe besiegbare Ziele,
-  behält Verteidiger daheim. Aggressive Häuser bilden mehr Offensive aus.
+- **Angriffe massiert:** greift erst an, wenn die Angriffskraft den
+  geforderten MARGIN-Schwellwert über der Zielverteidigung erreicht
+  (klarer Sieg, geringe Verluste), schickt dann die volle Axt-Armee.
+  Meidet zu starke Burgen, wählt lohnende/nahe besiegbare Ziele, behält
+  Verteidiger daheim. Aggressive Häuser bilden mehr Offensive aus.
+
+### Anti-Turtle (Boredom + Belagerungs-Tauglichkeit)
+
+Die KI hat einen dynamischen MARGIN-Schwellwert und plant aktiv
+Belagerungs-Trupps. Alle Konstanten sind in `config.js`, Sektion `AI`,
+zentralisiert (Default-Balancing).
+
+- **Boredom-Margin:** statt fester Schwelle 2,0 sinkt der geforderte
+  Schwellwert mit der Zeit seit dem letzten eigenen Angriff:
+
+  ```
+  margin = max(AI.marginFloor, 2,0 − AI.boredomFactor[difficulty] × (gameTime − lastAttackTime))
+  ```
+
+  Default-Faktoren je Schwierigkeit: `easy 0,0005`, `normal 0,001`,
+  `hard 0,002`. Floor: `AI.marginFloor = 1,0` (KI greift nie an, wenn
+  `atk < def` — Selbstmord-Schutz).
+- Nach einem erfolgreichen Angriff wird `state.ai[hid].lastAttackTime`
+  zurückgesetzt — der MARGIN steigt wieder auf 2,0.
+
+- **Belagerungs-Tauglichkeit:** Die KI bewertet pro potenziellem Ziel
+  `archersNeededFor = (wall × 2 + tower × 1,5) × AI.archerToSiegeRatio`
+  (Default-Ratio: 20). Wenn der eigene Bogenschützen-Bestand unter
+  50 % dieser Schwelle liegt, verschiebt die KI den Angriff zugunsten
+  weiterer **Bogen-Ausbildung**. Bei befestigten Nachbarzielen
+  (Wall ≥ 3) erhöht `manageMilitary` den Bogen-Anteil von 18 % auf
+  30 %.
+
+- **Truppmix erweitert:** Angriffstrupps der KI enthalten nun
+  Bogenschützen (`send = { axe, sword: escort, archer: archers }`).
+  Bogen leisten Belagerungs-Schaden und Bonus-Suppression im
+  Hauptkampf.
+
+- **Held-Mitgabe bei sicherem Sieg:** Steht ein Held bereit und ist
+  die Angriffskraft `> def × (margin + 0,5)`, ergänzt die KI
+  `send.hero = 1` — Eroberungen werden so möglich, ohne den Helden in
+  zu riskanten Schlachten zu verheizen.
+
+- **Max-Stage-Trigger (Expansionsmodus):** Sobald alle eigenen Burgen
+  Halle = 6 und alle wirtschaftlichen Gebäude (Holzfäller, Steinbruch,
+  Eisenmine, Bauernhof, Lager) ≥ Stufe 5 erreicht haben
+  (`AI.maxStageThreshold`), wird die KI-Aggression mit
+  `AI.pressureMultiplier = 1,2` multiplikativ verstärkt — eine voll
+  ausgebaute KI sitzt nicht mehr still.
+
+- **KI greift Strukturen an:** Über `pickStructureTarget` bewertet die
+  KI neutrale und fremde Rohstoff-Strukturen. Sammeln (`gather`)
+  liefert Beute, Eroberung (`capture`) mit verfügbarem Held wechselt
+  den Besitzer. Eroberte Strukturen erhöhen die KI-Wirtschaft und den
+  Pop-Cap der Heimatburg.
 
 ---
 
@@ -121,13 +241,18 @@ Ziel: mehr Vielfalt und strategische Tiefe durch verschiedene Strukturtypen.
   - **Eisenmine** direkt neben Gebirge platzieren.
   - **Hafen** nur an Küsten von Wasserflächen (Seen/Meere).
 
-## Eroberungs-/Einflussmechanik
+## Eroberungs-Mechanik
 
-- Liegt eine Rohstoff-Struktur (Holzfäller, Eisenmine, Hof, Schaffarm) im
-  **Einflussbereich** einer Burg, kann sie erobert werden.
-- Eroberte Rohstoff-Strukturen erhöhen die Rohstoffzufuhr der besitzenden Burg
-  deutlich (Schaffarm → Nahrung, Holzfäller → Holz, Eisenmine → Eisen, Hof → Nahrung/gemischt).
-- Einflussbereich = Radius um die Burg (Wert noch festzulegen, ggf. mit Ausbau wachsend).
+- Jede neutrale oder fremde Rohstoff-Struktur ist erreichbar, sofern ein
+  Trupp die Distanz überwinden kann. Eroberte Rohstoff-Strukturen erhöhen
+  die Rohstoffzufuhr der besitzenden Burg deutlich (Schaffarm → Nahrung,
+  Holzfäller → Holz, Eisenmine → Eisen, Hof → Nahrung/gemischt).
+- **Verworfen (Entscheidung 2026-06):** Eine harte Einflussbereichs-
+  Restriktion (Radius um die Burg) wurde gegen die bestehende
+  Marschzeit-basierte Limitation abgewogen und verworfen. Marschzeit
+  reguliert bereits indirekt, wie weit eine Burg ihre Reichweite
+  ausspielen kann; eine zusätzliche harte Radius-Sperre würde nur die
+  Komplexität erhöhen, ohne nennenswerten taktischen Mehrwert.
 
 ## Offene Punkte / spätere Schritte
 
@@ -294,6 +419,118 @@ das Lager voll ist, stoppt die Produktion bis Rohstoffe entnommen werden.
 - Differenzierte Upgrade-Kosten je Strukturtyp (Holzfäller braucht
   z. B. weniger Holz, mehr Stein/Eisen) bewusst zunächst zurückgestellt
   zugunsten einer einheitlichen Tabelle. Optional in v2 nachschärfen.
-- Einflussbereich-Mechanik aus Abschnitt „Eroberungs-/Einflussmechanik"
-  (Radius um Burg) bleibt parallel als zusätzliche Restriktion erhalten
-  oder wird verworfen — Entscheidung folgt im Umsetzungsschritt.
+- Einflussbereich-Mechanik (Radius um Burg) — **verworfen 2026-06**,
+  siehe Abschnitt „Eroberungs-Mechanik".
+
+---
+
+# Visualisierung von Bewegungen
+
+Sammeln und Eroberung werden visuell **vollständig analog** zu
+Burg-Angriffen dargestellt (`js/ui.js`, `renderMap` und Sidebar).
+
+- **Marschspur auf der Karte:** gestrichelte Linie zwischen Quell-Burg
+  und Ziel (Burg oder Struktur) plus wandernder Marschpunkt entlang
+  der Strecke. Farben: grün für eigene Bewegungen, rot für eingehende
+  Bedrohungen, grau für KI-vs-KI.
+- **Sidebar „↗ Eigene Bewegungen":** Liste aller laufenden Trupps mit
+  Symbol und ETA. Symbol-Mapping: ⚔ Angriff, ⛏ Sammeln, ⚑ Eroberung,
+  ⛨ Hilfe, ↩ Rückkehr.
+- **Sidebar „⚔ Eingehende Bedrohungen":** zeigt feindliche
+  `attack`/`gather`/`capture`-Bewegungen, deren Ziel eine eigene Burg
+  ODER eine eigene Struktur ist — mit Hausname, Bewegungstyp,
+  Ziel-Name und Ankunftszeit.
+- **Warnring an eigenen Strukturen:** Wird eine eigene Struktur durch
+  ein feindliches `gather`/`capture` bedroht, erscheint ein
+  pulsierender roter Ring um das Struktur-Sprite (Pulse-Frequenz aus
+  `state.gameTime`).
+- **Kampfbericht differenziert:** `res.targetKind = 'structure'` und
+  `res.action ∈ {'gather','capture'}` werden im Kampfbericht-Overlay
+  als „Sammelaktion: …" bzw. „Eroberungs-Versuch: …" gerendert.
+- **Belagerungs-Block im Kampfbericht:** zeigt Wall-/Tower-Schaden,
+  Stufenübergänge („Wall-Stufe 6 → 5") und Bogen-Suppression-Anteil.
+
+---
+
+# Bewegungs-Mechanik & Versand-Regeln
+
+## Marschzeit
+
+- Marschzeit = `distance(from, to) × slowestSpeed(units)`, mindestens
+  `MOVEMENT.minTravel = 8` Spielsekunden.
+- **Rückkehr-Marschzeit = Hinweg-Marschzeit** (gleiche Distanz, gleicher
+  Speed). `returnArmy` löst Ziel-Koordinaten universell über
+  `entityById` auf — Burg ODER Struktur als Quelle führen zur exakten
+  Distanz. Bugfix nach Schritt 7: vorher kollabierte die Strukturen-
+  Rückkehr auf `minTravel` (8 s) wegen fehlender Koordinaten-Auflösung.
+
+## Beute-Gutschrift
+
+- Beute (`loot`-Objekt) hängt am Rückkehr-Movement (`type: 'return'`),
+  **nicht** am Strukturlager oder am Trupp-Versand-Movement.
+- `resolveReturn` schreibt das Loot **erst beim Eintreffen** in der
+  Heimatburg ins Lager (begrenzt durch `V.storageCap(target)`,
+  Überschuss verfällt — konsistent zu Burg-Beute).
+- Geht die Heimatburg während des Rückwegs verloren, verfallen
+  Einheiten und Beute gleichermaßen (Standard-Behavior von
+  `resolveReturn`).
+
+## Duplikat-Schutz bei hostile Trupps
+
+- Aus **derselben Quell-Burg** darf nur **eine** hostile Bewegung
+  (`attack`/`gather`/`capture`) gleichzeitig zum selben Ziel laufen.
+  Implementierung in `Game.hasOutboundMovement(state, fromId, toId)`.
+- `sendArmy` lehnt Duplikate mit Fehlercode `duplicate-outbound` ab.
+- Im UI werden die Buttons „⚔ Angriff", „⛏ Sammeln" und „⚑ Eroberung"
+  bei laufendem Trupp **disabled** und zeigen den Tooltip
+  „Trupp ist bereits unterwegs zu diesem Ziel" sowie eine alternative
+  Beschriftung („⚔ Trupp bereits unterwegs"). Sobald der Trupp den
+  Rückweg antritt oder verloren geht, wird der Button beim nächsten
+  Re-Render (alle 400 ms) wieder aktiv.
+- **Nicht betroffen:**
+  - `support`-Bewegungen — Verstärkung darf nachgesendet werden.
+  - `return`-Bewegungen — sobald der Trupp auf dem Rückweg ist, ist
+    eine neue Welle zulässig.
+  - **Mehrere Quell-Burgen** dürfen parallel zum selben Ziel agieren
+    (legitime Koordination eines Mehr-Burgen-Hauses).
+
+---
+
+# Balancing-Konstanten (Übersicht)
+
+Alle spielrelevanten Werte sind in `js/config.js` zentralisiert und
+ohne Eingriff in die Spiellogik justierbar. Die hier gelisteten Zahlen
+sind **Default-Balancing** zum Stand des Designs; Anpassungen erfolgen
+in `config.js` und sind sofort wirksam.
+
+| Sektion | Inhalt |
+|---------|--------|
+| `BUILDINGS` | Bau-Kosten, Faktoren, Voraussetzungen je Gebäude (Halle, Bauernhof, Kaserne, Palisade, Wachturm …) |
+| `UNITS` / `UNIT_ORDER` | Stats aller Einheiten inkl. Held (atk, defI, defA, speed, trainTime, carry, pop, cost) |
+| `COMBAT` | luckRange, lossExponent, wallDefPerLevel, wallBaseDef, towerArcherBonus, baseVillageDef, loyaltyPerWin/regen, morale.min |
+| `PRODUCTION` / `STORAGE` / `POPULATION` | Basis-Rohstoff- und Bevölkerungs-Skalierung |
+| `MOVEMENT` | minTravel, Typen-Verzeichnis (`attack`/`return`/`support`/`gather`/`capture`) |
+| `RESOURCE_STRUCTURES` / `RESOURCE_STRUCTURE_ORDER` | Strukturen-Definitionen (Name, produzierter Rohstoff, Map-Anzahl, Gelände) |
+| `RESOURCE_STRUCTURE_LEVELS` | Strukturstufen 1–3: Produktion (10/20/30), Lager (5 000/12 500/20 000), Upgrade-Kosten (1 800/1 500/900 → 3 600/3 000/1 800), Bauzeit (240 s / 480 s) |
+| `STRUCTURE_GARRISON_CAP` | 100 (max. dauerhaft stationierte Einheiten pro Struktur) |
+| `STRUCTURE_POP_BONUS` | Pop-Bonus je Strukturstufe: `[0, 20, 40, 60]` |
+| `SIEGE` | Belagerungs-Konstanten: `wallMaxHP[lvl]`, `towerMaxHP[lvl]`, `unitSiegeWall`, `unitSiegeTower`, `wallSuppressionPerArcher` (0,003), `wallSuppressionMax` (0,5), `repairCostFactor` (0,3), `repairTimeFactor` (0,4), `repairQueueMax` (2) |
+| `AI` | KI-Anti-Turtle: `boredomFactor` je Difficulty (easy/normal/hard: 0,0005 / 0,001 / 0,002), `marginFloor` (1,0), `archerToSiegeRatio` (20), `maxStageThreshold` (townhall 6, econ 5), `pressureMultiplier` (1,2) |
+| `DIFFICULTY` | Aggressions-/Wirtschafts-/Trainings-Skalierung je Schwierigkeitsstufe |
+| `SAVE` | IndexedDB-Slot, Auto-Save-Intervall |
+
+---
+
+# Save-Schema-Historie
+
+| Version | Stand | Inhalt-Erweiterung |
+|---------|-------|---------------------|
+|   3     | vor Schritt 2 | Burgen, Häuser, Bewegungen, einfacher KI-Zustand |
+|   4     | nach Schritt 2 | `state.structures[]` als First-Class-Entitäten (id, type, x, y, level, ownerHouseId, assignedCastleId, storage, garrison) |
+|   5     | nach Schritt 6.5 | + Burg-HP-Felder (`wallHP`, `towerHP`, `repairQueue`); KI-Feld `lastAttackTime` |
+|   6     | nach Schritt 9 | + `structure.upgradeQueue` (verzögerte Upgrades); `state.gameOver` (Sieg/Niederlage); `state.stats` (Spielstatistik) |
+
+Migration in `js/persistence.js`, Funktion `migrate(state)` —
+idempotent, läuft automatisch beim Laden alter Saves. Fehlende Felder
+bekommen sichere Defaults (HP = max der aktuellen Stufe,
+`repairQueue = []`, `lastAttackTime = state.gameTime`).

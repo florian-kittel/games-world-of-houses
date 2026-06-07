@@ -60,20 +60,40 @@
     var luck = rng.range(-C.COMBAT.luckRange, C.COMBAT.luckRange);
     var mor = morale(scores ? scores.att : 1, scores ? scores.def : 1);
 
-    var atk = attackPower(attackUnits) * (1 + luck) * mor;
-    var def = defensePower(defUnits, wallLevel || 0, towerLevel || 0);
-
-    // Verteidigungs-Aufschlüsselung (Einheiten / Palisade / Turm / Held) für den Bericht.
+    // Schritt 6.5: Bogenschuetzen-Suppression auf wallMult (multiplikativ,
+    // wirkt nicht auf baseFlat). Wird VOR der eigentlichen Verteidigungs-
+    // berechnung in defensePower nicht beruecksichtigt — daher hier
+    // einmalig ableiten und durchziehen.
     var wl = wallLevel || 0, tl = towerLevel || 0;
-    var unitRaw = 0, archerDef = 0;
+    var archers = attackUnits.archer || 0;
+    var sup = C.SIEGE
+      ? Math.min(C.SIEGE.wallSuppressionMax, archers * C.SIEGE.wallSuppressionPerArcher)
+      : 0;
+    var wallMultBase = 1 + wl * C.COMBAT.wallDefPerLevel;
+    var wallMult = wallMultBase * (1 - sup);
+
+    // Verteidigungswert mit ggf. suppressierter wallMult.
+    var unitRawAll = 0, archerDef = 0;
     for (var dk in defUnits) {
       var du = C.UNITS[dk]; if (!du) continue;
       var dd = (defUnits[dk] || 0) * du.defI;
-      unitRaw += dd;
-      if (dk === 'archer') archerDef += dd;
+      if (dk === 'archer') {
+        archerDef += dd;
+        dd *= (1 + tl * C.COMBAT.towerArcherBonus);
+      }
+      unitRawAll += dd;
     }
-    var wallMult = 1 + wl * C.COMBAT.wallDefPerLevel;
     var wallBase = C.COMBAT.baseVillageDef + wl * C.COMBAT.wallBaseDef;
+    var def = unitRawAll * wallMult + wallBase;
+
+    var atk = attackPower(attackUnits) * (1 + luck) * mor;
+
+    // Verteidigungs-Aufschlüsselung (Einheiten / Palisade / Turm / Held) für den Bericht.
+    var unitRaw = 0;
+    for (var dk2 in defUnits) {
+      var du2 = C.UNITS[dk2]; if (!du2) continue;
+      unitRaw += (defUnits[dk2] || 0) * du2.defI;
+    }
     var towerExtra = archerDef * (tl * C.COMBAT.towerArcherBonus);
 
     var result = {
@@ -83,6 +103,8 @@
       attackerLosses: {}, defenderLosses: {},
       attackerSurvivors: {}, defenderSurvivors: {},
       defWallLevel: wl, defTowerLevel: tl,
+      // Bogen-Suppression fuer den Kampfbericht
+      wallSuppression: sup,
       defBreakdown: {
         units: Math.round(unitRaw),
         tower: Math.round(towerExtra),
@@ -145,12 +167,113 @@
     return s || 14;
   }
 
+  // -----------------------------------------------------------------------
+  // Strukturen-Kampf (Schritt 5)
+  // -----------------------------------------------------------------------
+  // Resolver fuer Sammel-/Eroberungstrupps gegen die Garnison einer neutralen
+  // oder fremden Rohstoff-Struktur. Mechanik analog `resolve()` fuer Burgen,
+  // aber: keine Palisade, kein Wachturm, kein Held-Verteidigungseffekt im
+  // Sockel. Spec: "Bonus-Logik wie bei Burg-Wachturm (sofern vorhanden -
+  // sonst neutraler Verteidigungswert)" -> Strukturen tragen weder Wall noch
+  // Tower; lediglich der bestehende `baseVillageDef` wirkt als Sockel.
+  //
+  // Strukturen-spezifischer Score-Proxy fuer Moral: Anzahl Garnisons-Einheiten
+  // plus level*5 (level reflektiert die Ausbaustufe als geringer Bauwert).
+  function structureDefenderScore(structure) {
+    var n = 0, g = (structure && structure.garrison) || {};
+    for (var k in g) n += (g[k] || 0);
+    var lvl = (structure && structure.level) || 1;
+    return n + lvl * 5;
+  }
+
+  // Kampf-Resolver: Angreifer-Trupp vs. Strukturen-Garnison.
+  // Liefert dasselbe Result-Format wie resolve(); zusaetzlich wird im
+  // aufrufenden Code (game.js) entschieden, ob Beute (gather) oder
+  // Besitzerwechsel (capture) folgt.
+  function resolveStructureBattle(attackUnits, garrison, rng, attackerScore, structure) {
+    var defScore = structureDefenderScore(structure);
+    return resolve(attackUnits, garrison || {}, 0, 0, rng, { att: attackerScore, def: defScore });
+  }
+
+  // -----------------------------------------------------------------------
+  // Belagerung (Schritt 6.5)
+  // -----------------------------------------------------------------------
+  // Berechnet den Schaden an Mauer und Turm und reduziert ggf. die Stufe.
+  // target ist ein Burg-Objekt (village) mit buildings.wall / buildings.tower
+  // und (optional) wallHP / towerHP. Liefert ein Resultobjekt fuer den
+  // Kampfbericht.
+  function applySiege(attackUnits, target) {
+    var res = {
+      wallDamage: 0, towerDamage: 0,
+      wallLevelBefore: target.buildings.wall || 0,
+      wallLevelAfter:  target.buildings.wall || 0,
+      towerLevelBefore: target.buildings.tower || 0,
+      towerLevelAfter:  target.buildings.tower || 0
+    };
+    if (!C.SIEGE) return res;
+    // Strukturen haben keine Wall/Tower - Guard: nur Burgen mit buildings.
+    if (!target.buildings) return res;
+
+    // Gesamtschaden berechnen
+    var dmgW = 0, dmgT = 0;
+    var sw = C.SIEGE.unitSiegeWall || {};
+    var st = C.SIEGE.unitSiegeTower || {};
+    for (var k in attackUnits) {
+      var n = attackUnits[k] || 0;
+      dmgW += n * (sw[k] || 0);
+      dmgT += n * (st[k] || 0);
+    }
+    res.wallDamage  = Math.round(dmgW);
+    res.towerDamage = Math.round(dmgT);
+
+    // Wall: Stufenabbau mit Ueberschuss-Schaden
+    applyDamageToStructure(target, 'wall', dmgW, C.SIEGE.wallMaxHP);
+    res.wallLevelAfter = target.buildings.wall || 0;
+
+    // Tower: nur abbauen, solange Tower existiert. Tower-HP wird mit Overflow
+    // ebenfalls in tiefere Stufen weitergereicht.
+    applyDamageToStructure(target, 'tower', dmgT, C.SIEGE.towerMaxHP);
+    res.towerLevelAfter = target.buildings.tower || 0;
+
+    return res;
+  }
+
+  // Hilfsfunktion: Schaden an wall/tower, mit Stufenabbau bei <=0 HP.
+  function applyDamageToStructure(target, key, dmg, maxHPArr) {
+    if (dmg <= 0) return;
+    var level = target.buildings[key] || 0;
+    if (level < 1) return;
+    var hpField = key + 'HP';
+    var hp = (typeof target[hpField] === 'number') ? target[hpField] : maxHPArr[Math.min(level, maxHPArr.length - 1)];
+    var remaining = dmg;
+    while (remaining > 0 && level >= 1) {
+      if (hp > remaining) {
+        hp -= remaining; remaining = 0;
+      } else {
+        remaining -= hp;
+        level -= 1;
+        if (level < 1) { hp = 0; break; }
+        hp = maxHPArr[Math.min(level, maxHPArr.length - 1)];
+      }
+    }
+    target.buildings[key] = level;
+    target[hpField] = level >= 1 ? hp : 0;
+    // Falls Stufe gefallen ist, aktive Reparaturen fuer dieses Bauwerk
+    // verlieren ihren Bezug — sie bleiben bestehen, schliessen am Ende aber
+    // auf der NEUEN aktuellen Stufe ab (siehe processRepairs in village.js).
+  }
+
   WOH.Combat = {
     resolve: resolve,
     attackPower: attackPower,
     defensePower: defensePower,
     carryCapacity: carryCapacity,
     slowestSpeed: slowestSpeed,
-    totalUnits: totalUnits
+    totalUnits: totalUnits,
+    // Schritt 5: Strukturen-Kampf
+    resolveStructureBattle: resolveStructureBattle,
+    structureDefenderScore: structureDefenderScore,
+    // Schritt 6.5: Belagerung
+    applySiege: applySiege
   };
 })(window.WOH = window.WOH || {});

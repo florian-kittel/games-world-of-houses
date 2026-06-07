@@ -108,6 +108,8 @@
       state.structures = WOH.MapGen.placeResourceStructures(
         state.map, WOH.RNG((state.seed ^ 0x5eed) >>> 0), occ);
     }
+    // Schema-Migration auf v5 (idempotent: HP-Felder, Repair-Queue, KI-State).
+    if (WOH.Persistence.migrate) WOH.Persistence.migrate(state);
     // Offline-Fortschritt simulieren (gedeckelt).
     var offline = Math.min(OFFLINE_CAP_MS, Date.now() - (payload.savedAt || Date.now()));
     if (offline > 1000) G.tick(state, offline);

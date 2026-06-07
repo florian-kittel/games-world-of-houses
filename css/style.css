@@ -36,7 +36,7 @@ small{color:var(--muted)}
 /* ---------- Dorf-Overlay ---------- */
 .overlay{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:24px}
 .overlay-backdrop{position:absolute;inset:0;background:rgba(4,8,11,.72);backdrop-filter:blur(3px)}
-.overlay-card{position:relative;z-index:1;width:min(1140px,96vw);max-height:92vh;display:flex;
+.overlay-card{position:relative;z-index:1;width:min(1440px,96vw);max-height:92vh;display:flex;
   flex-direction:column;background:linear-gradient(#16222c,#0e161c);
   border:1px solid var(--line);border-radius:10px;box-shadow:0 24px 70px rgba(0,0,0,.7);overflow:hidden}
 .overlay-head{display:flex;align-items:center;justify-content:space-between;gap:10px;
@@ -110,7 +110,7 @@ small{color:var(--muted)}
 .btn.ghost{background:transparent;color:var(--muted)}
 
 /* ---------- Dorfansicht ---------- */
-.vv-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;max-width:1200px;margin:0 auto}
+.vv-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;max-width:1400px;margin:0 auto}
 @media(max-width:900px){.vv-grid{grid-template-columns:1fr}}
 .vv-col h2{margin:0 0 10px;font-size:17px;color:var(--gold);
   border-bottom:1px solid var(--line);padding-bottom:6px}
@@ -202,3 +202,109 @@ small{color:var(--muted)}
   background:#0e171f;border:1px solid var(--gold);color:var(--text);padding:10px 18px;
   border-radius:6px;opacity:0;pointer-events:none;transition:.25s;z-index:200;max-width:80%}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ---------- Belagerung (Schritt 6.5): HP-Leisten, Reparatur ---------- */
+.hp-row{display:flex;align-items:center;gap:6px;margin:4px 0;font-size:11px}
+.hp-bar{flex:1;height:8px;background:#0c1418;border:1px solid var(--line);border-radius:3px;overflow:hidden}
+.hp-fill{height:100%;background:linear-gradient(90deg,var(--red),var(--gold) 55%,var(--green));
+  transition:width 0.3s}
+.hp-val{color:var(--muted);font-variant-numeric:tabular-nums;min-width:64px;text-align:right}
+.repair-active{font-size:11px;color:var(--blue);margin:2px 0 4px}
+.repair-box{display:flex;flex-wrap:wrap;align-items:center;gap:5px;margin:4px 0}
+.repair-box .costtag{font-size:11px}
+.repair-box .btn.sm{margin-left:auto}
+.battle-siege{margin:8px 0;padding:6px 9px;background:rgba(80,40,40,.25);
+  border-left:3px solid var(--red);border-radius:0 4px 4px 0;font-size:12px}
+
+/* ---------- Sieg/Niederlage End-Screen (Schritt 8.5) ---------- */
+#end-screen{position:fixed;inset:0;background:rgba(4,8,11,.92);z-index:300;
+  display:flex;align-items:center;justify-content:center;padding:24px}
+.end-card{background:linear-gradient(#16222c,#0e161c);border:2px solid var(--line);
+  border-radius:10px;padding:32px 40px;max-width:520px;text-align:center;
+  box-shadow:0 24px 70px rgba(0,0,0,.8)}
+.end-card.victory{border-color:var(--green)}
+.end-card.defeat{border-color:var(--red)}
+.end-card h1{font-size:42px;margin:0 0 8px;color:var(--gold);letter-spacing:1px}
+.end-card.victory h1{color:var(--green)}
+.end-card.defeat h1{color:var(--red)}
+.end-sub{color:var(--muted);font-size:15px;margin:0 0 18px;line-height:1.5}
+.end-stats{text-align:left;background:rgba(0,0,0,.3);padding:14px 18px;border-radius:6px;margin:18px 0}
+.end-stats div{margin:5px 0;font-size:13px}
+.loss-list{margin:4px 0 0 18px;padding:0;font-size:12px;color:var(--text)}
+.loss-list li{margin:2px 0}
+.end-actions{display:flex;gap:10px;justify-content:center;margin-top:18px}
+.end-actions .btn{flex:1;max-width:200px}
+
+/* ---------- Geschwindigkeits-Regler (Schritt 10) ---------- */
+.tb-speed{display:inline-flex;gap:2px;margin:0 8px;align-items:center}
+.tb-speed .speed-btn{background:var(--panel);color:var(--text);border:1px solid var(--line);
+  padding:4px 8px;border-radius:4px;cursor:pointer;font-size:12px;
+  font-variant-numeric:tabular-nums;min-width:30px}
+.tb-speed .speed-btn:hover{background:var(--panel2);border-color:var(--gold)}
+.tb-speed .speed-btn.active{background:var(--blue);color:#fff;border-color:var(--gold);font-weight:600}
+.tb-clock.paused{color:var(--red);animation:pulse-pause 1.2s ease-in-out infinite}
+@keyframes pulse-pause{0%,100%{opacity:1}50%{opacity:0.4}}
+
+/* ---------- Toggle „Zeit beim Kampfbericht anhalten" ---------- */
+.battle-pause-toggle{display:flex;align-items:center;gap:6px;margin:10px 0;
+  padding:6px 8px;background:rgba(0,0,0,.25);border-radius:4px;
+  font-size:12px;color:var(--muted);cursor:pointer;user-select:none}
+.battle-pause-toggle:hover{color:var(--text)}
+.battle-pause-toggle input{accent-color:var(--gold);cursor:pointer}
+
+/* ---------- Bau-/Ausbildungs-Warteschlangen seitlich ---------- */
+.bld-area{display:flex;gap:12px;align-items:flex-start}
+.bld-area .queue-col{flex:0 0 160px}
+.bld-area .bld-grid{flex:1;min-width:0}
+.mil-area{display:flex;gap:12px;align-items:flex-start;margin-top:10px}
+.mil-area .unit-table-wrap{flex:1;min-width:0}
+.mil-area .queue-col{flex:0 0 180px}
+.queue-list{background:rgba(0,0,0,.25);border:1px solid var(--line);border-radius:5px;
+  padding:8px 10px;font-size:12px}
+.queue-list h3{margin:0 0 6px;font-size:12px;color:var(--gold);
+  letter-spacing:0.3px;text-transform:uppercase;font-weight:600;border-bottom:1px solid var(--line);
+  padding-bottom:4px}
+.queue-empty{color:var(--muted);font-style:italic;text-align:center;padding:8px 0}
+.queue-item{background:var(--bg);border:1px solid var(--line);border-radius:4px;
+  padding:5px 7px;margin-bottom:4px;line-height:1.3}
+.queue-item.active{border-color:var(--gold);box-shadow:0 0 0 1px rgba(232,215,160,0.25)}
+.qi-name{font-weight:600;color:var(--text);font-size:12px}
+.qi-meta{color:var(--muted);font-size:11px;font-variant-numeric:tabular-nums;margin-top:1px}
+
+/* ---------- Kaserne-Tabelle: volle Breite, kompakte Spaltenpadding ---------- */
+.mil-area .unit-table{width:100%;table-layout:auto}
+.mil-area .unit-table th,
+.mil-area .unit-table td{padding:6px 8px;white-space:nowrap}
+.mil-area .unit-table .train-ctl{display:inline-flex;gap:4px;align-items:center;white-space:nowrap}
+.mil-area .unit-table input.train-n{width:48px;background:var(--bg);color:var(--text);
+  border:1px solid var(--line);border-radius:3px;padding:2px 4px;font-size:12px;
+  font-variant-numeric:tabular-nums}
+/* Trainings-Queue rechts: etwas schmaler, damit die Tabelle nicht abgeschnitten wird */
+.mil-area .queue-col{flex:0 0 160px}
+
+/* ---------- Kaserne: Tabelle bekommt verbleibenden Platz, Queue feste 150px ---------- */
+.mil-area{margin-top:0}
+.mil-area .unit-table-wrap{flex:1 1 auto;min-width:0;overflow-x:auto}
+.mil-area .queue-col{flex:0 0 150px}
+.mil-area .unit-table{width:100%;table-layout:auto;border-collapse:collapse}
+.mil-area .unit-table th,
+.mil-area .unit-table td{padding:5px 6px;vertical-align:middle}
+/* Zahlen-Spalten kompakt, nicht umbrechend */
+.mil-area .unit-table th:nth-child(3),
+.mil-area .unit-table th:nth-child(4),
+.mil-area .unit-table th:nth-child(5),
+.mil-area .unit-table th:nth-child(6),
+.mil-area .unit-table td:nth-child(3),
+.mil-area .unit-table td:nth-child(4),
+.mil-area .unit-table td:nth-child(5),
+.mil-area .unit-table td:nth-child(6){text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+/* Einheit-Spalte darf umbrechen damit costStr Platz hat */
+.mil-area .unit-table td:nth-child(2){white-space:normal;line-height:1.3;min-width:0}
+.mil-area .unit-table td:nth-child(2) .costtag{margin-right:4px;font-size:11px}
+/* Ausbilden-Spalte kompakt */
+.mil-area .unit-table td:nth-child(7){white-space:nowrap}
+.mil-area .unit-table .train-ctl{display:inline-flex;gap:3px;align-items:center}
+.mil-area .unit-table input.train-n{width:42px;background:var(--bg);color:var(--text);
+  border:1px solid var(--line);border-radius:3px;padding:2px 4px;font-size:12px;
+  font-variant-numeric:tabular-nums}
+.mil-area .unit-table .btn.sm{padding:3px 7px}
