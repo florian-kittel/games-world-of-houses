@@ -1,0 +1,21 @@
+# OS-Artefakte
+Thumbs.db
+.DS_Store
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*~
+
+# Node (falls spaeter Build-Tools dazukommen)
+node_modules/
+dist/
+*.log
+
+# Lokale Backups / Temp
+*.bak
+*.tmp
+
+# Projektinterne Snapshots vor groesseren Schritten
+_backups/

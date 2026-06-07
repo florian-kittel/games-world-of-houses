@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>World of Houses</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="start-screen"></div>
+
+  <div id="app">
+    <header id="topbar"></header>
+    <div id="stage">
+      <main id="content">
+        <section id="map-view"><canvas id="map-canvas"></canvas>
+          <div id="map-hint">Ziehen zum Verschieben · Mausrad zum Zoomen · Dorf anklicken · <b>Doppelklick öffnet die Dorfansicht</b></div>
+        </section>
+      </main>
+      <aside id="sidebar"></aside>
+    </div>
+    <footer id="statusbar"><span id="save-status">—</span></footer>
+  </div>
+
+  <!-- Dorfansicht als modales Overlay über der Karte -->
+  <div id="village-overlay" class="overlay" style="display:none">
+    <div class="overlay-backdrop"></div>
+    <div class="overlay-card">
+      <div class="overlay-head">
+        <span id="overlay-title">Dorf</span>
+        <button id="overlay-close" title="Schließen (Esc)">✕</button>
+      </div>
+      <div id="village-body"></div>
+    </div>
+  </div>
+
+  <!-- Kampfbericht-Overlay -->
+  <div id="battle-overlay" class="overlay" style="display:none">
+    <div class="overlay-backdrop"></div>
+    <div class="overlay-card battle-card">
+      <div class="overlay-head">
+        <span id="battle-title">Kampfbericht</span>
+        <button id="battle-close" title="Schließen (Esc)">✕</button>
+      </div>
+      <div id="battle-body"></div>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/rng.js"></script>
+  <script src="js/houses.js"></script>
+  <script src="js/mapgen.js"></script>
+  <script src="js/atlas.js"></script>
+  <script src="js/sprites.js"></script>
+  <script src="js/village.js"></script>
+  <script src="js/combat.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/ai.js"></script>
+  <script src="js/persistence.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
