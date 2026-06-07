@@ -46,21 +46,28 @@
 
   var EMBLEMS = ['falke', 'rabe', 'wolf', 'baer', 'hirsch', 'turm', 'drache', 'schwert', 'sonne', 'fisch'];
 
+  // Wappen-Muster (zweifarbig). Werden mit der Primär-/Sekundärfarbe kombiniert.
+  var CREST_PATTERNS = ['diagonal', 'horizontal', 'vertical', 'cross', 'triangleUp', 'triangleDown'];
+
   function generateHouses(rng, count) {
     var surnames = rng.shuffle(SURNAMES.slice());
     var seats = rng.shuffle(SEATS.slice());
     var sigils = rng.shuffle(SIGILS.slice());
     var emblems = rng.shuffle(EMBLEMS.slice());
+    var patterns = rng.shuffle(CREST_PATTERNS.slice());
     var houses = [];
     for (var i = 0; i < count; i++) {
       var sur = surnames[i % surnames.length];
+      var base = sigils[i % sigils.length];
+      // Eigene Sigil-Kopie je Haus inkl. Muster (verhindert geteilte Referenzen).
+      var sigil = { p: base.p, s: base.s, pattern: patterns[i % patterns.length] };
       houses.push({
         id: 'house_' + i,
         name: 'Haus ' + sur,
         surname: sur,
         seat: seats[i % seats.length],
         motto: rng.pick(WORDS),
-        sigil: sigils[i % sigils.length],
+        sigil: sigil,
         emblem: emblems[i % emblems.length],
         isPlayer: false
       });

@@ -50,7 +50,7 @@
   var BUILDINGS = {
     townhall: {
       name: 'Halle', max: MAX_LEVEL, key: 'townhall',
-      baseCost: { food: 90, wood: 180, stone: 80, iron: 60 },
+      baseCost: { food: 90, wood: 180, stone: 150, iron: 60 },
       costFactor: 2.0, baseTime: 40, timeFactor: 2.0,
       popPerLevel: 0,  // Halle selbst ist Quelle der Pop
       levelRequires: {
@@ -78,7 +78,7 @@
     },
     mine: {
       name: 'Eisenmine', max: MAX_LEVEL, key: 'mine',
-      baseCost: { food: 0, wood: 150, stone: 65, iron: 30 },
+      baseCost: { food: 0, wood: 150, stone: 130, iron: 30 },
       costFactor: 2.0, baseTime: 35, produces: 'iron',
       perLevel: 1,     // Basis-Produktion Eisen je Stufe (× Standortbonus)
       popPerLevel: 3,
@@ -101,7 +101,7 @@
     },
     barracks: {
       name: 'Kaserne', max: MAX_LEVEL, key: 'barracks',
-      baseCost: { food: 0, wood: 400, stone: 170, iron: 90 },
+      baseCost: { food: 0, wood: 400, stone: 300, iron: 90 },
       costFactor: 2.0, baseTime: 90, requires: { townhall: 2 },
       popPerLevel: 3,
       desc: 'Bildet Schwert-, Axt- und Speerkrieger aus. 3 Ausbilder je Stufe. Ab Halle 2.'
@@ -115,14 +115,14 @@
     },
     wall: {
       name: 'Palisade', max: MAX_LEVEL, key: 'wall',
-      baseCost: { food: 0, wood: 160, stone: 130, iron: 30 },
+      baseCost: { food: 0, wood: 160, stone: 280, iron: 30 },
       costFactor: 2.0, baseTime: 60,
       popPerLevel: 0,  // passives Bauwerk
       desc: 'Erhöht die Grundverteidigung der Burg und verstärkt alle Verteidiger.'
     },
     tower: {
       name: 'Wachturm', max: MAX_LEVEL, key: 'tower',
-      baseCost: { food: 0, wood: 240, stone: 200, iron: 80 },
+      baseCost: { food: 0, wood: 240, stone: 380, iron: 80 },
       costFactor: 2.0, baseTime: 80, requires: { wall: 2 },
       popPerLevel: 1,
       desc: 'Erweitert die Spähweite und verstärkt Bogenschützen massiv.'
@@ -186,9 +186,9 @@
     axe: {
       name: 'Axtkämpfer', key: 'axe', role: 'off', sprite: 'axe',
       cost: { food: 24, wood: 120, stone: 0, iron: 40 },
-      pop: 1, atk: 45, defI: 10, defA: 10, speed: 14, trainTime: 26, carry: 10,
+      pop: 1, atk: 45, defI: 10, defA: 10, speed: 10, trainTime: 26, carry: 10,
       foodUpkeep: 0.10,
-      desc: 'Reine Angriffseinheit. Hoher Schaden, kaum Verteidigung.'
+      desc: 'Reine Angriffseinheit. Hoher Schaden, kaum Verteidigung. Schnellste Einheit auf dem Marsch.'
     },
     archer: {
       name: 'Bogenschütze', key: 'archer', role: 'def', sprite: 'archer',
@@ -288,9 +288,15 @@
     upgradeTime: [240, 480]
   };
 
-  // Maximale dauerhaft stationierte Garnison in einer eigenen Struktur
-  // (frei waehlbare Mischung Speer/Schwert/Axt/Bogen; Held nicht stationierbar).
-  var STRUCTURE_GARRISON_CAP = 100;
+  // Maximale dauerhaft stationierte Garnison in einer eigenen Struktur,
+  // gestaffelt nach Strukturstufe (Index = Stufe): 1=30, 2=70, 3=120.
+  // STRUCTURE_GARRISON_CAP bleibt als Obergrenze (= Stufe 3) erhalten.
+  var STRUCTURE_GARRISON_CAP_LEVELS = [0, 30, 70, 120];
+  var STRUCTURE_GARRISON_CAP = 120;
+  function structureGarrisonCap(level) {
+    var l = Math.max(1, Math.min(3, level || 1));
+    return STRUCTURE_GARRISON_CAP_LEVELS[l] || STRUCTURE_GARRISON_CAP;
+  }
 
   // Bevoelkerungsbonus auf maxPop der Heimatburg (Index = Strukturstufe).
   // Index 0 = unerobert/neutral (kein Bonus), 1/2/3 = Strukturstufe.
@@ -417,6 +423,8 @@
     RESOURCE_STRUCTURE_ORDER: RESOURCE_STRUCTURE_ORDER,
     RESOURCE_STRUCTURE_LEVELS: RESOURCE_STRUCTURE_LEVELS,
     STRUCTURE_GARRISON_CAP: STRUCTURE_GARRISON_CAP,
+    STRUCTURE_GARRISON_CAP_LEVELS: STRUCTURE_GARRISON_CAP_LEVELS,
+    structureGarrisonCap: structureGarrisonCap,
     STRUCTURE_POP_BONUS: STRUCTURE_POP_BONUS,
     SIEGE: SIEGE,
     TIME_SCALE: TIME_SCALE,

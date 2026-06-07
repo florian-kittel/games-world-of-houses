@@ -249,14 +249,45 @@
   }
 
   // Kleines Wappen-Schild (zweifarbig) – für Labels/HUD.
-  function drawCrest(ctx, x, y, sz, sigil) {
+  // Muster (sigil.pattern oder 6. Argument): 'diagonal' (Standard), 'horizontal',
+  // 'vertical', 'cross', 'triangleUp', 'triangleDown'. Primärfarbe = Grund,
+  // Sekundärfarbe = aufgesetztes Motiv.
+  function drawCrest(ctx, x, y, sz, sigil, pattern) {
     var p = (sigil && sigil.p) || '#888', sc = (sigil && sigil.s) || '#ddd';
+    pattern = pattern || (sigil && sigil.pattern) || 'diagonal';
+    // Outline + Grundfläche (Primärfarbe)
     ctx.fillStyle = '#15110d'; ctx.fillRect(x - 1, y - 1, sz + 2, sz + 2);
     ctx.fillStyle = p; ctx.fillRect(x, y, sz, sz);
     ctx.fillStyle = sc;
-    ctx.beginPath();
-    ctx.moveTo(x, y + sz); ctx.lineTo(x + sz, y); ctx.lineTo(x + sz, y + sz); ctx.closePath();
-    ctx.fill();
+    var hx = x + sz / 2, half = Math.round(sz / 2);
+    switch (pattern) {
+      case 'horizontal': // untere Hälfte
+        ctx.fillRect(x, y + half, sz, sz - half);
+        break;
+      case 'vertical':   // rechte Hälfte
+        ctx.fillRect(x + half, y, sz - half, sz);
+        break;
+      case 'cross': {    // Plus-Kreuz
+        var t = Math.max(2, Math.round(sz * 0.30));
+        var o = Math.round((sz - t) / 2);
+        ctx.fillRect(x, y + o, sz, t);
+        ctx.fillRect(x + o, y, t, sz);
+        break;
+      }
+      case 'triangleUp': // Dreieck nach oben
+        ctx.beginPath();
+        ctx.moveTo(hx, y); ctx.lineTo(x + sz, y + sz); ctx.lineTo(x, y + sz); ctx.closePath(); ctx.fill();
+        break;
+      case 'triangleDown': // Dreieck nach unten
+        ctx.beginPath();
+        ctx.moveTo(x, y); ctx.lineTo(x + sz, y); ctx.lineTo(hx, y + sz); ctx.closePath(); ctx.fill();
+        break;
+      case 'diagonal':
+      default:           // diagonale Teilung (untere rechte Hälfte)
+        ctx.beginPath();
+        ctx.moveTo(x, y + sz); ctx.lineTo(x + sz, y); ctx.lineTo(x + sz, y + sz); ctx.closePath(); ctx.fill();
+        break;
+    }
   }
 
   // Garnisons-Schild: kleines rotes Schild mit goldenem Schwert-Kreuz.

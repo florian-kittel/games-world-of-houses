@@ -75,6 +75,20 @@
 
   function maxLevel(key) { return C.BUILDINGS[key].max; }
 
+  // Effektive Ausbildungszeit (Spielsekunden) einer Einheit in dieser Burg.
+  // Jede Stufe des Ausbildungsgebäudes (Kaserne; Bogen: Schießplatz) senkt die
+  // Zeit additiv um 10 %. Der Held ist davon ausgenommen (immer Basiszeit).
+  function trainTimeFor(village, unitKey) {
+    var u = C.UNITS[unitKey];
+    if (!u) return 0;
+    var base = u.trainTime || 0;
+    if (u.unique) return base;                       // Held: keine Reduktion
+    var srcKey = unitKey === 'archer' ? 'range' : 'barracks';
+    var lvl = village.buildings[srcKey] || 0;
+    var factor = Math.max(0.2, 1 - 0.10 * lvl);      // -10 %/Stufe, min. 20 % der Basiszeit
+    return base * factor;
+  }
+
   // Produktion pro Spielsekunde für einen Rohstoff.
   // `state` (optional, ab Schritt 5): wenn übergeben, wird der Food-Upkeep
   // um die Garnison-Einheiten in zugewiesenen Strukturen erweitert.
@@ -370,6 +384,7 @@
     meetsRequirements: meetsRequirements,
     unmetRequirements: unmetRequirements,
     maxLevel: maxLevel,
+    trainTimeFor: trainTimeFor,
     productionPerSec: productionPerSec,
     storageCap: storageCap,
     populationCap: populationCap,

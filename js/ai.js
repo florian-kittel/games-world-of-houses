@@ -252,15 +252,15 @@
     if (!state.structures || !state.structures.length) return;
     var aic = C.AI || {};
     var baseTarget = aic.structureGarrisonTarget != null ? aic.structureGarrisonTarget : 50;
-    // Expansive/defensive Häuser besetzen Strukturen stärker (structureBias),
-    // begrenzt durch das Garnison-Cap.
-    var target = Math.min(C.STRUCTURE_GARRISON_CAP || 100,
-      Math.round(baseTarget * Math.max(0.5, Math.min(2.0, p.structureBias || 1.0))));
     var minDef = (aic.castleDefenseMinimum != null ? aic.castleDefenseMinimum : 30) * (p.defenseMinMult || 1.0);
 
     for (var i = 0; i < state.structures.length; i++) {
       var s = state.structures[i];
       if (s.ownerHouseId !== hid) continue;
+      // Ziel je Struktur: Persönlichkeit × Basiswert, begrenzt durch das
+      // stufenabhängige Garnison-Limit der Struktur.
+      var target = Math.min(C.structureGarrisonCap(s.level),
+        Math.round(baseTarget * Math.max(0.5, Math.min(2.0, p.structureBias || 1.0))));
       var current = 0; var g = s.garrison || {};
       for (var k in g) current += (g[k] || 0);
       if (current >= target) continue;

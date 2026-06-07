@@ -216,11 +216,48 @@
     if (V.populationUsed(village, state) + count * u.pop > V.populationCap(village, state))
       return { ok: false, msg: 'Bevölkerungsgrenze erreicht (Bauernhof ausbauen).' };
     V.pay(village, cost);
-    var src = unit === 'archer' ? 'range' : 'barracks';
-    var lvl = village.buildings[src] || 1;
-    var perTime = u.trainTime / (1 + lvl * 0.06);
+    // Ausbildungszeit je Einheit: -10 %/Stufe des Ausbildungsgebäudes (Held ausgenommen).
+    var perTime = V.trainTimeFor(village, unit);
     village.trainingQueue.push({ unit: unit, remaining: count, perTime: perTime, timeLeft: perTime });
     return { ok: true };
+  }
+
+  // 50 % der angegebenen Kosten zurückerstatten (durch Lagerkapazität begrenzt).
+  function refundResources(village, cost, factor) {
+    var cap = V.storageCap(village);
+    C.RESOURCES.forEach(function (r) {
+      village.resources[r] = Math.min(cap, (village.resources[r] || 0) + Math.floor((cost[r] || 0) * factor));
+    });
+  }
+
+  // Bau-Auftrag abbrechen: 50 % der Baukosten zurück. Nachfolgende Aufträge
+  // desselben Gebäudes rücken eine Stufe nach (Stufenfolge bleibt lückenlos).
+  function cancelBuild(state, village, index) {
+    var q = village.buildQueue || [];
+    if (index < 0 || index >= q.length) return { ok: false, msg: 'Kein Auftrag.' };
+    var job = q[index];
+    var cost = V.buildingCost(job.key, job.target - 1);
+    refundResources(village, cost, 0.5);
+    for (var i = index + 1; i < q.length; i++) {
+      if (q[i].key === job.key && q[i].target > 1) q[i].target -= 1;
+    }
+    q.splice(index, 1);
+    return { ok: true, refund: cost };
+  }
+
+  // Ausbildungs-Auftrag abbrechen: 50 % der Kosten der NOCH ausstehenden
+  // Einheiten zurück (bereits ausgebildete bleiben). Auftrag wird entfernt.
+  function cancelTrain(state, village, index) {
+    var q = village.trainingQueue || [];
+    if (index < 0 || index >= q.length) return { ok: false, msg: 'Kein Auftrag.' };
+    var job = q[index];
+    var u = C.UNITS[job.unit];
+    var rem = job.remaining || 0;
+    var cost = {};
+    C.RESOURCES.forEach(function (r) { cost[r] = (u && u.cost[r] || 0) * rem; });
+    refundResources(village, cost, 0.5);
+    q.splice(index, 1);
+    return { ok: true, refund: cost };
   }
 
   // Lookup-Helper: gibt Burg- ODER Struktur-Entitaet mit gemeinsamem
@@ -340,8 +377,9 @@
     if (addTotal <= 0) return { ok: false, msg: 'Keine Einheiten ausgewaehlt.' };
     var garrison = structure.garrison || { spear: 0, sword: 0, axe: 0, archer: 0 };
     var current = 0; for (var k2 in garrison) current += (garrison[k2] || 0);
-    if (current + addTotal > C.STRUCTURE_GARRISON_CAP) {
-      return { ok: false, msg: 'Garnison-Cap (' + C.STRUCTURE_GARRISON_CAP + ') wuerde ueberschritten.' };
+    var capStation = C.structureGarrisonCap(structure.level);
+    if (current + addTotal > capStation) {
+      return { ok: false, msg: 'Garnison-Limit (' + capStation + ') wuerde ueberschritten.' };
     }
     // Transfer ausfuehren.
     for (var k3 in have) {
@@ -353,7 +391,8 @@
   }
 
   // Garnison aus einer eigenen Struktur in die Heimatburg zurueckziehen.
-  // Sofortig (kein Marsch).
+  // Laeuft als Rueckmarsch mit Marschzeit (analog Stationierung/Angriff);
+  // die Einheiten treffen erst nach der Reise in der Burg ein (resolveReturn).
   function withdrawGarrison(state, structure, units) {
     if (!structure) return { ok: false, msg: 'Ungueltig.' };
     var castle = state.villages[structure.assignedCastleId];
@@ -361,17 +400,26 @@
       return { ok: false, msg: 'Heimatburg fehlt oder anderer Besitzer.' };
     }
     var garrison = structure.garrison || {};
-    var moved = 0;
+    var take = {}, moved = 0;
     for (var k in units) {
       var n = Math.min(units[k] || 0, garrison[k] || 0);
       if (n <= 0) continue;
-      garrison[k] -= n;
-      castle.units[k] = (castle.units[k] || 0) + n;
-      moved += n;
+      take[k] = n; moved += n;
     }
     if (moved <= 0) return { ok: false, msg: 'Keine Einheiten ausgewaehlt.' };
+    // Aus der Garnison abziehen (verlassen die Struktur sofort, treffen aber
+    // erst nach dem Marsch in der Burg ein).
+    for (var k2 in take) garrison[k2] = (garrison[k2] || 0) - take[k2];
     structure.garrison = garrison;
-    return { ok: true };
+    var dx = structure.x - castle.x, dy = structure.y - castle.y;
+    var dist = Math.sqrt(dx * dx + dy * dy);
+    var travel = Math.max(C.MOVEMENT.minTravel, dist * Combat.slowestSpeed(take));
+    state.movements.push({
+      id: uid('mv'), fromId: structure.id, toId: castle.id, units: take,
+      type: 'return', startTime: state.gameTime, arriveTime: state.gameTime + travel,
+      ownerHouseId: structure.ownerHouseId
+    });
+    return { ok: true, travel: travel };
   }
 
   // Heimatburg manuell auf eine andere eigene Burg umstellen.
@@ -787,7 +835,7 @@
     if (!toS.garrison) toS.garrison = { spear: 0, sword: 0, axe: 0, archer: 0 };
     // Cap respektieren — Ueberschuss wird ausgesetzt (faellt nicht zurueck).
     var current = 0; for (var t in toS.garrison) current += (toS.garrison[t] || 0);
-    var cap = C.STRUCTURE_GARRISON_CAP || 100;
+    var cap = C.structureGarrisonCap(toS.level);
     for (var u in m.units) {
       if (u === 'hero') continue; // Held nicht in Garnison
       var room = Math.max(0, cap - current);
@@ -1148,6 +1196,8 @@
     tick: tick,
     enqueueBuild: enqueueBuild,
     enqueueTrain: enqueueTrain,
+    cancelBuild: cancelBuild,
+    cancelTrain: cancelTrain,
     sendArmy: sendArmy,
     distance: distance,
     villageScore: villageScore,

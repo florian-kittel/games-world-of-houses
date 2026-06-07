@@ -15,6 +15,8 @@
   var selectedStructureId = null; // angeklickte Rohstoff-Struktur (Karte)
   var hoverStructureId = null;  // Mauszeiger ueber Struktur (Hover-Highlight)
   var overlayOpen = false;
+  var overlayMode = 'village';    // 'village' | 'structure' — Inhalt des Overlays
+  var activeStructureId = null;   // im Overlay verwaltete eigene Struktur
   var reportOpen = false;
   var panelTimer = 0;
   var trainCounts = {};         // gemerkte Ausbildungsmengen je Einheit (überlebt Neuaufbau)
@@ -75,6 +77,24 @@
   // "#n" nur, wenn das Haus mehr als ein Dorf besitzt.
   function villageTag(v) {
     return G.villagesOfHouse(state, v.houseId).length > 1 ? ' #' + villageOrdinal(v) : '';
+  }
+  // CSS-Hintergrund für ein zweifarbiges Wappen passend zum Muster (sigil.pattern).
+  // Deckungsgleich mit S.drawCrest auf der Karte: diagonal/horizontal/vertical/
+  // cross/triangleUp/triangleDown.
+  function crestBg(sigil) {
+    var p = (sigil && sigil.p) || '#888', s = (sigil && sigil.s) || '#ddd';
+    switch (sigil && sigil.pattern) {
+      case 'horizontal': return 'linear-gradient(180deg,' + p + ' 0 50%,' + s + ' 50% 100%)';
+      case 'vertical':   return 'linear-gradient(90deg,' + p + ' 0 50%,' + s + ' 50% 100%)';
+      case 'cross':      return 'linear-gradient(' + s + ',' + s + ') no-repeat center/100% 32%,' +
+                                'linear-gradient(' + s + ',' + s + ') no-repeat center/32% 100%,' + p;
+      case 'triangleUp': return 'linear-gradient(to top right,' + p + ' 0 50%,' + s + ' 50% 100%) left/50% 100% no-repeat,' +
+                                'linear-gradient(to top left,' + p + ' 0 50%,' + s + ' 50% 100%) right/50% 100% no-repeat';
+      case 'triangleDown': return 'linear-gradient(to bottom right,' + p + ' 0 50%,' + s + ' 50% 100%) left/50% 100% no-repeat,' +
+                                'linear-gradient(to bottom left,' + p + ' 0 50%,' + s + ' 50% 100%) right/50% 100% no-repeat';
+      case 'diagonal':
+      default:           return 'linear-gradient(135deg,' + p + ' 0 50%,' + s + ' 50% 100%)';
+    }
   }
   // Quell-Dorf für den Angriff (gewählt oder aktives Dorf).
   function sourceVillage() {
@@ -202,9 +222,26 @@
       cam.x += before.x - after.x; cam.y += before.y - after.y;
       clampCam();
     }, { passive: false });
-    // Doppelklick öffnet die Dorfansicht als Overlay.
+    // Doppelklick öffnet das Overlay: eigene Burg -> Burgansicht, eigene
+    // Struktur -> Strukturverwaltung. Es gewinnt das geometrisch nähere Element.
     cv.addEventListener('dblclick', function (e) {
+      var rect = dom.canvas.getBoundingClientRect();
+      var w = screenToWorld(e.clientX - rect.left, e.clientY - rect.top);
+      var ts = C.MAP.tileSize;
       var v = villageAtEvent(e);
+      var s = structureAtEvent(e);
+      var pickStructure = false;
+      if (v && s) {
+        var dV = Math.hypot(v.x * ts + ts / 2 - w.x, v.y * ts + ts / 2 - w.y);
+        var dS = Math.hypot(s.x * ts + ts / 2 - w.x, s.y * ts + ts / 2 - w.y);
+        pickStructure = dS < dV;
+      } else if (s) { pickStructure = true; }
+
+      if (pickStructure) {
+        if (s.ownerHouseId === state.playerHouseId) { openStructure(s.id); }
+        else { selectedStructureId = s.id; targetVillageId = null; renderSidebar(); }
+        return;
+      }
       if (!v) return;
       if (v.houseId === state.playerHouseId) { activeVillageId = v.id; openVillage(v.id); }
       else { targetVillageId = v.id; renderSidebar(); toast('Fremde Burg als Angriffsziel gewählt.'); }
@@ -383,7 +420,7 @@
       else if (isPlayerAtt && isSupply) { lineCol = 'rgba(200,162,74,0.6)'; dotCol = '#c8a24a'; }
       else if (isPlayerAtt && isSupport) { lineCol = 'rgba(90,160,216,0.6)'; dotCol = '#5aa0d8'; }
       else if (isPlayerAtt) { lineCol = 'rgba(110,207,151,0.6)'; dotCol = '#6fcf97'; }
-      else { lineCol = 'rgba(150,150,160,0.25)'; dotCol = '#9a9aa6'; }
+      else { lineCol = 'rgba(186,178,170,0.6)'; dotCol = '#bdb6ae'; }
       ctx.strokeStyle = lineCol;
       ctx.lineWidth = 1.5 / cam.zoom;
       ctx.setLineDash([6 / cam.zoom, 4 / cam.zoom]);
@@ -434,26 +471,35 @@
       });
     }
     ctx.restore();
-    // Burg-Labels (Bildschirmraum): Wappen-Schild + Name.
-    // Spieler: blauer Hintergrund, weiße Schrift. Andere: graue Schrift.
-    ctx.font = '11px monospace';
+    // Burg-Labels (Bildschirmraum): größeres Wappen-Schild + zwei Zeilen.
+    // Zeile 1 = Burgname, Zeile 2 = Hausname. Spieler: blauer Hintergrund.
     ctx.textAlign = 'left';
-    var SHIELD = 10, GAP = 4, PADX = 4, BOXH = 15;
+    var SHIELD = 20, GAP = 6, PADX = 5, PADY = 4;
+    var F1 = 'bold 11px monospace', F2 = '10px monospace';
     for (var id2 in state.villages) {
       var v2 = state.villages[id2];
       var sp = worldToScreen(v2.x * ts + ts / 2, v2.y * ts + ts / 2);
-      if (sp.x < -60 || sp.x > cv.width + 60 || sp.y < -40 || sp.y > cv.height + 40) continue;
+      if (sp.x < -80 || sp.x > cv.width + 80 || sp.y < -40 || sp.y > cv.height + 40) continue;
       var h2 = state.houses[v2.houseId];
       var isP = v2.houseId === state.playerHouseId;
-      var label = h2.surname + villageTag(v2);
-      var tw = ctx.measureText(label).width;
-      var boxW = PADX + SHIELD + GAP + tw + PADX;
+      var line1 = v2.name + villageTag(v2);   // Burgname
+      var line2 = h2.name;                     // Hausname (z. B. "Haus Schwarzfels")
+      ctx.font = F1; var w1 = ctx.measureText(line1).width;
+      ctx.font = F2; var w2 = ctx.measureText(line2).width;
+      var textW = Math.max(w1, w2);
+      var boxW = PADX + SHIELD + GAP + textW + PADX;
+      var BOXH = SHIELD + PADY * 2;
       var bx = Math.round(sp.x - boxW / 2), by = Math.round(sp.y + ts * 0.5);
-      ctx.fillStyle = isP ? 'rgba(38,92,170,0.95)' : 'rgba(12,16,20,0.66)';
+      ctx.fillStyle = isP ? 'rgba(38,92,170,0.95)' : 'rgba(12,16,20,0.72)';
       ctx.fillRect(bx, by, boxW, BOXH);
-      S.drawCrest(ctx, bx + PADX, by + (BOXH - SHIELD) / 2, SHIELD, h2.sigil);
-      ctx.fillStyle = isP ? '#ffffff' : '#c2c2c2';
-      ctx.fillText(label, bx + PADX + SHIELD + GAP, by + 11);
+      S.drawCrest(ctx, bx + PADX, by + PADY, SHIELD, h2.sigil);
+      var tx = bx + PADX + SHIELD + GAP;
+      ctx.font = F1;
+      ctx.fillStyle = isP ? '#ffffff' : '#e2e6ec';
+      ctx.fillText(line1, tx, by + PADY + 10);
+      ctx.font = F2;
+      ctx.fillStyle = isP ? 'rgba(255,255,255,0.82)' : '#99a2ad';
+      ctx.fillText(line2, tx, by + PADY + 22);
     }
     // Struktur-Labels nur bei stärkerem Zoom
     if (cam.zoom > 1.1) {
@@ -481,7 +527,7 @@
     dom.topbar.innerHTML = '';
     var left = el('div', 'tb-left');
     var crest = el('span', 'crest');
-    crest.style.background = 'linear-gradient(135deg,' + house.sigil.p + ' 0 50%,' + house.sigil.s + ' 50% 100%)';
+    crest.style.background = crestBg(house.sigil);
     left.appendChild(crest);
     left.appendChild(el('span', 'tb-house', house.name + ' — <i>' + house.motto + '</i>'));
     dom.topbar.appendChild(left);
@@ -714,15 +760,37 @@
     if (id) activeVillageId = id;
     var v = activeVillage();
     if (!v) { toast('Keine eigene Burg mehr.'); return; }
+    overlayMode = 'village';
     overlayOpen = true;
+    dom.overlay.classList.remove('struct-mode');
     dom.overlay.style.display = 'flex';
     dom.overlay.style.top = dom.topbar.offsetHeight + 'px'; // Topbar (Ressourcen) sichtbar lassen
     updateVillageSelect();
     renderVillageView();
   }
+  // Eigene Struktur im selben Overlay verwalten (analog zur Burgansicht).
+  function openStructure(id) {
+    var s = G.findStructureById(state, id);
+    if (!s || s.ownerHouseId !== state.playerHouseId) { toast('Nur eigene Strukturen können verwaltet werden.'); return; }
+    activeStructureId = id;
+    selectedStructureId = id;     // hält Seiten-Selektion synchron
+    overlayMode = 'structure';
+    overlayOpen = true;
+    dom.overlay.classList.add('struct-mode');
+    dom.overlay.style.display = 'flex';
+    dom.overlay.style.top = dom.topbar.offsetHeight + 'px';
+    renderStructureView();
+  }
   function closeVillage() {
     overlayOpen = false;
+    overlayMode = 'village';
+    dom.overlay.classList.remove('struct-mode');
     dom.overlay.style.display = 'none';
+  }
+  // Overlay-Inhalt je nach Modus rendern.
+  function renderOverlay() {
+    if (overlayMode === 'structure') renderStructureView();
+    else renderVillageView();
   }
 
   // ---------------------------------------------------------------------
@@ -737,8 +805,7 @@
 
   function battleSideHtml(label, house, villageName, units, surv, loss, power, sym) {
     var sig = house ? house.sigil : null;
-    var crest = '<span class="crest sm" style="background:linear-gradient(135deg,' +
-      (sig ? sig.p : '#888') + ' 0 50%,' + (sig ? sig.s : '#ddd') + ' 50% 100%)"></span>';
+    var crest = '<span class="crest sm" style="background:' + crestBg(sig) + '"></span>';
     var rows = '';
     C.UNIT_ORDER.forEach(function (k) {
       var o = units[k] || 0; if (!o) return;
@@ -859,7 +926,7 @@
   function refreshPanels() {
     if (!state) return;
     updateVillageSelect();
-    if (overlayOpen) renderVillageView();
+    if (overlayOpen) renderOverlay();
     renderSidebar();
   }
   // leichtgewichtige Aktualisierung (Queues, Beträge).
@@ -869,7 +936,7 @@
     var ae = document.activeElement;
     var inBody = ae && dom.villageBody && dom.villageBody.contains(ae);
     var inSide = ae && dom.sideTop && dom.sideTop.contains(ae);
-    if (overlayOpen && !inBody) renderVillageView();
+    if (overlayOpen && !inBody) renderOverlay();
     if (!inSide) renderSideTop();      // Bewegungen/Ziel laufend aktualisieren
     renderSideLog();                   // Chronik nur bei Änderung (kein Flackern)
   }
@@ -889,8 +956,7 @@
     var v = activeVillage();
     if (!v) { dom.villageBody.innerHTML = '<p class="empty">Keine eigene Burg mehr. Das Spiel ist verloren.</p>'; return; }
     var house = state.houses[v.houseId];
-    dom.overlayTitle.innerHTML = '<span class="crest sm" style="background:linear-gradient(135deg,' +
-      house.sigil.p + ' 0 50%,' + house.sigil.s + ' 50% 100%)"></span> ' +
+    dom.overlayTitle.innerHTML = '<span class="crest sm" style="background:' + crestBg(house.sigil) + '"></span> ' +
       v.name + villageTag(v) + ' — ' + house.name + ' · Treue ' + Math.round(v.loyalty) + '%';
     var html = '';
     html += '<div class="vv-grid">';
@@ -912,6 +978,56 @@
     attachVillageEvents(v);
   }
 
+  // Overlay-Ansicht für eine eigene Struktur (analog zur Burgansicht).
+  function renderStructureView() {
+    var s = G.findStructureById(state, activeStructureId);
+    if (!s || s.ownerHouseId !== state.playerHouseId) { overlayMode = 'village'; renderVillageView(); return; }
+    var meta = structureMeta(s);
+    var lvl = s.level || 1;
+    var house = state.houses[s.ownerHouseId];
+    var resKey = meta.res;
+    var prod = C.RESOURCE_STRUCTURE_LEVELS.production[lvl - 1] || 0;
+    var castle = state.villages[s.assignedCastleId];
+    dom.overlayTitle.innerHTML = (house ? '<span class="crest sm" style="background:' + crestBg(house.sigil) + '"></span> ' : '') +
+      meta.name + ' (Stufe ' + lvl + ') — eigene Struktur · Pos. ' + s.x + ',' + s.y;
+    var sfort = WOH.Combat.structureFortLevel(s);
+    var ownCastles = G.villagesOfHouse(state, state.playerHouseId);
+
+    // Zweispaltig: links Verwaltung (Info+Heimatburg, Ausbau, Garnison),
+    // rechts Verstärkung anfordern — wie bei Burgen.
+    var html = '<div class="struct-grid">';
+    html += '<div class="struct-main">';
+
+    // Info-Box (inkl. Heimatburg-Auswahl oben).
+    html += '<div class="def-box">';
+    if (ownCastles.length > 1) {
+      html += '<div class="home-row">Heimatburg: ' +
+        '<select class="home-select">' +
+        ownCastles.map(function (c) {
+          return '<option value="' + c.id + '"' + (c.id === s.assignedCastleId ? ' selected' : '') + '>' +
+            c.name + villageTag(c) + '</option>';
+        }).join('') + '</select> <button class="btn xs home-apply">Ändern</button></div>';
+    } else {
+      html += 'Heimatburg: <b>' + (castle ? castle.name + villageTag(castle) : '?') + '</b><br>';
+    }
+    html += 'Produktion fließt direkt in das Burg-Lager (+' + (prod * C.TIME_SCALE).toFixed(0) +
+      ' ' + C.RESOURCE_META[resKey].name + '/s)<br>';
+    html += 'Bevölkerungs-Bonus: +' + (C.STRUCTURE_POP_BONUS[lvl] || 0);
+    if (sfort > 0) html += '<br>Befestigung: Palisade ' + sfort + ' · Turm ' + sfort;
+    html += '</div>';
+
+    html += structureUpgradeHtml(s, castle);
+    html += structureGarrisonHtml(s, castle);
+    html += '</div>'; // .struct-main
+
+    // Rechte Spalte: Verstärkung anfordern.
+    html += '<div class="struct-side">' + supportPickerHtml(s, 'structure') + '</div>';
+    html += '</div>'; // .struct-grid
+
+    dom.villageBody.innerHTML = html;
+    attachStructureEvents(dom.villageBody);
+  }
+
   // Bau-Warteschlange als vertikale Listendarstellung. Ein Eintrag pro
   // Auftrag: Gebäudename als Zeile 1, Stufe und Restzeit als Zeile 2.
   function buildQueueListHtml(v) {
@@ -922,6 +1038,7 @@
       v.buildQueue.forEach(function (q, idx) {
         var name = (C.BUILDINGS[q.key] && C.BUILDINGS[q.key].name) || q.key;
         html += '<div class="queue-item' + (idx === 0 ? ' active' : '') + '">' +
+          '<button class="qi-cancel" data-cancel="build" data-idx="' + idx + '" title="Abbrechen — 50% Rohstoffe zurück">✕</button>' +
           '<div class="qi-name">' + name + '</div>' +
           '<div class="qi-meta">→ Stufe ' + q.target + ' · ' + fmtTime(q.timeLeft) + '</div>' +
           '</div>';
@@ -940,6 +1057,7 @@
       v.trainingQueue.forEach(function (q, idx) {
         var name = (C.UNITS[q.unit] && C.UNITS[q.unit].name) || q.unit;
         html += '<div class="queue-item' + (idx === 0 ? ' active' : '') + '">' +
+          '<button class="qi-cancel" data-cancel="train" data-idx="' + idx + '" title="Abbrechen — 50% Rohstoffe zurück">✕</button>' +
           '<div class="qi-name">' + name + '</div>' +
           '<div class="qi-meta">× ' + q.remaining + ' · ' + fmtTime(q.timeLeft) + '</div>' +
           '</div>';
@@ -1088,7 +1206,10 @@
     stats += row('Bevölkerung', u.pop);
     stats += row('Nahrung', (u.foodUpkeep || 0).toFixed(2) + '/s');
     stats += row('Tragkapazität', (u.carry || 0) + (u.carry ? '' : ' (keine Beute)'));
-    stats += row('Ausbildung', fmtTime(u.trainTime));
+    var vv = activeVillage();
+    var eff = vv ? V.trainTimeFor(vv, key) : u.trainTime;
+    stats += row('Ausbildung', fmtTime(eff) +
+      (eff < u.trainTime ? ' <span class="muted">(Basis ' + fmtTime(u.trainTime) + ')</span>' : ''));
     if (sw || stw) stats += row('Belagerung M/T', sw + ' / ' + stw);
 
     // Rollenspezifische Hinweise
@@ -1136,6 +1257,9 @@
     if (key === 'townhall') stats += row('Bevölkerung', '+' + C.POPULATION.perTownhallLevel + '/Stufe (Hauptquelle)');
     if (key === 'farm') stats += row('Bev.-Kapazität', '+' + C.POPULATION.perFarmLevel + '/Stufe');
     if (typeof b.popPerLevel === 'number' && b.popPerLevel > 0) stats += row('Arbeiter', b.popPerLevel + '/Stufe');
+    if (key === 'barracks' || key === 'range') {
+      stats += row('Ausbildungstempo', (lvl > 0 ? '−' + (lvl * 10) + '% ' : '') + '<span class="muted">(−10%/Stufe, außer Held)</span>');
+    }
     if (key === 'warehouse') {
       var capNow = Math.round(C.STORAGE.baseCap * Math.pow(C.STORAGE.perLevel, lvl));
       var capNext = Math.round(C.STORAGE.baseCap * Math.pow(C.STORAGE.perLevel, lvl + 1));
@@ -1213,7 +1337,7 @@
       html += '<tr class="' + rowCls + '">';
       html += '<td><canvas class="unit-ico" width="30" height="36" data-unit="' + key + '"></canvas></td>';
       html += '<td><span class="unit-name" data-uinfo="' + key + '" tabindex="0"><b>' + u.name + '</b></span>' +
-        ' <span class="utime">(' + fmtTime(u.trainTime) + ')</span><br><small>' + costStr + '</small></td>';
+        ' <span class="utime">(' + fmtTime(V.trainTimeFor(v, key)) + ')</span><br><small>' + costStr + '</small></td>';
       html += '<td>' + u.atk + '</td><td>' + u.defI + '</td><td>' + (u.speed) + '</td>';
       html += '<td class="cnt">' + fmt(v.units[key] || 0) + (u.unique ? '/1' : '') + '</td>';
       if (!avail) {
@@ -1277,6 +1401,18 @@
       btn.addEventListener('click', function () {
         var r = G.enqueueBuild(state, v, btn.getAttribute('data-build'));
         if (!r.ok) toast(r.msg); else api.requestSave();
+        renderVillageView();
+      });
+    });
+    // Warteschlangen-Aufträge abbrechen (50 % Rohstoffe zurück).
+    Array.prototype.forEach.call(dom.villageBody.querySelectorAll('[data-cancel]'), function (btn) {
+      btn.addEventListener('click', function () {
+        var kind = btn.getAttribute('data-cancel');
+        var idx = parseInt(btn.getAttribute('data-idx'), 10);
+        var r = (kind === 'build') ? G.cancelBuild(state, v, idx) : G.cancelTrain(state, v, idx);
+        if (!r.ok) { toast(r.msg); return; }
+        api.requestSave();
+        toast('Auftrag abgebrochen — 50 % der Rohstoffe erstattet.');
         renderVillageView();
       });
     });
@@ -1433,15 +1569,12 @@
     var isOwn = t.houseId === state.playerHouseId;
     var dist = src ? G.distance(src, t) : 0;
     var html = '<div class="panel"><h3>Ziel: ' + t.name + villageTag(t) + '</h3>';
-    html += '<div class="crestline"><span class="crest sm" style="background:linear-gradient(135deg,' +
-      house.sigil.p + ' 0 50%,' + house.sigil.s + ' 50% 100%)"></span> ' + house.name + '</div>';
+    html += '<div class="crestline"><span class="crest sm" style="background:' + crestBg(house.sigil) + '"></span> ' + house.name + '</div>';
     html += '<div class="muted small">Entfernung ' + dist.toFixed(1) + ' Felder · Treue ' + Math.round(t.loyalty) + '%</div>';
     if (isOwn) {
       html += '<div class="def-box small">Garnison — ' + unitsInline(t.units) + '</div>';
-      // Unterstuetzung anfordern (Schritt 6, auch fuer Burgen)
-      html += '<div class="support-req-box"><b>Unterstuetzung anfordern</b><br>' +
-        '<button class="btn sm support-open-castle">Quelle waehlen…</button></div>';
-      if (supportSourceId) html += supportPickerHtml(t, 'village');
+      // Unterstützung: Truppen und/oder Rohstoffe von einer anderen eigenen Burg/Struktur.
+      html += supportPickerHtml(t, 'village');
       html += '</div>';
       return html;
     }
@@ -1516,6 +1649,8 @@
     // Lager-Anzeige
     var cap = levels.capacity[lvl - 1] || 0;
     var prod = levels.production[lvl - 1] || 0;
+    var fort = WOH.Combat.structureFortLevel(s);
+    var fortLine = fort > 0 ? '<br>Befestigung: Palisade ' + fort + ' · Turm ' + fort : '';
     if (isOwn) {
       var castle = state.villages[s.assignedCastleId];
       var castleName = castle ? (castle.name + villageTag(castle)) : '?';
@@ -1524,19 +1659,21 @@
       html += 'Produktion fliesst direkt in das Burg-Lager (+' +
         (prod * C.TIME_SCALE).toFixed(0) + ' ' + C.RESOURCE_META[resKey].name + '/s)<br>';
       html += 'Pop-Bonus: +' + (C.STRUCTURE_POP_BONUS[lvl] || 0) + '<br>';
-      html += 'Garnison: ' + garrisonTotal(s) + '/' + C.STRUCTURE_GARRISON_CAP + ' — ' + unitsInline(s.garrison || {});
+      html += 'Garnison: ' + garrisonTotal(s) + '/' + C.structureGarrisonCap(s.level) + ' — ' + unitsInline(s.garrison || {});
+      html += fortLine;
       html += '</div>';
     } else {
       var inStore = Math.floor(s.storage && s.storage[resKey] || 0);
       html += '<div class="def-box small">';
       html += 'Lager: <b>' + fmt(inStore) + ' / ' + fmt(cap) + ' ' + C.RESOURCE_META[resKey].name + '</b><br>';
       html += 'Garnison: ' + garrisonTotal(s) + ' — ' + unitsInline(s.garrison || {});
+      html += fortLine;
       html += '</div>';
     }
 
-    // Aktionen
+    // Aktionen — eigene Struktur wird im Overlay verwaltet (wie Burgen).
     if (isOwn) {
-      html += structureOwnActionsHtml(s);
+      html += '<button class="btn full struct-open">⌂ Struktur verwalten</button>';
     } else {
       html += structureAttackActionsHtml(s);
     }
@@ -1585,19 +1722,16 @@
 
   // Aktionen fuer eigene Strukturen: Upgrade / Garnison verwalten /
   // Heimatburg aendern / Unterstuetzung anfordern.
-  function structureOwnActionsHtml(s) {
+  // Ausbau-Panel: Kosten-Info links, Button rechtsbündig.
+  function structureUpgradeHtml(s, castle) {
     var lvl = s.level || 1;
     var levels = C.RESOURCE_STRUCTURE_LEVELS;
-    var castle = state.villages[s.assignedCastleId];
-    var html = '<div class="own-actions">';
-
-    // Upgrade — Schritt 9.1: zeigt laufende Upgrade-Queue, sonst Upgrade-Button
+    var html = '<div class="struct-panel"><div class="sp-head">Ausbau</div>';
     var inUpgrade = Array.isArray(s.upgradeQueue) && s.upgradeQueue.length > 0;
     if (inUpgrade) {
       var q = s.upgradeQueue[0];
       var left = Math.max(0, q.endsAt - (state.gameTime || 0));
-      html += '<div class="upgrade-box"><b>Upgrade auf Stufe ' + q.targetLevel + ' läuft</b><br>' +
-        '<small>Restzeit: ' + fmtTime(left) + '</small></div>';
+      html += '<div class="muted small">Ausbau auf Stufe ' + q.targetLevel + ' läuft — Restzeit ' + fmtTime(left) + '</div>';
     } else if (lvl < 3) {
       var cost = levels.upgradeCost[lvl - 1];
       var costStr = C.RESOURCES.filter(function (r) { return cost[r] > 0; }).map(function (r) {
@@ -1605,51 +1739,54 @@
         return '<span class="costtag ' + (lack ? 'lack' : '') + '">' + resIcoTag(r, 22) + fmt(cost[r]) + '</span>';
       }).join(' ');
       var afford = castle && C.RESOURCES.every(function (r) { return (castle.resources[r] || 0) >= (cost[r] || 0); });
-      html += '<div class="upgrade-box"><b>Upgrade auf Stufe ' + (lvl + 1) + '</b><br>' + costStr +
-        '<br><small>' + fmtTime(levels.upgradeTime[lvl - 1]) + ' Bauzeit (zahlt aus ' + (castle ? castle.name : '?') + ')</small><br>' +
-        '<button class="btn sm upgrade-btn" ' + (afford ? '' : 'disabled') + '>Upgrade ausführen</button></div>';
+      html += '<div class="sp-row">';
+      html += '<div class="sp-info"><b>Stufe ' + lvl + ' → ' + (lvl + 1) + '</b><div class="sp-cost">' + costStr + '</div>' +
+        '<small>' + fmtTime(levels.upgradeTime[lvl - 1]) + ' Bauzeit · zahlt aus ' + (castle ? castle.name + villageTag(castle) : '?') + '</small></div>';
+      html += '<button class="btn upgrade-btn" ' + (afford ? '' : 'disabled') + '>Ausbauen</button>';
+      html += '</div>';
     } else {
-      html += '<div class="upgrade-box muted">Maximale Stufe erreicht.</div>';
+      html += '<div class="muted small">Maximale Stufe erreicht.</div>';
     }
+    html += '</div>';
+    return html;
+  }
 
-    // Garnison verwalten — stationieren & zurueckziehen
-    if (castle) {
-      var garrFree = C.STRUCTURE_GARRISON_CAP - garrisonTotal(s);
-      html += '<div class="garrison-box"><b>Garnison verwalten</b> ' +
-        '<small>(frei: ' + garrFree + ')</small>';
-      html += '<table class="unit-table small"><tbody>';
-      ['spear', 'sword', 'axe', 'archer'].forEach(function (k) {
-        var inCastle = castle.units[k] || 0;
-        var inGarr = (s.garrison && s.garrison[k]) || 0;
-        var gv = (garrisonCounts[k] != null ? garrisonCounts[k] : 0);
-        html += '<tr><td><b>' + C.UNITS[k].name + '</b></td>' +
-          '<td>Burg: ' + inCastle + '</td>' +
-          '<td>Garnison: ' + inGarr + '</td>' +
-          '<td><input class="garr-n" type="number" min="0" value="' + gv + '" data-unit="' + k + '"></td></tr>';
-      });
-      html += '</tbody></table>';
-      html += '<button class="btn sm garr-station">→ Stationieren</button> ' +
-        '<button class="btn sm garr-withdraw">← Zurueckziehen</button></div>';
+  // Garnison-Panel: pro Einheit ein Schieberegler, der das Verhältnis
+  // Burg ⇄ Garnison festlegt. "Übernehmen" verschiebt die Differenz
+  // (mit Marschzeit) — gleichzeitig hin und zurück möglich.
+  function structureGarrisonHtml(s, castle) {
+    var cap = C.structureGarrisonCap(s.level);
+    var html = '<div class="struct-panel" data-garrcap="' + cap + '"><div class="sp-head">Garnison <small class="muted">(max. ' +
+      cap + ' · Stufe ' + (s.level || 1) + ')</small></div>';
+    if (!castle) {
+      html += '<div class="muted small">Keine Heimatburg — Garnison nicht verwaltbar.</div></div>';
+      return html;
     }
-
-    // Heimatburg aendern
-    var ownCastles = G.villagesOfHouse(state, state.playerHouseId);
-    if (ownCastles.length > 1) {
-      html += '<div class="home-box"><b>Heimatburg</b> ' +
-        '<select class="home-select">' +
-        ownCastles.map(function (c) {
-          return '<option value="' + c.id + '"' + (c.id === s.assignedCastleId ? ' selected' : '') + '>' +
-            c.name + villageTag(c) + '</option>';
-        }).join('') + '</select> <button class="btn sm home-apply">Aendern</button></div>';
+    var any = false, curSum = 0;
+    html += '<div class="garr-sliders">';
+    ['spear', 'sword', 'axe', 'archer'].forEach(function (k) {
+      var inCastle = castle.units[k] || 0;
+      var inGarr = (s.garrison && s.garrison[k]) || 0;
+      var total = inCastle + inGarr;
+      if (total > 0) any = true;
+      curSum += inGarr;
+      html += '<div class="garr-row" data-unit="' + k + '">' +
+        '<canvas class="unit-ico" width="22" height="28" data-unit="' + k + '"></canvas>' +
+        '<span class="gr-name">' + C.UNITS[k].name + '</span>' +
+        '<input class="garr-slider" type="range" min="0" max="' + total + '" value="' + inGarr + '" data-unit="' + k + '"' +
+          (total === 0 ? ' disabled' : '') + '>' +
+        '<span class="gr-split" data-unit="' + k + '">Burg <b>' + inCastle + '</b> · Garnison <b>' + inGarr + '</b></span>' +
+        '</div>';
+    });
+    html += '</div>';
+    if (!any) {
+      html += '<div class="muted small">Keine Einheiten in Burg oder Garnison.</div>';
+    } else {
+      html += '<div class="garr-total muted small">Garnison gewählt: <b class="gt-sum' + (curSum > cap ? ' bad' : '') + '">' +
+        curSum + '</b> / ' + cap + '</div>';
+      html += '<button class="btn sm garr-apply">Übernehmen</button>' +
+        '<div class="muted small" style="margin-top:4px">Regler verschieben und übernehmen — die Einheiten wechseln mit Marschzeit.</div>';
     }
-
-    // Unterstuetzung anfordern
-    html += '<div class="support-req-box"><b>Unterstuetzung anfordern</b><br>' +
-      '<button class="btn sm support-open">Quelle waehlen…</button></div>';
-
-    // Bei geoeffnetem Support-Picker: Auswahl + Truppen + Senden
-    if (supportSourceId) html += supportPickerHtml(s, 'structure');
-
     html += '</div>';
     return html;
   }
@@ -1659,35 +1796,46 @@
   // targetKind: 'village' | 'structure'. Rohstoff-Tross nur bei Burg-Ziel mit
   // Burg-Quelle (Strukturen besitzen kein eigenes Rohstofflager).
   function supportPickerHtml(target, targetKind) {
-    var src = G.entityById(state, supportSourceId);
-    if (!src || src.ownerHouseId !== state.playerHouseId) { supportSourceId = null; return ''; }
-    var ownVillages = G.villagesOfHouse(state, state.playerHouseId).filter(function (c) {
-      return !(targetKind === 'village' && c.id === target.id);
+    // Gültige Quellen sammeln: andere eigene Burgen + eigene Strukturen (nicht das Ziel selbst).
+    var sources = [];
+    G.villagesOfHouse(state, state.playerHouseId).forEach(function (v) {
+      if (targetKind === 'village' && v.id === target.id) return;
+      sources.push({ id: v.id, kind: 'village', label: 'Burg: ' + v.name + villageTag(v) });
     });
-    var ownStructs = (state.structures || []).filter(function (st) {
-      return st.ownerHouseId === state.playerHouseId && !(targetKind === 'structure' && st.id === target.id);
+    (state.structures || []).forEach(function (st) {
+      if (st.ownerHouseId !== state.playerHouseId) return;
+      if (targetKind === 'structure' && st.id === target.id) return;
+      sources.push({ id: st.id, kind: 'structure', label: 'Struktur: ' + structureMeta(st).name + ' (' + st.x + ',' + st.y + ')' });
     });
-    var html = '<div class="support-picker"><b>Unterstuetzung von:</b> ';
-    html += '<select class="support-source-sel">';
-    ownVillages.forEach(function (v) {
-      html += '<option value="' + v.id + '"' + (v.id === supportSourceId ? ' selected' : '') + '>Burg: ' + v.name + villageTag(v) + '</option>';
-    });
-    ownStructs.forEach(function (st) {
-      var nm = structureMeta(st).name + ' (' + st.x + ',' + st.y + ')';
-      html += '<option value="' + st.id + '"' + (st.id === supportSourceId ? ' selected' : '') + '>Struktur: ' + nm + '</option>';
-    });
-    html += '</select>';
 
-    // Verfuegbare Einheiten ermitteln (Burg: stationierte Truppen; Struktur: Garnison).
+    var head = '<div class="support-picker"><b>⛨ Verstärkung anfordern</b>';
+    if (!sources.length) {
+      return head + '<div class="muted small">Keine andere eigene Burg oder Struktur als Quelle verfügbar.</div></div>';
+    }
+    // Quelle absichern: gemerkte Auswahl muss eine gültige Quelle sein, sonst erste nehmen.
+    if (!sources.some(function (s) { return s.id === supportSourceId; })) supportSourceId = sources[0].id;
+    var src = G.entityById(state, supportSourceId);
+
+    var html = head;
+    html += '<label class="support-from-row">Von <select class="support-source-sel">';
+    sources.forEach(function (s) {
+      html += '<option value="' + s.id + '"' + (s.id === supportSourceId ? ' selected' : '') + '>' + s.label + '</option>';
+    });
+    html += '</select></label>';
+
+    // Entfernung zum Ziel (Marschzeit richtet sich nach der langsamsten Einheit).
+    var dist = G.distance(src.ref, target);
+    html += '<div class="muted small">Entfernung: ' + dist.toFixed(1) + ' Felder · Marschzeit je nach langsamster Einheit.</div>';
+
+    // Verfügbare Einheiten (Burg: stationierte Truppen; Struktur: Garnison; Held nicht sendbar).
     var availUnits = {};
     if (src.kind === 'village') {
-      ['spear','sword','axe','archer','hero'].forEach(function (k) { availUnits[k] = src.ref.units[k] || 0; });
+      ['spear', 'sword', 'axe', 'archer'].forEach(function (k) { availUnits[k] = src.ref.units[k] || 0; });
     } else {
-      ['spear','sword','axe','archer'].forEach(function (k) { availUnits[k] = (src.ref.garrison && src.ref.garrison[k]) || 0; });
-      availUnits.hero = 0;
+      ['spear', 'sword', 'axe', 'archer'].forEach(function (k) { availUnits[k] = (src.ref.garrison && src.ref.garrison[k]) || 0; });
     }
-    html += '<div class="send-form">';
-    C.UNIT_ORDER.forEach(function (k) {
+    html += '<div class="support-section-label">Truppen</div><div class="send-form">';
+    ['spear', 'sword', 'axe', 'archer'].forEach(function (k) {
       var have = availUnits[k] || 0;
       var v = (supportCounts['u_' + k] != null ? supportCounts['u_' + k] : 0);
       html += '<label class="send-row"><canvas class="unit-ico" width="24" height="30" data-unit="' + k + '"></canvas>' +
@@ -1696,9 +1844,9 @@
     });
     html += '</div>';
 
-    // Rohstoff-Tross: nur eigene Burg -> eigene Burg.
+    // Rohstoffe: nur eigene Burg -> eigene Burg (Strukturen haben kein eigenes Rohstofflager).
     if (targetKind === 'village' && src.kind === 'village') {
-      html += '<div class="support-res"><b>Rohstoffe senden</b><div class="send-form">';
+      html += '<div class="support-section-label">Rohstoffe <small class="muted">(reiner Tross reist langsamer)</small></div><div class="send-form">';
       C.RESOURCES.forEach(function (r) {
         var have = Math.floor(src.ref.resources[r] || 0);
         var rv = (supportResCounts[r] != null ? supportResCounts[r] : 0);
@@ -1706,11 +1854,12 @@
           ' <small>(' + fmt(have) + ')</small>' +
           '<input class="sup-r" type="number" min="0" max="' + have + '" value="' + rv + '" data-res="' + r + '"></label>';
       });
-      html += '</div><div class="muted small">Reiner Rohstoff-Tross reist langsamer (Fuhrwerk).</div></div>';
+      html += '</div>';
+    } else if (targetKind === 'village' && src.kind === 'structure') {
+      html += '<div class="muted small">Rohstoffe können nur von einer Burg gesendet werden.</div>';
     }
 
-    html += '<button class="btn full support-send" data-kind="' + targetKind + '" data-target="' + target.id + '">⛨ Unterstuetzung entsenden</button>';
-    html += '<button class="btn ghost sm support-cancel">Abbrechen</button>';
+    html += '<button class="btn full support-send" data-kind="' + targetKind + '" data-target="' + target.id + '">⛨ Anfordern</button>';
     html += '</div>';
     return html;
   }
@@ -1764,14 +1913,7 @@
     var atk = dom.sidebar.querySelector('.attack-btn');
     if (atk) atk.addEventListener('click', function () { send('attack'); });
 
-    // Unterstuetzung anfordern fuer eigene Burgen (Ziel = Burg)
-    var soc = dom.sidebar.querySelector('.support-open-castle');
-    if (soc) soc.addEventListener('click', function () {
-      var t = state.villages[targetVillageId];
-      if (!t) return;
-      openSupportPicker(t.id);
-    });
-    // Gemeinsame Support-Controls (Quelle/Einheiten/Rohstoffe/Senden/Abbrechen).
+    // Support-Picker (eigene Burg als Ziel) wird direkt gerendert; nur verdrahten.
     wireSupportControls();
 
     function send(type) {
@@ -1789,21 +1931,28 @@
   // -----------------------------------------------------------------------
   // Event-Handler fuer Strukturen-Panel (Schritt 6)
   // -----------------------------------------------------------------------
-  function attachStructureEvents() {
-    var s = selectedStructure();
+  // root: Container, in dem die Struktur-Controls liegen (Sidebar oder Overlay-Body).
+  function attachStructureEvents(root) {
+    root = root || dom.sidebar;
+    var s = (root === dom.sidebar) ? selectedStructure() : G.findStructureById(state, activeStructureId);
     if (!s) return;
+
+    // "Struktur verwalten" (Sidebar-Kurzpanel) öffnet das Overlay.
+    var so = root.querySelector('.struct-open');
+    if (so) so.addEventListener('click', function () { openStructure(s.id); });
+
     // Unit-Icons in Inputs zeichnen
-    paintUnitIcons(dom.sidebar);
-    paintResIcons(dom.sidebar);
+    paintUnitIcons(root);
+    paintResIcons(root);
 
     // Quelldorf-Selector (analog Angriff)
-    var fromSel = dom.sidebar.querySelector('.send-from');
+    var fromSel = root.querySelector('.send-from');
     if (fromSel) fromSel.addEventListener('change', function () {
       sendFromId = fromSel.value; renderSidebar();
     });
 
     // Truppen-Mengen merken
-    Array.prototype.forEach.call(dom.sidebar.querySelectorAll('input.send-n'), function (inp) {
+    Array.prototype.forEach.call(root.querySelectorAll('input.send-n'), function (inp) {
       inp.addEventListener('input', function () { sendCounts[inp.getAttribute('data-unit')] = inp.value; });
     });
 
@@ -1814,7 +1963,7 @@
     }
 
     // Sammeln
-    var gb = dom.sidebar.querySelector('.gather-btn');
+    var gb = root.querySelector('.gather-btn');
     if (gb) gb.addEventListener('click', function () {
       var src = sourceVillage();
       if (!src) { toast('Keine Quell-Burg.'); return; }
@@ -1830,7 +1979,7 @@
     });
 
     // Eroberung
-    var cb = dom.sidebar.querySelector('.capture-btn');
+    var cb = root.querySelector('.capture-btn');
     if (cb) cb.addEventListener('click', function () {
       var src = sourceVillage();
       if (!src) { toast('Keine Quell-Burg.'); return; }
@@ -1845,7 +1994,7 @@
     });
 
     // Upgrade
-    var ub = dom.sidebar.querySelector('.upgrade-btn');
+    var ub = root.querySelector('.upgrade-btn');
     if (ub) ub.addEventListener('click', function () {
       var r = G.upgradeStructure(state, s);
       if (!r.ok) { toast(r.msg); return; }
@@ -1854,102 +2003,105 @@
       refreshPanels();
     });
 
-    // Garnison verwalten
-    Array.prototype.forEach.call(dom.sidebar.querySelectorAll('input.garr-n'), function (inp) {
-      inp.addEventListener('input', function () { garrisonCounts[inp.getAttribute('data-unit')] = inp.value; });
-    });
-    function collectGarr() {
-      var u = {};
-      ['spear', 'sword', 'axe', 'archer'].forEach(function (k) {
-        u[k] = Math.max(0, parseInt(garrisonCounts[k], 10) || 0);
-      });
-      return u;
+    // Garnison-Schieberegler: Live-Anzeige + Summen-Begrenzung auf das
+    // stufenabhängige Limit (Stufe 1=30, 2=70, 3=120).
+    var castleForGarr = state.villages[s.assignedCastleId];
+    var garrCap = C.structureGarrisonCap(s.level);
+    var garrSliders = root.querySelectorAll('input.garr-slider');
+    function sliderSum() {
+      var sum = 0;
+      Array.prototype.forEach.call(garrSliders, function (sl) { sum += parseInt(sl.value, 10) || 0; });
+      return sum;
     }
-    var stb = dom.sidebar.querySelector('.garr-station');
-    if (stb) stb.addEventListener('click', function () {
-      var castle = state.villages[s.assignedCastleId];
-      if (!castle) { toast('Heimatburg fehlt.'); return; }
-      var units = collectGarr();
-      // Held kann nicht stationiert werden
-      units.hero = 0;
-      var total = 0; for (var u in units) total += units[u];
-      if (total <= 0) { toast('Keine Einheiten ausgewaehlt.'); return; }
-      // Cap-Vorabpruefung
-      var g = s.garrison || {spear:0,sword:0,axe:0,archer:0};
-      var current = 0; for (var k in g) current += g[k] || 0;
-      if (current + total > C.STRUCTURE_GARRISON_CAP) {
-        toast('Garnisons-Cap (' + C.STRUCTURE_GARRISON_CAP + ') wuerde ueberschritten.'); return;
-      }
-      // Stationierung laeuft jetzt via support-Movement mit Marschzeit
-      var r = G.sendArmy(state, castle.id, s.id, units, 'support');
-      if (!r.ok) { toast(r.msg); return; }
-      api.requestSave();
-      garrisonCounts = {};
-      toast('Einheiten unterwegs — Marschzeit ' + fmtTime(r.travel) + '.');
-      refreshPanels();
+    function refreshGarrUI() {
+      Array.prototype.forEach.call(garrSliders, function (sl) {
+        var k = sl.getAttribute('data-unit');
+        var tgt = parseInt(sl.value, 10) || 0;
+        var total = parseInt(sl.getAttribute('max'), 10) || 0;
+        var split = root.querySelector('.gr-split[data-unit="' + k + '"]');
+        if (split) split.innerHTML = 'Burg <b>' + (total - tgt) + '</b> · Garnison <b>' + tgt + '</b>';
+      });
+      var sum = sliderSum();
+      var gt = root.querySelector('.gt-sum');
+      if (gt) { gt.textContent = sum; gt.className = 'gt-sum' + (sum > garrCap ? ' bad' : ''); }
+    }
+    Array.prototype.forEach.call(garrSliders, function (inp) {
+      inp.addEventListener('input', function () {
+        // Summe darf das Limit nicht überschreiten -> aktuellen Regler kappen.
+        var over = sliderSum() - garrCap;
+        if (over > 0) inp.value = Math.max(0, (parseInt(inp.value, 10) || 0) - over);
+        refreshGarrUI();
+      });
     });
-    var wdb = dom.sidebar.querySelector('.garr-withdraw');
-    if (wdb) wdb.addEventListener('click', function () {
-      var r = G.withdrawGarrison(state, s, collectGarr());
-      if (!r.ok) { toast(r.msg); return; }
+    // Übernehmen: Differenzen pro Einheit berechnen und verschieben.
+    var gap = root.querySelector('.garr-apply');
+    if (gap) gap.addEventListener('click', function () {
+      if (!castleForGarr) { toast('Heimatburg fehlt.'); return; }
+      var station = {}, withdraw = {}, stationTot = 0, withdrawTot = 0, targetSum = 0;
+      Array.prototype.forEach.call(root.querySelectorAll('input.garr-slider'), function (inp) {
+        var k = inp.getAttribute('data-unit');
+        var cur = (s.garrison && s.garrison[k]) || 0;
+        var total = parseInt(inp.getAttribute('max'), 10) || 0;
+        var tgt = Math.max(0, Math.min(total, parseInt(inp.value, 10) || 0));
+        targetSum += tgt;
+        var d = tgt - cur;
+        if (d > 0) { station[k] = d; stationTot += d; }
+        else if (d < 0) { withdraw[k] = -d; withdrawTot += (-d); }
+      });
+      if (stationTot === 0 && withdrawTot === 0) { toast('Keine Änderung am Garnisons-Verhältnis.'); return; }
+      if (targetSum > garrCap) {
+        toast('Garnisons-Limit (' + garrCap + ') überschritten.'); return;
+      }
+      var parts = [];
+      if (withdrawTot > 0) {
+        var rw = G.withdrawGarrison(state, s, withdraw);
+        if (!rw.ok) { toast(rw.msg); return; }
+        parts.push(withdrawTot + ' zur Burg');
+      }
+      if (stationTot > 0) {
+        var rs = G.sendArmy(state, castleForGarr.id, s.id, station, 'support');
+        if (!rs.ok) { toast(rs.msg); return; }
+        parts.push(stationTot + ' zur Garnison');
+      }
       api.requestSave();
-      garrisonCounts = {};
-      toast('Einheiten zurueckgezogen.');
+      toast('Garnison angepasst — ' + parts.join(', ') + ' (unterwegs).');
       refreshPanels();
     });
 
-    // Heimatburg aendern
-    var ha = dom.sidebar.querySelector('.home-apply');
+    // Heimatburg ändern
+    var ha = root.querySelector('.home-apply');
     if (ha) ha.addEventListener('click', function () {
-      var sel2 = dom.sidebar.querySelector('.home-select');
+      var sel2 = root.querySelector('.home-select');
       var newId = sel2 ? sel2.value : null;
       if (!newId) return;
       var r = G.reassignHomeCastle(state, s, newId);
       if (!r.ok) { toast(r.msg); return; }
       api.requestSave();
-      toast('Heimatburg geaendert.');
+      toast('Heimatburg geändert.');
       refreshPanels();
     });
 
-    // Unterstuetzung anfordern: Picker oeffnen (Default-Quelle: erste eigene Burg).
-    var sop = dom.sidebar.querySelector('.support-open');
-    if (sop) sop.addEventListener('click', function () { openSupportPicker(null); });
-    // Gemeinsame Support-Controls (Quelle/Einheiten/Rohstoffe/Senden/Abbrechen).
-    wireSupportControls();
+    // Support-Picker (eigene Struktur als Ziel) wird direkt gerendert; nur verdrahten.
+    wireSupportControls(root);
   }
 
   // -----------------------------------------------------------------------
-  // Gemeinsame Support-Logik (konsolidiert; ersetzt doppelte Verdrahtung).
+  // Gemeinsame Support-Verdrahtung (Burg- und Struktur-Panel teilen den Picker).
+  // root: Container (Sidebar oder Overlay-Body).
   // -----------------------------------------------------------------------
-  // Öffnet den Picker mit einer sinnvollen Default-Quelle. excludeVillageId:
-  // bei Burg-Ziel die Ziel-Burg ausschließen (man unterstützt sich nicht selbst).
-  function openSupportPicker(excludeVillageId) {
-    var own = G.villagesOfHouse(state, state.playerHouseId).filter(function (c) {
-      return c.id !== excludeVillageId;
-    });
-    supportSourceId = (own[0] && own[0].id) || null;
-    supportCounts = {}; supportResCounts = {};
-    refreshPanels();
-  }
-
-  // Verdrahtet alle Picker-Elemente im aktuellen Sidebar-DOM. Funktioniert für
-  // Burg- und Struktur-Panel gleichermaßen, da beide denselben Picker rendern.
-  function wireSupportControls() {
-    var ssel = dom.sidebar.querySelector('.support-source-sel');
+  function wireSupportControls(root) {
+    root = root || dom.sidebar;
+    var ssel = root.querySelector('.support-source-sel');
     if (ssel) ssel.addEventListener('change', function () {
       supportSourceId = ssel.value; supportCounts = {}; supportResCounts = {}; refreshPanels();
     });
-    Array.prototype.forEach.call(dom.sidebar.querySelectorAll('input.sup-n'), function (inp) {
+    Array.prototype.forEach.call(root.querySelectorAll('input.sup-n'), function (inp) {
       inp.addEventListener('input', function () { supportCounts['u_' + inp.getAttribute('data-unit')] = inp.value; });
     });
-    Array.prototype.forEach.call(dom.sidebar.querySelectorAll('input.sup-r'), function (inp) {
+    Array.prototype.forEach.call(root.querySelectorAll('input.sup-r'), function (inp) {
       inp.addEventListener('input', function () { supportResCounts[inp.getAttribute('data-res')] = inp.value; });
     });
-    var sca = dom.sidebar.querySelector('.support-cancel');
-    if (sca) sca.addEventListener('click', function () {
-      supportSourceId = null; supportCounts = {}; supportResCounts = {}; refreshPanels();
-    });
-    var ssend = dom.sidebar.querySelector('.support-send');
+    var ssend = root.querySelector('.support-send');
     if (ssend) ssend.addEventListener('click', function () {
       var kind = ssend.getAttribute('data-kind');
       var tid = ssend.getAttribute('data-target');
@@ -1958,8 +2110,8 @@
       sendSupportToTarget(target, kind);
     });
     // Icons im Picker zeichnen (Einheiten + Rohstoffe).
-    paintUnitIcons(dom.sidebar);
-    paintResIcons(dom.sidebar);
+    paintUnitIcons(root);
+    paintResIcons(root);
   }
 
   // Schritt 9.2: Unterstuetzung laeuft jetzt durchgehend ueber Marschzeit.
@@ -1988,9 +2140,9 @@
       if (resTotal <= 0) resObj = null;
     }
 
-    if (total <= 0 && resTotal <= 0) { toast('Weder Einheiten noch Rohstoffe ausgewaehlt.'); return; }
+    if (total <= 0 && resTotal <= 0) { toast('Weder Einheiten noch Rohstoffe ausgewählt.'); return; }
 
-    // Verfuegbarkeit der Einheiten
+    // Verfügbarkeit der Einheiten
     var avail = srcEnt.kind === 'village' ? srcEnt.ref.units : (srcEnt.ref.garrison || {});
     for (var k0 in units) {
       if ((units[k0] || 0) > (avail[k0] || 0)) { toast('Nicht genug ' + C.UNITS[k0].name + ' in der Quelle.'); return; }
@@ -2002,15 +2154,15 @@
       if (!r.ok) { toast(r.msg); return; }
       api.requestSave();
       supportCounts = {}; supportResCounts = {}; supportSourceId = null;
-      var what = (total > 0 && resTotal > 0) ? 'Unterstuetzung + Rohstoffe'
-               : (resTotal > 0 ? 'Rohstoff-Tross' : 'Unterstuetzung');
+      var what = (total > 0 && resTotal > 0) ? 'Unterstützung + Rohstoffe'
+               : (resTotal > 0 ? 'Rohstoff-Tross' : 'Unterstützung');
       toast(what + ' entsandt — Marschzeit ' + fmtTime(r.travel) + '.');
       refreshPanels();
       return;
     }
 
     // Struktur als Quelle: nur Einheiten (Garnison), keine Rohstoffe.
-    if (total <= 0) { toast('Keine Einheiten ausgewaehlt.'); return; }
+    if (total <= 0) { toast('Keine Einheiten ausgewählt.'); return; }
 
     // Quelle ist Struktur: instantaner Garnisons-Transfer (Strukturen haben
     // keine eigene Bewegungs-Identitaet im Movement-System).
@@ -2019,8 +2171,9 @@
       var tg = target.garrison || { spear: 0, sword: 0, axe: 0, archer: 0 };
       var curr = 0; for (var tk in tg) curr += tg[tk] || 0;
       var sum = 0; for (var sk in units) sum += units[sk];
-      if (curr + sum > C.STRUCTURE_GARRISON_CAP) {
-        toast('Garnisons-Cap des Ziels wuerde ueberschritten.'); return;
+      var tcap = C.structureGarrisonCap(target.level);
+      if (curr + sum > tcap) {
+        toast('Garnisons-Limit des Ziels (' + tcap + ') würde überschritten.'); return;
       }
       for (var su in units) {
         srcGar[su] = (srcGar[su] || 0) - units[su];
@@ -2036,7 +2189,7 @@
     srcEnt.ref.garrison = srcGar;
     api.requestSave();
     supportCounts = {}; supportSourceId = null;
-    toast('Garnison von ' + structureMeta(srcEnt.ref).name + ' uebertragen.');
+    toast('Garnison von ' + structureMeta(srcEnt.ref).name + ' übertragen.');
     refreshPanels();
   }
 

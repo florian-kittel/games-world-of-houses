@@ -190,9 +190,18 @@
   // Liefert dasselbe Result-Format wie resolve(); zusaetzlich wird im
   // aufrufenden Code (game.js) entschieden, ob Beute (gather) oder
   // Besitzerwechsel (capture) folgt.
+  // Befestigung einer Struktur aus ihrer Stufe: Stufe 2 = Palisade 1 + Turm 1,
+  // Stufe 3 = Palisade 2 + Turm 2 (Stufe 1 = ungeschützt). Wirkt im Strukturkampf
+  // wie Mauer/Turm einer Burg (Verteidigungs-Multiplikator, Grundwert, Turmbonus
+  // für Bogenschützen) — ohne Belagerungs-HP.
+  function structureFortLevel(structure) {
+    var lvl = (structure && structure.level) || 1;
+    return Math.max(0, lvl - 1);
+  }
   function resolveStructureBattle(attackUnits, garrison, rng, attackerScore, structure) {
     var defScore = structureDefenderScore(structure);
-    return resolve(attackUnits, garrison || {}, 0, 0, rng, { att: attackerScore, def: defScore });
+    var fort = structureFortLevel(structure);
+    return resolve(attackUnits, garrison || {}, fort, fort, rng, { att: attackerScore, def: defScore });
   }
 
   // -----------------------------------------------------------------------
@@ -273,6 +282,7 @@
     // Schritt 5: Strukturen-Kampf
     resolveStructureBattle: resolveStructureBattle,
     structureDefenderScore: structureDefenderScore,
+    structureFortLevel: structureFortLevel,
     // Schritt 6.5: Belagerung
     applySiege: applySiege
   };

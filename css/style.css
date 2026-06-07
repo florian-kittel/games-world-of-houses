@@ -112,6 +112,26 @@ small{color:var(--muted)}
 /* ---------- Dorfansicht ---------- */
 .vv-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;max-width:1400px;margin:0 auto}
 @media(max-width:900px){.vv-grid{grid-template-columns:1fr}}
+#village-overlay.struct-mode .overlay-card{width:min(940px,96vw)}
+.struct-grid{display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start}
+@media(max-width:760px){.struct-grid{grid-template-columns:1fr}}
+.struct-main{display:flex;flex-direction:column;gap:12px}
+.struct-main .def-box{margin-bottom:0}
+.struct-side .support-picker{margin-top:0}
+.struct-panel{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px 12px}
+.sp-head{color:var(--gold);font-size:12px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.sp-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.sp-info b{font-size:13px}
+.sp-cost{margin:4px 0}
+.garr-sliders{display:flex;flex-direction:column;gap:8px;margin-bottom:8px}
+.garr-row{display:grid;grid-template-columns:24px 96px 1fr auto;align-items:center;gap:8px}
+.garr-row .gr-name{font-size:12px;font-weight:600}
+.garr-row .garr-slider{width:100%;accent-color:var(--gold);cursor:pointer}
+.garr-row .gr-split{font-size:11px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.home-row{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.home-row .home-select{flex:1;min-width:0;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:4px;padding:3px}
+.btn.xs{padding:3px 8px;font-size:11px}
+.struct-view .def-box{margin-bottom:12px}
 .vv-col h2{margin:0 0 10px;font-size:17px;color:var(--gold);
   border-bottom:1px solid var(--line);padding-bottom:6px}
 .queue{background:var(--panel);border:1px solid var(--line);border-radius:5px;
@@ -189,6 +209,17 @@ small{color:var(--muted)}
   border-radius:4px;padding:4px;margin-left:4px;max-width:100%}
 .send-row{display:flex;align-items:center;gap:6px;margin:4px 0;font-size:13px}
 .send-row input{margin-left:auto;width:56px}
+/* Unterstützungs-Picker (Truppen + Rohstoffe an eigene Burg/Struktur) */
+.support-picker{margin-top:10px;padding:8px 10px;border:1px solid var(--line);
+  border-radius:6px;background:var(--panel)}
+.support-picker>b{display:block;color:var(--gold);font-size:13px;margin-bottom:6px}
+.support-from-row{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);margin-bottom:4px}
+.support-source-sel{flex:1;min-width:0;background:var(--bg);color:var(--text);
+  border:1px solid var(--line);border-radius:4px;padding:4px}
+.support-section-label{margin-top:8px;font-size:11px;text-transform:uppercase;
+  letter-spacing:.5px;color:var(--gold);border-top:1px solid var(--line);padding-top:6px}
+.support-picker .send-form{margin-top:4px}
+.support-picker .support-send{margin-top:10px}
 .send-eta{margin:6px 0}
 .log{max-height:300px;overflow:auto;font-size:12px}
 .log-e{padding:4px 2px;border-bottom:1px solid #1b2731;line-height:1.4}
@@ -283,9 +314,13 @@ small{color:var(--muted)}
   letter-spacing:0.3px;text-transform:uppercase;font-weight:600;border-bottom:1px solid var(--line);
   padding-bottom:4px}
 .queue-empty{color:var(--muted);font-style:italic;text-align:center;padding:8px 0}
-.queue-item{background:var(--bg);border:1px solid var(--line);border-radius:4px;
-  padding:5px 7px;margin-bottom:4px;line-height:1.3}
+.queue-item{position:relative;background:var(--bg);border:1px solid var(--line);border-radius:4px;
+  padding:5px 24px 5px 7px;margin-bottom:4px;line-height:1.3}
 .queue-item.active{border-color:var(--gold);box-shadow:0 0 0 1px rgba(232,215,160,0.25)}
+.qi-cancel{position:absolute;top:3px;right:3px;width:18px;height:18px;padding:0;
+  border:1px solid var(--line);border-radius:3px;background:transparent;color:var(--muted);
+  font-size:12px;line-height:16px;cursor:pointer}
+.qi-cancel:hover{border-color:var(--red,#d24646);color:var(--red,#d24646);background:rgba(210,70,70,0.12)}
 .qi-name{font-weight:600;color:var(--text);font-size:12px}
 .qi-meta{color:var(--muted);font-size:11px;font-variant-numeric:tabular-nums;margin-top:1px}
 

@@ -133,6 +133,16 @@
     // Schritt 10b: Auto-Pause bei Kampfbericht-Overlay (Default true).
     if (typeof state.pauseOnReport !== 'boolean') state.pauseOnReport = true;
 
+    // Wappen-Muster fuer Altspielstaende deterministisch nachziehen.
+    if (state.houses) {
+      var pats = ['diagonal', 'horizontal', 'vertical', 'cross', 'triangleUp', 'triangleDown'];
+      var pi = 0;
+      for (var hk in state.houses) {
+        var hh = state.houses[hk];
+        if (hh && hh.sigil && !hh.sigil.pattern) { hh.sigil.pattern = pats[pi % pats.length]; pi++; }
+      }
+    }
+
     state.version = 7;
     return state;
   }
