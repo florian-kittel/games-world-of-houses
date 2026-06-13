@@ -26,6 +26,7 @@
   var supportCounts = {};       // Einheiten-Mengen fuer Support-Picker
   var supportResCounts = {};    // Rohstoff-Mengen fuer Support-Picker (Tross)
   var supportSourceId = null;   // gewaehlte Quelle (Burg- oder Struktur-Id)
+  var activeBurgTab = 'buildings'; // 'buildings' | 'military' — nur auf schmalen Viewports sichtbar
 
   function $(id) { return document.getElementById(id); }
   function el(tag, cls, html) {
@@ -128,7 +129,30 @@
       if (e.key !== 'Escape') return;
       if (reportOpen) closeBattle();
       else if (overlayOpen) closeVillage();
+      else if ($('sidebar').classList.contains('open')) closeSidebar();
     });
+    // Mobile: Burger-Button + Backdrop fuer Sidebar-Sheet
+    var burger = $('sidebar-toggle');
+    var backdrop = $('sidebar-backdrop');
+    if (burger) burger.addEventListener('click', toggleSidebar);
+    if (backdrop) backdrop.addEventListener('click', closeSidebar);
+  }
+
+  function toggleSidebar() {
+    var sb = $('sidebar'), bd = $('sidebar-backdrop');
+    if (!sb) return;
+    if (sb.classList.contains('open')) closeSidebar();
+    else { sb.classList.add('open'); if (bd) bd.classList.add('show'); }
+  }
+  function closeSidebar() {
+    var sb = $('sidebar'), bd = $('sidebar-backdrop');
+    if (sb) sb.classList.remove('open');
+    if (bd) bd.classList.remove('show');
+  }
+  function openSidebarSheet() {
+    var sb = $('sidebar'), bd = $('sidebar-backdrop');
+    if (sb) sb.classList.add('open');
+    if (bd) bd.classList.add('show');
   }
 
   function bind(s) {
@@ -187,30 +211,139 @@
     return { x: sx / cam.zoom + cam.x, y: sy / cam.zoom + cam.y };
   }
 
+  // Phase B: Pointer Events (Touch + Maus + Pen einheitlich).
+  // Single-Pointer = Pan / Tap; Two-Pointer = Pinch-Zoom.
+  // Long-Press (>= 500 ms ohne Bewegung) = Tooltip-Open analog Hover.
+  var activePointers = {};      // pointerId -> {x, y}
+  var pinchInitDist = 0;
+  var pinchInitZoom = 1;
+  var pinchCenter   = null;
+  var longPressTimer = null;
+  var LONG_PRESS_MS = 500;
+  var TAP_THRESHOLD_PX = 8;
+  // Doppel-Tap (Touch + Maus): zwei tap-Events innerhalb 350 ms und unter 25 px
+  // Abstand. iOS Safari synthetisiert dblclick aus zwei Taps nicht zuverlaessig,
+  // wenn touch-action:none gesetzt ist — deshalb erkennen wir es selbst.
+  var DOUBLE_TAP_MS = 350;
+  var DOUBLE_TAP_PX = 25;
+  var lastTapTime = 0, lastTapX = 0, lastTapY = 0;
+
+  function cancelLongPress() {
+    if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+  }
+  function pinchDistance(pts) {
+    var keys = Object.keys(pts); if (keys.length < 2) return 0;
+    var a = pts[keys[0]], b = pts[keys[1]];
+    return Math.hypot(a.x - b.x, a.y - b.y);
+  }
+  function pinchMidpoint(pts) {
+    var keys = Object.keys(pts);
+    var a = pts[keys[0]], b = pts[keys[1]];
+    return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+  }
+
   function attachCanvasEvents() {
     var cv = dom.canvas;
-    cv.addEventListener('mousedown', function (e) {
-      cam.drag = { sx: e.clientX, sy: e.clientY, cx: cam.x, cy: cam.y };
-      cam.moved = false;
+
+    cv.addEventListener('pointerdown', function (e) {
+      cv.setPointerCapture(e.pointerId);
+      activePointers[e.pointerId] = { x: e.clientX, y: e.clientY };
+      var n = Object.keys(activePointers).length;
+      if (n === 1) {
+        cam.drag = { sx: e.clientX, sy: e.clientY, cx: cam.x, cy: cam.y, pointerId: e.pointerId };
+        cam.moved = false;
+        // Long-Press auf Touch ist ein Tooltip-Trigger (Strukturen-Info)
+        if (e.pointerType === 'touch') {
+          cancelLongPress();
+          longPressTimer = setTimeout(function () {
+            if (!cam.moved) {
+              var st = structureAtEvent(e);
+              if (st) {
+                selectedStructureId = st.id;
+                targetVillageId = null;
+                renderSidebar();
+                openSidebarSheet();
+              }
+            }
+          }, LONG_PRESS_MS);
+        }
+      } else if (n === 2) {
+        // Pinch-Start
+        cam.drag = null;
+        cancelLongPress();
+        pinchInitDist = pinchDistance(activePointers);
+        pinchInitZoom = cam.zoom;
+        pinchCenter   = pinchMidpoint(activePointers);
+      }
     });
-    window.addEventListener('mousemove', function (e) {
+
+    cv.addEventListener('pointermove', function (e) {
+      if (activePointers[e.pointerId]) {
+        activePointers[e.pointerId].x = e.clientX;
+        activePointers[e.pointerId].y = e.clientY;
+      }
+      var n = Object.keys(activePointers).length;
+      if (n === 2 && pinchInitDist > 0) {
+        // Pinch-Zoom
+        var d = pinchDistance(activePointers);
+        var factor = d / pinchInitDist;
+        var newZoom = Math.max(0.4, Math.min(3, pinchInitZoom * factor));
+        var rect = cv.getBoundingClientRect();
+        var mx = pinchCenter.x - rect.left, my = pinchCenter.y - rect.top;
+        var before = screenToWorld(mx, my);
+        cam.zoom = newZoom;
+        var after = screenToWorld(mx, my);
+        cam.x += before.x - after.x; cam.y += before.y - after.y;
+        clampCam();
+        return;
+      }
       if (cam.drag) {
         var dx = e.clientX - cam.drag.sx, dy = e.clientY - cam.drag.sy;
-        if (Math.abs(dx) + Math.abs(dy) > 4) cam.moved = true;
+        if (Math.abs(dx) + Math.abs(dy) > TAP_THRESHOLD_PX) {
+          cam.moved = true;
+          cancelLongPress();
+        }
         cam.x = cam.drag.cx - dx / cam.zoom;
         cam.y = cam.drag.cy - dy / cam.zoom;
         clampCam();
         return;
       }
-      // Hover-Highlight ueber Strukturen (nur wenn nicht gedraggt)
+      // Hover-Highlight nur fuer Maus, nicht fuer Touch
+      if (e.pointerType !== 'mouse') return;
       if (e.target !== cv) { hoverStructureId = null; return; }
       var st = structureAtEvent(e);
       hoverStructureId = st ? st.id : null;
     });
-    window.addEventListener('mouseup', function (e) {
-      if (cam.drag && !cam.moved) handleMapClick(e);
-      cam.drag = null;
-    });
+
+    function endPointer(e) {
+      cancelLongPress();
+      var wasDragging = cam.drag && cam.drag.pointerId === e.pointerId;
+      delete activePointers[e.pointerId];
+      var n = Object.keys(activePointers).length;
+      if (n < 2) {
+        pinchInitDist = 0; pinchCenter = null;
+      }
+      if (n === 0 && wasDragging && !cam.moved) {
+        // Doppel-Tap-Erkennung: zwei Taps binnen DOUBLE_TAP_MS und nahe beieinander.
+        var now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+        var dx = e.clientX - lastTapX, dy = e.clientY - lastTapY;
+        var isDouble = (lastTapTime > 0)
+          && (now - lastTapTime < DOUBLE_TAP_MS)
+          && (Math.hypot(dx, dy) < DOUBLE_TAP_PX);
+        if (isDouble) {
+          handleMapDblTap(e);
+          lastTapTime = 0; // Reset, damit kein 3.-Tap als Doppel-Tap zaehlt
+        } else {
+          handleMapClick(e);
+          lastTapTime = now; lastTapX = e.clientX; lastTapY = e.clientY;
+        }
+      }
+      if (n === 0) cam.drag = null;
+    }
+    cv.addEventListener('pointerup', endPointer);
+    cv.addEventListener('pointercancel', endPointer);
+
+    // Mausrad-Zoom bleibt fuer Desktop
     cv.addEventListener('wheel', function (e) {
       e.preventDefault();
       var rect = cv.getBoundingClientRect();
@@ -222,30 +355,52 @@
       cam.x += before.x - after.x; cam.y += before.y - after.y;
       clampCam();
     }, { passive: false });
-    // Doppelklick öffnet das Overlay: eigene Burg -> Burgansicht, eigene
-    // Struktur -> Strukturverwaltung. Es gewinnt das geometrisch nähere Element.
-    cv.addEventListener('dblclick', function (e) {
-      var rect = dom.canvas.getBoundingClientRect();
-      var w = screenToWorld(e.clientX - rect.left, e.clientY - rect.top);
-      var ts = C.MAP.tileSize;
-      var v = villageAtEvent(e);
-      var s = structureAtEvent(e);
-      var pickStructure = false;
-      if (v && s) {
-        var dV = Math.hypot(v.x * ts + ts / 2 - w.x, v.y * ts + ts / 2 - w.y);
-        var dS = Math.hypot(s.x * ts + ts / 2 - w.x, s.y * ts + ts / 2 - w.y);
-        pickStructure = dS < dV;
-      } else if (s) { pickStructure = true; }
+    // Klassischer dblclick (Desktop-Maus) leitet auf gemeinsame Handler-Funktion um.
+    // Touch-Geraete werden durch eigene Doppel-Tap-Logik in endPointer() bedient.
+    cv.addEventListener('dblclick', handleMapDblTap);
+  }
 
-      if (pickStructure) {
-        if (s.ownerHouseId === state.playerHouseId) { openStructure(s.id); }
-        else { selectedStructureId = s.id; targetVillageId = null; renderSidebar(); }
-        return;
+  // Doppel-Tap / Doppel-Klick auf der Karte:
+  //  - eigene Burg     -> Burgansicht-Overlay
+  //  - eigene Struktur -> Struktur-Verwaltungs-Overlay
+  //  - fremde Burg     -> Angriffsziel selektieren + Sidebar oeffnen (auf Touch)
+  //  - fremde Struktur -> Aktion-Picker selektieren + Sidebar oeffnen (auf Touch)
+  function handleMapDblTap(e) {
+    var rect = dom.canvas.getBoundingClientRect();
+    var w = screenToWorld(e.clientX - rect.left, e.clientY - rect.top);
+    var ts = C.MAP.tileSize;
+    var v = villageAtEvent(e);
+    var s = structureAtEvent(e);
+    var pickStructure = false;
+    if (v && s) {
+      var dV = Math.hypot(v.x * ts + ts / 2 - w.x, v.y * ts + ts / 2 - w.y);
+      var dS = Math.hypot(s.x * ts + ts / 2 - w.x, s.y * ts + ts / 2 - w.y);
+      pickStructure = dS < dV;
+    } else if (s) { pickStructure = true; }
+
+    // Auf schmalen Viewports (Phone/iPad-Portrait) zusaetzlich Sidebar-Sheet oeffnen,
+    // damit das Verwaltungs-/Aktions-Panel sofort sichtbar ist.
+    var openSheet = (window.innerWidth <= 1024);
+
+    if (pickStructure) {
+      if (s.ownerHouseId === state.playerHouseId) {
+        openStructure(s.id);
+      } else {
+        selectedStructureId = s.id; targetVillageId = null;
+        renderSidebar();
+        if (openSheet) openSidebarSheet();
       }
-      if (!v) return;
-      if (v.houseId === state.playerHouseId) { activeVillageId = v.id; openVillage(v.id); }
-      else { targetVillageId = v.id; renderSidebar(); toast('Fremde Burg als Angriffsziel gewählt.'); }
-    });
+      return;
+    }
+    if (!v) return;
+    if (v.houseId === state.playerHouseId) {
+      activeVillageId = v.id; openVillage(v.id);
+    } else {
+      targetVillageId = v.id;
+      renderSidebar();
+      toast('Fremde Burg als Angriffsziel gewählt.');
+      if (openSheet) openSidebarSheet();
+    }
   }
 
   function villageAtEvent(e) {
@@ -276,7 +431,7 @@
       var d = Math.hypot(cx - w.x, cy - w.y);
       if (d < bestD) { bestD = d; best = s; }
     }
-    return (best && bestD < ts * 0.75) ? best : null;
+    return (best && bestD < ts * 0.9) ? best : null;
   }
 
   function handleMapClick(e) {
@@ -642,30 +797,48 @@
   // Ressourcen-Eintrag oder die Pop-Anzeige oeffnet sich ein kleines Popup
   // mit Aufschluesselung der Quellen und Verbraucher.
   function attachHudPopups(resBox) {
-    // Pop-Eintrag
-    var popEl = resBox.querySelector('.res.pop');
-    if (popEl) {
-      popEl.classList.add('hud-hover');
-      popEl.addEventListener('mouseenter', function () { showHudPopup(popEl, buildPopPopupHtml()); });
-      popEl.addEventListener('mouseleave', closeHudPopup);
+    function wire(el, htmlBuilder) {
+      if (!el) return;
+      el.classList.add('hud-hover');
+      // Maus: Hover oeffnet/schliesst
+      el.addEventListener('mouseenter', function () { showHudPopup(el, htmlBuilder()); });
+      el.addEventListener('mouseleave', closeHudPopup);
+      // Touch: Tap toggelt
+      el.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var existing = document.getElementById('hud-popup');
+        if (existing && existing._anchor === el) closeHudPopup();
+        else showHudPopup(el, htmlBuilder());
+      });
     }
-    // Ressourcen-Eintraege (food, wood, stone, iron)
+    wire(resBox.querySelector('.res.pop'), buildPopPopupHtml);
     C.RESOURCES.forEach(function (r) {
-      var cell = resBox.querySelector('.res[data-r="' + r + '"]');
-      if (!cell) return;
-      cell.classList.add('hud-hover');
-      cell.addEventListener('mouseenter', function () { showHudPopup(cell, buildResPopupHtml(r)); });
-      cell.addEventListener('mouseleave', closeHudPopup);
+      wire(resBox.querySelector('.res[data-r="' + r + '"]'), function () { return buildResPopupHtml(r); });
     });
+    // Tap ausserhalb schliesst das Popup
+    if (!document._hudPopupOutsideWired) {
+      document._hudPopupOutsideWired = true;
+      document.addEventListener('click', function (e) {
+        var p = document.getElementById('hud-popup');
+        if (!p) return;
+        if (p.contains(e.target)) return;
+        if (p._anchor && p._anchor.contains(e.target)) return;
+        closeHudPopup();
+      });
+    }
   }
 
   function showHudPopup(anchor, html) {
     closeHudPopup();
     var pop = el('div', 'hud-popup'); pop.id = 'hud-popup'; pop.innerHTML = html;
+    pop._anchor = anchor;
     document.body.appendChild(pop);
-    var rect = anchor.getBoundingClientRect();
-    pop.style.top  = (rect.bottom + 6) + 'px';
-    pop.style.left = Math.max(8, Math.min(window.innerWidth - pop.offsetWidth - 8, rect.left)) + 'px';
+    // Auf mobil (< 600px) sitzt das Popup als Bottom-Sheet — Position via CSS.
+    if (window.innerWidth >= 600) {
+      var rect = anchor.getBoundingClientRect();
+      pop.style.top  = (rect.bottom + 6) + 'px';
+      pop.style.left = Math.max(8, Math.min(window.innerWidth - pop.offsetWidth - 8, rect.left)) + 'px';
+    }
   }
   function closeHudPopup() {
     var e = document.getElementById('hud-popup'); if (e) e.remove();
@@ -762,6 +935,7 @@
     if (!v) { toast('Keine eigene Burg mehr.'); return; }
     overlayMode = 'village';
     overlayOpen = true;
+    activeBurgTab = 'buildings'; // beim Öffnen immer mit Gebäude-Tab starten
     dom.overlay.classList.remove('struct-mode');
     dom.overlay.style.display = 'flex';
     dom.overlay.style.top = dom.topbar.offsetHeight + 'px'; // Topbar (Ressourcen) sichtbar lassen
@@ -959,9 +1133,17 @@
     dom.overlayTitle.innerHTML = '<span class="crest sm" style="background:' + crestBg(house.sigil) + '"></span> ' +
       v.name + villageTag(v) + ' — ' + house.name + ' · Treue ' + Math.round(v.loyalty) + '%';
     var html = '';
-    html += '<div class="vv-grid">';
+    // Tab-Header — nur auf schmalen Viewports sichtbar (via CSS gesteuert).
+    // Auf Desktop bleibt er ausgeblendet und beide Spalten sind nebeneinander sichtbar.
+    html += '<nav class="burg-tabs" role="tablist" aria-label="Burgansicht">';
+    html += '<button class="burg-tab' + (activeBurgTab === 'buildings' ? ' active' : '') +
+      '" data-burg-tab="buildings" role="tab" aria-selected="' + (activeBurgTab === 'buildings') + '">Gebäude</button>';
+    html += '<button class="burg-tab' + (activeBurgTab === 'military' ? ' active' : '') +
+      '" data-burg-tab="military" role="tab" aria-selected="' + (activeBurgTab === 'military') + '">Militär</button>';
+    html += '</nav>';
+    html += '<div class="vv-grid" data-burg-tab="' + activeBurgTab + '">';
     // Gebäude-Spalte: Bau-Warteschlange LINKS neben dem Gebäude-Grid
-    html += '<div class="vv-col"><h2>Gebäude</h2>';
+    html += '<div class="vv-col vv-col-buildings"><h2>Gebäude</h2>';
     html += '<div class="bld-area">';
     html += '<div class="queue-col">' + buildQueueListHtml(v) + '</div>';
     html += '<div class="bld-grid">';
@@ -970,7 +1152,7 @@
     html += '</div>';
     html += '</div>';
     // Militär-Spalte: Trainings-Warteschlange RECHTS neben dem Kaserne-HUD
-    html += '<div class="vv-col"><h2>Kaserne &amp; Verteidigung</h2>';
+    html += '<div class="vv-col vv-col-military"><h2>Kaserne &amp; Verteidigung</h2>';
     html += militaryHtml(v);
     html += '</div>';
     html += '</div>';
@@ -1374,6 +1556,27 @@
   }
 
   function attachVillageEvents(v) {
+    // Tab-Switch (Burgansicht): aktiver Tab nur via data-Attribut umschalten,
+    // ohne Re-Render — flicker-frei und ohne State-Verlust in Inputs.
+    Array.prototype.forEach.call(dom.villageBody.querySelectorAll('.burg-tab'), function (btn) {
+      btn.addEventListener('click', function () {
+        var t = btn.getAttribute('data-burg-tab');
+        if (t !== 'buildings' && t !== 'military') return;
+        if (activeBurgTab === t) return;
+        activeBurgTab = t;
+        var grid = dom.villageBody.querySelector('.vv-grid');
+        if (grid) grid.setAttribute('data-burg-tab', t);
+        Array.prototype.forEach.call(dom.villageBody.querySelectorAll('.burg-tab'), function (b) {
+          var on = b.getAttribute('data-burg-tab') === t;
+          b.classList.toggle('active', on);
+          b.setAttribute('aria-selected', on ? 'true' : 'false');
+        });
+        // Inhalt aktualisieren (Counter, Queues), aber ohne Tab-Header neu zu bauen.
+        // Einfachste Konsistenz: refreshPanels via renderVillageView re-rendert,
+        // setzt aber activeBurgTab nicht zurueck — daher unkritisch.
+        renderVillageView();
+      });
+    });
     // Icons zeichnen
     paintResIcons(dom.villageBody);
     Array.prototype.forEach.call(dom.villageBody.querySelectorAll('canvas[data-bld]'), function (c) {
@@ -2208,3 +2411,4 @@
     refreshPanels: refreshPanels, setSaveStatus: setSaveStatus, toast: toast
   };
 })(window.WOH = window.WOH || {});
+

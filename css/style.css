@@ -14,13 +14,17 @@ small{color:var(--muted)}
 .good{color:var(--green)} .bad{color:var(--red)} .lack{color:#e06a8a}
 
 /* ---------- Layout ---------- */
-#app{display:flex;flex-direction:column;height:100vh}
+/* Root-Hoehe: vh-Fallback gefolgt von dvh (dynamic viewport — beruecksichtigt
+   Mobile-Browser-Chrome korrekt). Browser, die dvh nicht kennen, ignorieren
+   die zweite Property. */
+#app{display:flex;flex-direction:column;height:100vh;height:100dvh}
 #stage{flex:1;display:flex;min-height:0}
 #content{flex:1;position:relative;min-width:0}
 #map-view,#village-view{position:absolute;inset:0}
 #map-canvas{width:100%;height:100%;display:block;cursor:grab}
 #map-canvas:active{cursor:grabbing}
-#map-hint{position:absolute;left:12px;bottom:12px;background:rgba(0,0,0,.5);
+#map-hint{position:absolute;left:max(12px,env(safe-area-inset-left));
+  bottom:max(12px,env(safe-area-inset-bottom));background:rgba(0,0,0,.5);
   padding:5px 10px;border-radius:4px;font-size:12px;color:var(--muted);pointer-events:none}
 #sidebar{width:330px;flex-shrink:0;background:var(--bg2);border-left:1px solid var(--line);
   overflow:auto;padding:10px}
@@ -36,7 +40,8 @@ small{color:var(--muted)}
 /* ---------- Dorf-Overlay ---------- */
 .overlay{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:24px}
 .overlay-backdrop{position:absolute;inset:0;background:rgba(4,8,11,.72);backdrop-filter:blur(3px)}
-.overlay-card{position:relative;z-index:1;width:min(1440px,96vw);max-height:92vh;display:flex;
+.overlay-card{position:relative;z-index:1;width:min(1440px,96vw);
+  max-height:92vh;max-height:92dvh;display:flex;
   flex-direction:column;background:linear-gradient(#16222c,#0e161c);
   border:1px solid var(--line);border-radius:10px;box-shadow:0 24px 70px rgba(0,0,0,.7);overflow:hidden}
 .overlay-head{display:flex;align-items:center;justify-content:space-between;gap:10px;
@@ -74,7 +79,13 @@ small{color:var(--muted)}
 .unit-table tr.hero{background:rgba(232,200,74,.14)}
 
 /* ---------- Topbar ---------- */
-#topbar{display:flex;align-items:center;gap:16px;padding:8px 14px;
+/* Safe-Area: Topbar respektiert Notch/Dynamic Island (top) und seitliche Insets.
+   max() mit 0px-Fallback fuer Browser ohne env() Unterstuetzung. */
+#topbar{display:flex;align-items:center;gap:16px;
+  padding-top:max(8px,env(safe-area-inset-top));
+  padding-right:max(14px,env(safe-area-inset-right));
+  padding-bottom:8px;
+  padding-left:max(14px,env(safe-area-inset-left));
   background:linear-gradient(#1a262f,#121a20);border-bottom:2px solid var(--line);flex-wrap:wrap}
 .tb-left{display:flex;align-items:center;gap:10px}
 .tb-house{font-size:15px}
@@ -112,6 +123,17 @@ small{color:var(--muted)}
 /* ---------- Dorfansicht ---------- */
 .vv-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;max-width:1400px;margin:0 auto}
 @media(max-width:900px){.vv-grid{grid-template-columns:1fr}}
+/* Burgansicht-Tabs — Standard versteckt; auf schmalen Viewports via Media-Query aktiv. */
+.burg-tabs{display:none;gap:6px;margin:0 auto 14px;max-width:1400px;
+  border-bottom:1px solid var(--line);padding:0 2px}
+.burg-tab{flex:1;background:transparent;color:var(--muted);
+  border:0;border-bottom:2px solid transparent;
+  padding:10px 14px;font:600 14px/1.2 inherit;cursor:pointer;
+  min-height:42px;letter-spacing:.02em;
+  transition:color .15s,border-color .15s,background .15s}
+.burg-tab:hover{color:var(--text);background:rgba(255,255,255,0.03)}
+.burg-tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+.burg-tab:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}
 #village-overlay.struct-mode .overlay-card{width:min(940px,96vw)}
 .struct-grid{display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start}
 @media(max-width:760px){.struct-grid{grid-template-columns:1fr}}
@@ -248,7 +270,8 @@ small{color:var(--muted)}
 .legal{font-size:11px;color:#5c6873;margin-top:14px;text-align:center}
 
 /* ---------- Toast ---------- */
-#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+#toast{position:fixed;bottom:max(24px,calc(env(safe-area-inset-bottom) + 16px));
+  left:50%;transform:translateX(-50%) translateY(20px);
   padding:10px 18px;opacity:0;pointer-events:none;transition:.25s;z-index:200;max-width:80%}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
@@ -390,3 +413,134 @@ small{color:var(--muted)}
   display:flex;justify-content:space-between;gap:8px}
 .hud-popup .hud-saldo .good{color:var(--green)}
 .hud-popup .hud-saldo .bad{color:var(--red)}
+
+/* ===========================================================
+   Mobile / Responsive Layer (Phase A)
+   - < 600px : Phone-Portrait
+   - 600-1024px : Tablet/Phone-Landscape
+   - > 1024px : Desktop (bleibt unveraendert)
+   =========================================================== */
+
+/* Burger-Button und Backdrop standardmaessig unsichtbar (nur mobil aktiv) */
+#sidebar-toggle{display:none;position:absolute;top:8px;right:8px;z-index:55;
+  width:42px;height:42px;border-radius:6px;background:rgba(12,16,20,0.85);
+  color:var(--gold);border:1px solid var(--line);font-size:20px;cursor:pointer;
+  box-shadow:0 2px 8px rgba(0,0,0,0.4)}
+#sidebar-toggle:hover{background:rgba(28,40,52,0.95);border-color:var(--gold)}
+#sidebar-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);
+  z-index:48;backdrop-filter:blur(2px)}
+#sidebar-backdrop.show{display:block}
+
+/* ---- Tablet/Phone-Landscape: 600-1024px ---- */
+@media (max-width:1024px){
+  #sidebar-toggle{display:block;
+    top:max(8px,env(safe-area-inset-top));
+    right:max(8px,env(safe-area-inset-right))}
+  /* Sidebar-Sheet: dvh-Hoehe (Mobile-Browser-Chrome korrekt), Safe-Area-Padding
+     top/bottom/right damit Inhalt nicht hinter Notch / Home-Indicator gerät. */
+  #sidebar{position:fixed;top:0;right:0;
+    height:100vh;height:100dvh;width:min(330px,85vw);
+    padding-top:max(10px,env(safe-area-inset-top));
+    padding-bottom:max(10px,env(safe-area-inset-bottom));
+    padding-right:max(10px,env(safe-area-inset-right));
+    transform:translateX(100%);transition:transform 0.25s ease;z-index:50;
+    border-left:1px solid var(--line);box-shadow:-2px 0 12px rgba(0,0,0,0.4)}
+  #sidebar.open{transform:translateX(0)}
+  #content{width:100%}
+  /* Topbar kompakter */
+  #topbar{padding-top:max(6px,env(safe-area-inset-top));
+    padding-right:max(10px,env(safe-area-inset-right));
+    padding-bottom:6px;
+    padding-left:max(10px,env(safe-area-inset-left));gap:10px}
+  .tb-house{font-size:13px}
+  .tb-house i{display:none}
+  .tb-res{gap:8px}
+  .crest{width:22px;height:22px}
+  /* Burg-verwalten + Burgwahl kompakt */
+  .vill-select{max-width:140px;font-size:12px}
+  /* Speed-Buttons kompakter */
+  .tb-speed .speed-btn{padding:5px 8px;min-width:32px;min-height:32px}
+  /* Mil-Area: Tabelle voll, Queue darunter */
+  .mil-area{flex-direction:column}
+  .mil-area .queue-col{flex:0 0 auto;width:100%}
+  /* Bauen-Bereich: Queue oben, dann Grid */
+  .bld-area{flex-direction:column}
+  .bld-area .queue-col{flex:0 0 auto;width:100%}
+}
+
+/* ---- Tabs-Modus aktivieren: Phone immer, iPad-Portrait (600-1024 + portrait) ---- */
+@media (max-width:599px),
+       (min-width:600px) and (max-width:1024px) and (orientation:portrait){
+  .burg-tabs{display:flex}
+  .vv-grid{grid-template-columns:1fr;gap:14px}
+  .vv-grid[data-burg-tab="buildings"] > .vv-col-military{display:none}
+  .vv-grid[data-burg-tab="military"]  > .vv-col-buildings{display:none}
+  /* Gebäude-Cards volle Breite (eine Spalte) */
+  .bld-grid{grid-template-columns:1fr;gap:8px}
+  .bld-card{padding:10px 12px}
+  .bld-card .btn.sm{min-height:36px;padding:8px 12px;font-size:13px}
+}
+
+/* ---- Phone-Portrait: < 600px ---- */
+@media (max-width:599px){
+  /* HUD weiter eindampfen: nur Hauptwerte ohne Produktions-Detail */
+  .tb-res .res small{display:none}
+  .tb-clock{font-size:12px}
+  .tb-right{gap:6px}
+  /* Topbar in 2 Zeilen aufteilen: Zeile 1 = Haus/Crest + Burg-Selektor + Speed,
+     Zeile 2 = Rohstoffe + Pop (volle Breite). Erzeugt einen sauberen Wrap, weil
+     flex-wrap auf #topbar bereits aktiv ist. */
+  #topbar{row-gap:6px;column-gap:10px}
+  .tb-left{order:1;flex:0 1 auto;min-width:0}
+  .tb-right{order:1;flex:0 1 auto;margin-left:auto}
+  .tb-res{order:2;flex:1 0 100%;justify-content:space-between;gap:10px;
+    padding:4px 0;border-top:1px solid rgba(232,215,160,0.12)}
+  /* Hausname auf Phone kürzer, damit Zeile 1 nicht selbst umbricht */
+  .tb-house{font-size:12px;max-width:38vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  /* Map-Hint klein und automatisch ausblenden nach Interaktion */
+  #map-hint{font-size:10px;padding:3px 6px;left:8px;bottom:8px;
+    max-width:calc(100% - 60px);line-height:1.3}
+  /* Overlay-Card geht ueber den ganzen Bildschirm. dvh statt vh, damit
+     bei eingeblendeter Mobile-Browser-Chrome nichts abgeschnitten wird. */
+  .overlay-card{width:100vw;max-height:100vh;max-height:100dvh;
+    border-radius:0;border-width:0;
+    padding-top:env(safe-area-inset-top);
+    padding-bottom:env(safe-area-inset-bottom)}
+  .overlay{padding:0}
+  #village-body{padding:10px}
+  #battle-body{padding:12px}
+  /* Buttons groesser fuer Touch */
+  .btn{min-height:36px;padding:8px 12px}
+  .btn.sm{min-height:32px;padding:5px 10px;font-size:12px}
+  /* Eingabefelder vergroessern — font-size:16px verhindert iOS-Safari-Auto-Zoom. */
+  input[type="number"],input[type="text"],select{min-height:36px;font-size:16px}
+  /* Schmale Zahlen-Inputs in Tabellen muessen mehr Platz bekommen, weil 16px breiter rendert. */
+  .train-ctl input.train-n,.mil-area .unit-table input.train-n{width:56px;font-size:16px}
+  input.sup-n,input.sup-r{width:64px;font-size:16px}
+  /* HP-Leiste duenner aber gut sichtbar */
+  .hp-row{font-size:10px}
+  /* Hover-Popup: Bottom-Sheet-Style mit Safe-Area-Padding unten (Home-Indicator). */
+  .hud-popup{position:fixed;bottom:0;left:0;right:0;top:auto;max-width:100vw;
+    border-radius:8px 8px 0 0;border:1px solid var(--gold);border-bottom:0;
+    padding:14px 16px max(14px,env(safe-area-inset-bottom))}
+  /* End-Screen Buttons groesser */
+  .end-actions .btn{padding:14px 16px}
+  /* Sidebar oeffnet sich vollflaechig */
+  #sidebar{width:100vw}
+  /* Queue-Cancel-Buttons (Build, Train) auf 28x28 Touch-Target. Repair ist
+     nicht abbrechbar — daher kein eigener Cancel-Selektor noetig. */
+  .queue-item{padding:8px 38px 8px 8px}
+  .qi-cancel{top:50%;right:5px;transform:translateY(-50%);
+    width:28px;height:28px;min-width:28px;min-height:28px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:14px;line-height:1}
+}
+
+/* ---- Touch-Geräte: Hover-Effekte deaktivieren ---- */
+@media (hover:none){
+  .btn:hover:not(:disabled){background:var(--panel2);border-color:var(--line)}
+  .hud-hover:hover{background:transparent}
+}
+
+/* Canvas-spezifisch: Pan-Geste nicht durch Browser-Gesten gestoert */
+#map-canvas{touch-action:none}

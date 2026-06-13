@@ -1,0 +1,27 @@
+{
+  "name": "World of Houses",
+  "short_name": "WoH",
+  "description": "Echtzeit-Strategiespiel im Stil von Die Stämme als Top-Down-Pixel-Art.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0c1014",
+  "theme_color": "#0c1014",
+  "lang": "de",
+  "categories": ["games", "strategy"],
+  "icons": [
+    {
+      "src": "assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

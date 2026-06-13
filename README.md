@@ -73,6 +73,47 @@ js/ui.js              Karten- & Dorfansicht, HUD, Truppenversand, Chronik
 js/main.js            Startmenü, Spielschleife, Auto-Save
 ```
 
+## Mobile & PWA
+
+Das Spiel ist auf Phone, iPad und Desktop spielbar.
+
+- **Touch-Eingabe:** Karte mit einem Finger verschieben, mit zwei Fingern zoomen (Pinch).
+  Burgen und Strukturen werden per Tap ausgewählt; ein langer Tap (≥ 500 ms) öffnet
+  die Detail-Ansicht. Auf der Karte ist Doppel-Tap = Doppelklick (Burgansicht öffnen).
+- **HUD-Popups:** Tap auf einen HUD-Wert (Holz, Stein, Eisen, Nahrung, Pop) öffnet
+  das Info-Popup; Tap außerhalb oder erneut auf den Wert schließt es.
+- **Seitenleiste:** Auf Phone und iPad-Portrait ist die Seitenleiste eine Slide-In-Sheet,
+  aufrufbar über das Burger-Symbol oben rechts. Escape oder Tap auf den Hintergrund schließt.
+- **Burgansicht:** Auf Phone und iPad-Portrait sind Gebäude, Kaserne, Verteidigung und Boni
+  als Tabs organisiert; auf iPad-Landscape und Desktop bleibt das Mehrspalten-Layout.
+- **Orientierung:** Sowohl Portrait als auch Landscape werden unterstützt.
+- **Speicherstände:** Werden pro Gerät in IndexedDB des Browsers gehalten. Es findet kein
+  Cloud-Sync statt — wer auf einem anderen Gerät weiterspielen möchte, sollte den
+  Speicherstand manuell exportieren (geplant).
+
+### Als App installieren
+
+- **Android (Chrome):** Browser-Menü → „Zum Startbildschirm hinzufügen".
+- **iOS/iPadOS (Safari):** Teilen-Menü → „Zum Home-Bildschirm". Das Symbol ist
+  die skalierte Burg auf dunklem Hintergrund mit goldenem Rand.
+- **Desktop (Chrome/Edge):** In der Adressleiste erscheint ein Installations-Icon
+  (oder via Menü → „Installieren").
+
+Nach der Installation läuft das Spiel als Standalone-Fenster ohne Browser-Chrome.
+Der Service Worker (`sw.js`) cached alle statischen Assets, sodass das Spiel
+auch offline gestartet werden kann.
+
+## Deployment via GitHub Pages
+
+1. Repository auf GitHub anlegen und Code pushen.
+2. In den Repo-Settings unter **Pages** als Quelle den Branch (z. B. `main`) und
+   Verzeichnis `/ (root)` wählen.
+3. Nach kurzer Bauzeit ist das Spiel unter `https://<user>.github.io/<repo>/`
+   erreichbar. Die Datei `.nojekyll` im Root-Verzeichnis stellt sicher, dass
+   GitHub Pages den Inhalt unverändert ausliefert.
+4. Bei jedem Asset-/Code-Update sollte `CACHE_VERSION` in `sw.js` inkrementiert
+   werden, damit Clients beim nächsten Aufruf die neuen Dateien ziehen.
+
 ## Balancing anpassen
 
 Alle Spielwerte (Produktion, Gebäudekosten, Einheiten-Stats, Kampfparameter,

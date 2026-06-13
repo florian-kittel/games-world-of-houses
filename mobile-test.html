@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>WoH Mobile-Diagnose</title>
+  <link rel="stylesheet" href="css/style.css?v=2026061302">
+  <style>
+    body{margin:0;padding:14px;background:#0c1014;color:#e8d7a0;font-family:system-ui,sans-serif;font-size:14px;line-height:1.4}
+    h1{color:#e8d7a0;font-size:18px;margin:0 0 12px}
+    h2{color:#bfa86a;font-size:14px;margin:18px 0 6px;border-bottom:1px solid #2a3540;padding-bottom:3px}
+    .ok{color:#7cc77c} .bad{color:#e06a8a} .warn{color:#e8c060}
+    .row{display:flex;justify-content:space-between;gap:8px;padding:3px 0;border-bottom:1px dashed #2a3540}
+    .row b{color:#e8d7a0;font-weight:600}
+    .row span{font-variant-numeric:tabular-nums;text-align:right}
+    pre{background:#0a0d11;border:1px solid #2a3540;padding:8px;border-radius:4px;overflow-x:auto;font-size:11px;white-space:pre-wrap;word-break:break-all}
+    .demo{background:#16222c;border:1px solid #2a3540;border-radius:6px;padding:10px;margin-top:8px;overflow-x:auto}
+  </style>
+</head>
+<body>
+  <h1>WoH Mobile-Diagnose</h1>
+
+  <h2>Viewport</h2>
+  <div class="row"><b>window.innerWidth</b><span id="iw"></span></div>
+  <div class="row"><b>window.innerHeight</b><span id="ih"></span></div>
+  <div class="row"><b>devicePixelRatio</b><span id="dpr"></span></div>
+  <div class="row"><b>document.documentElement.clientWidth</b><span id="dew"></span></div>
+  <div class="row"><b>screen.width × screen.height</b><span id="scr"></span></div>
+
+  <h2>Media-Queries</h2>
+  <div class="row"><b>max-width: 599px</b><span id="m599"></span></div>
+  <div class="row"><b>max-width: 1024px</b><span id="m1024"></span></div>
+  <div class="row"><b>orientation: portrait</b><span id="mport"></span></div>
+  <div class="row"><b>Tabs-Aktivierung sollte greifen</b><span id="mTabs"></span></div>
+
+  <h2>CSS-Datei verifizieren</h2>
+  <div class="row"><b>style.css enthält .burg-tabs</b><span id="cssBurgTabs"></span></div>
+  <div class="row"><b>style.css enthält Tab-Media-Query</b><span id="cssTabMedia"></span></div>
+  <div class="row"><b>style.css CACHE_VERSION-Hinweis</b><span id="cssVer"></span></div>
+
+  <h2>Tab-Demo</h2>
+  <p style="color:#9aa">Hier wird der HTML-Code der Burgansicht-Tabs eingefügt, um zu testen, ob die CSS-Regeln im realen Viewport greifen:</p>
+  <div class="demo" id="demoBox">
+    <nav class="burg-tabs" role="tablist">
+      <button class="burg-tab active" data-burg-tab="buildings">Gebäude</button>
+      <button class="burg-tab" data-burg-tab="military">Militär</button>
+    </nav>
+    <div class="vv-grid" data-burg-tab="buildings">
+      <div class="vv-col vv-col-buildings"><h2 style="color:#e8d7a0">Gebäude-Spalte</h2>
+        <div class="bld-grid">
+          <div class="bld-card">Card A</div>
+          <div class="bld-card">Card B</div>
+          <div class="bld-card">Card C</div>
+        </div>
+      </div>
+      <div class="vv-col vv-col-military"><h2 style="color:#e8d7a0">Militär-Spalte</h2>
+        <p>Sollte verborgen sein, wenn Tab "Gebäude" aktiv und Phone-Viewport.</p>
+      </div>
+    </div>
+  </div>
+
+  <h2>Computed-Style der Tab-Demo</h2>
+  <div class="row"><b>.burg-tabs display</b><span id="cBurgTabs"></span></div>
+  <div class="row"><b>.burg-tab[active] display</b><span id="cBurgTab"></span></div>
+  <div class="row"><b>.vv-grid grid-template-columns</b><span id="cVvGrid"></span></div>
+  <div class="row"><b>.bld-grid grid-template-columns</b><span id="cBldGrid"></span></div>
+  <div class="row"><b>.vv-col-military display</b><span id="cVvMil"></span></div>
+  <div class="row"><b>.bld-card[0] computed width</b><span id="cBldCard"></span></div>
+
+  <h2>Horizontaler Overflow</h2>
+  <div class="row"><b>document.scrollWidth</b><span id="docSW"></span></div>
+  <div class="row"><b>document.clientWidth</b><span id="docCW"></span></div>
+  <div class="row"><b>Overflow vorhanden?</b><span id="ovf"></span></div>
+  <div class="row"><b>Schuldiges Element (breitestes scrollWidth)</b><span></span></div>
+  <pre id="ovfList">—</pre>
+
+  <h2>HUD-Topbar (Phone-Wrap-Test)</h2>
+  <p style="color:#9aa">Simuliert den Topbar im aktuellen Viewport. Auf Phone sollte der Rohstoff-Block in eine eigene Zeile umbrechen (siehe orange Border).</p>
+  <div id="topbarSim" style="background:linear-gradient(#1a262f,#121a20);border:1px solid #2a3540;border-radius:6px;padding:8px;display:flex;flex-wrap:wrap;gap:10px;row-gap:6px">
+    <div style="display:flex;align-items:center;gap:8px;flex:0 1 auto"><span style="width:22px;height:22px;border-radius:4px;background:#bfa86a"></span><span style="font-size:12px;max-width:38vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Haus Hightower — <i style="color:#bfa86a">Wir leuchten</i></span></div>
+    <div style="display:flex;align-items:center;gap:6px;margin-left:auto;flex:0 1 auto"><select style="background:#1a2230;color:#e8d7a0;border:1px solid #2a3540;padding:4px;font-size:13px"><option>Hochburg</option></select><button style="background:#bfa86a;color:#1a1206;border:0;padding:6px 10px;border-radius:4px;font-weight:700">⌂</button><span style="color:#bfa86a">⏱ 0:00</span></div>
+    <div id="resSim" style="flex:1 0 100%;display:flex;justify-content:space-between;gap:10px;border-top:1px solid #2a3540;padding:4px 0;font-variant-numeric:tabular-nums"><span>🌲 100</span><span>⛰ 100</span><span>⛏ 100</span><span>🌾 100</span><span style="color:#bfa86a">⚑ 5/10</span></div>
+  </div>
+  <div class="row" style="margin-top:8px"><b>Topbar simulierte Höhe</b><span id="topH"></span></div>
+  <div class="row"><b>Rohstoff-Block in eigener Zeile?</b><span id="resWrap"></span></div>
+
+  <h2>Doppel-Tap-Test</h2>
+  <p style="color:#9aa">Tippe das gelbe Feld zweimal kurz hintereinander. Beide Mechanismen werden gemessen — der native <code>dblclick</code> (oft unzuverlässig auf iOS) und unsere selbstgebaute Doppel-Tap-Erkennung über Pointer Events.</p>
+  <div id="tapPad" style="background:#2a2310;border:2px dashed #bfa86a;border-radius:6px;padding:24px;text-align:center;color:#e8d7a0;cursor:pointer;user-select:none;touch-action:none">
+    Hier doppelt tippen
+  </div>
+  <div class="row" style="margin-top:8px"><b>Native dblclick gefeuert</b><span id="natDbl">noch nicht</span></div>
+  <div class="row"><b>Pointer-Doppel-Tap erkannt</b><span id="ptrDbl">noch nicht</span></div>
+  <div class="row"><b>Letzter Tap-Abstand (ms)</b><span id="tapDelta">—</span></div>
+
+  <h2>Service Worker</h2>
+  <div class="row"><b>navigator.serviceWorker</b><span id="swSupp"></span></div>
+  <div class="row"><b>Registrierte Worker</b><span id="swList"></span></div>
+  <div class="row"><b>Cache-Names</b><span id="swCaches"></span></div>
+
+  <h2>Aktionen</h2>
+  <button onclick="clearAllCaches()" style="margin-top:6px;padding:10px 14px;background:#7c2c2c;color:#fff;border:0;border-radius:5px;font-size:14px">Service-Worker + Caches komplett löschen</button>
+  <p style="color:#9aa;font-size:12px">Nach Klick: Seite manuell neu laden (Safari → Seite ziehen oder URL erneut eingeben), dann `index.html` öffnen.</p>
+
+  <script>
+  function $(id){return document.getElementById(id);}
+  function set(id,v,cls){var e=$(id);if(!e)return;e.textContent=v;if(cls)e.className=cls;}
+
+  // --- Viewport ---
+  set('iw', window.innerWidth + ' px');
+  set('ih', window.innerHeight + ' px');
+  set('dpr', window.devicePixelRatio);
+  set('dew', document.documentElement.clientWidth + ' px');
+  set('scr', screen.width + ' × ' + screen.height + ' px');
+
+  // --- Media-Queries ---
+  var m599 = matchMedia('(max-width: 599px)').matches;
+  var m1024 = matchMedia('(max-width: 1024px)').matches;
+  var mport = matchMedia('(orientation: portrait)').matches;
+  var tabsShouldShow = m599 || (window.innerWidth >= 600 && window.innerWidth <= 1024 && mport);
+  set('m599', m599 ? 'JA ✓' : 'nein', m599 ? 'ok' : 'warn');
+  set('m1024', m1024 ? 'JA ✓' : 'nein', m1024 ? 'ok' : 'warn');
+  set('mport', mport ? 'JA ✓' : 'nein', mport ? 'ok' : 'warn');
+  set('mTabs', tabsShouldShow ? 'JA — Tabs müssen sichtbar sein' : 'NEIN — Tabs bleiben versteckt', tabsShouldShow ? 'ok' : 'bad');
+
+  // --- CSS-Datei lesen ---
+  fetch('css/style.css?v=2026061302&t=' + Date.now()).then(function(r){return r.text();}).then(function(txt){
+    var hasBurgTabs = /\.burg-tabs\s*\{[\s\S]{0,300}?display\s*:\s*none/.test(txt);
+    var hasMediaTab = /@media\s*\([^)]*max-width\s*:\s*599px[\s\S]{0,500}?\.burg-tabs\s*\{\s*display\s*:\s*flex/.test(txt);
+    set('cssBurgTabs', hasBurgTabs ? 'JA ✓' : 'NEIN ✗', hasBurgTabs ? 'ok' : 'bad');
+    set('cssTabMedia', hasMediaTab ? 'JA ✓' : 'NEIN ✗', hasMediaTab ? 'ok' : 'bad');
+    // Aus den ersten Bytes ein Hash-Prefix bilden, damit Florian sieht, ob er
+    // tatsaechlich die aktuelle Datei lädt.
+    var sig = txt.length + 'B / Erste 80 Zeichen: ' + txt.replace(/\s+/g,' ').slice(0,80);
+    set('cssVer', sig, hasBurgTabs && hasMediaTab ? 'ok' : 'warn');
+  }).catch(function(e){ set('cssVer','Fehler beim Laden: '+e.message, 'bad'); });
+
+  // --- Computed-Styles ---
+  var tabs = document.querySelector('.burg-tabs');
+  var tab  = document.querySelector('.burg-tab.active');
+  var vvg  = document.querySelector('.vv-grid');
+  var bld  = document.querySelector('.bld-grid');
+  var mil  = document.querySelector('.vv-col-military');
+  var card = document.querySelector('.bld-card');
+  set('cBurgTabs', tabs ? getComputedStyle(tabs).display : 'NICHT IM DOM', tabs && getComputedStyle(tabs).display !== 'none' ? 'ok' : 'bad');
+  set('cBurgTab',  tab  ? getComputedStyle(tab).display  : '—');
+  set('cVvGrid',   vvg  ? getComputedStyle(vvg).gridTemplateColumns : '—');
+  set('cBldGrid',  bld  ? getComputedStyle(bld).gridTemplateColumns : '—');
+  set('cVvMil',    mil  ? getComputedStyle(mil).display : '—', mil && getComputedStyle(mil).display === 'none' ? 'ok' : 'warn');
+  set('cBldCard',  card ? getComputedStyle(card).width : '—');
+
+  // --- Overflow ---
+  var docSW = document.documentElement.scrollWidth;
+  var docCW = document.documentElement.clientWidth;
+  set('docSW', docSW + ' px');
+  set('docCW', docCW + ' px');
+  set('ovf', (docSW > docCW) ? ('JA — ' + (docSW - docCW) + ' px zu breit') : 'nein', (docSW > docCW) ? 'bad' : 'ok');
+
+  // Findet alle Elemente, deren rechte Kante über window.innerWidth hinausragt.
+  var offenders = [];
+  var W = window.innerWidth;
+  document.querySelectorAll('*').forEach(function(el){
+    try {
+      var r = el.getBoundingClientRect();
+      if (r.right > W + 1) {
+        offenders.push({
+          tag: el.tagName.toLowerCase() + (el.id ? '#' + el.id : '') + (el.className && typeof el.className === 'string' ? '.' + el.className.replace(/\s+/g,'.') : ''),
+          right: Math.round(r.right),
+          width: Math.round(r.width),
+          overshoot: Math.round(r.right - W)
+        });
+      }
+    } catch(e){}
+  });
+  offenders.sort(function(a,b){ return b.overshoot - a.overshoot; });
+  $('ovfList').textContent = offenders.length
+    ? offenders.slice(0,12).map(function(o){ return o.overshoot + 'px über → ' + o.tag + ' (width=' + o.width + ', right=' + o.right + ')'; }).join('\n')
+    : 'Keine Elemente außerhalb der Viewport-Breite gefunden.';
+
+  // --- Topbar-Simulation ---
+  var topSim = $('topbarSim');
+  var resSim = $('resSim');
+  set('topH', topSim ? topSim.offsetHeight + ' px' : '—');
+  // Wenn der Rohstoff-Block in eigener Zeile ist, liegt sein top > erste-Zeile-bottom.
+  var resTop = resSim.getBoundingClientRect().top;
+  var firstChildBottom = topSim.firstElementChild.getBoundingClientRect().bottom;
+  var wrappedOk = resTop >= firstChildBottom - 1;
+  set('resWrap', wrappedOk ? 'JA ✓' : 'NEIN ✗ (alles in einer Zeile)', wrappedOk ? 'ok' : 'bad');
+
+  // --- Doppel-Tap-Test ---
+  var pad = $('tapPad');
+  var lastT = 0, lastX = 0, lastY = 0;
+  var DT_MS = 350, DT_PX = 25;
+  pad.addEventListener('pointerup', function(e){
+    var now = performance.now();
+    var dx = e.clientX - lastX, dy = e.clientY - lastY;
+    if (lastT > 0 && (now - lastT) < DT_MS && Math.hypot(dx,dy) < DT_PX) {
+      set('ptrDbl', 'JA ✓ — Delta ' + Math.round(now - lastT) + ' ms', 'ok');
+      set('tapDelta', Math.round(now - lastT));
+      lastT = 0;
+    } else {
+      lastT = now; lastX = e.clientX; lastY = e.clientY;
+      if ($('ptrDbl').textContent.indexOf('JA') !== 0) set('ptrDbl', 'noch warten...');
+    }
+  });
+  pad.addEventListener('dblclick', function(){
+    set('natDbl', 'JA ✓ — native dblclick gefeuert', 'ok');
+  });
+
+  // --- SW-Status ---
+  if ('serviceWorker' in navigator) {
+    set('swSupp', 'unterstützt ✓', 'ok');
+    navigator.serviceWorker.getRegistrations().then(function(regs){
+      set('swList', regs.length ? regs.map(function(r){return r.scope;}).join(', ') : '— keine —');
+    });
+    if (window.caches) {
+      caches.keys().then(function(keys){
+        set('swCaches', keys.length ? keys.join(', ') : '— keine —');
+      });
+    }
+  } else {
+    set('swSupp', 'nicht verfügbar', 'warn');
+  }
+
+  function clearAllCaches() {
+    var p1 = ('serviceWorker' in navigator)
+      ? navigator.serviceWorker.getRegistrations().then(function(regs){ return Promise.all(regs.map(function(r){return r.unregister();})); })
+      : Promise.resolve();
+    var p2 = window.caches ? caches.keys().then(function(keys){ return Promise.all(keys.map(function(k){return caches.delete(k);})); }) : Promise.resolve();
+    Promise.all([p1,p2]).then(function(){
+      alert('Service Worker abgemeldet und Caches gelöscht. Bitte index.html neu laden.');
+    });
+  }
+  window.clearAllCaches = clearAllCaches;
+  </script>
+</body>
+</html>

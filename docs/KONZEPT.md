@@ -3,11 +3,12 @@
 Lebendes Designdokument. Dient als Ankerpunkt, um die Entwicklung fortzusetzen
 und zu verfeinern. Stand: laufend gepflegt.
 
-**Aktueller Save-Schema-Stand:** `version: 6` — beinhaltet
+**Aktueller Save-Schema-Stand:** `version: 7` — beinhaltet
 `state.structures[]` mit Garnison/Heimatburg/`upgradeQueue`, Burg-HP-Felder
-(`wallHP`/`towerHP`/`repairQueue`), KI-Feld `lastAttackTime`, sowie
-`state.gameOver` und `state.stats`. Migration älterer Stände erfolgt
-idempotent in `js/persistence.js` (`migrate()`).
+(`wallHP`/`towerHP`/`repairQueue`), KI-Feld `lastAttackTime`, `state.gameOver`,
+`state.stats`, `state.speedMultiplier`, `state.pauseOnReport` sowie
+KI-Persönlichkeit pro Haus (`house.personality`). Migration älterer
+Stände erfolgt idempotent in `js/persistence.js` (`migrate()`).
 
 ## Vision
 
@@ -212,6 +213,42 @@ zentralisiert (Default-Balancing).
   den Besitzer. Eroberte Strukturen erhöhen die KI-Wirtschaft und den
   Pop-Cap der Heimatburg.
 
+### KI-Persönlichkeiten
+
+Jede KI-Fraktion bekommt bei Spielstart eine **Persönlichkeit**
+(`house.personality`), die ihr Verhalten über die ganze Partie färbt.
+Persönlichkeit ist orthogonal zur Schwierigkeitsstufe — letztere skaliert
+Aggression/Wirtschaft/Tempo, Persönlichkeit gestaltet das *Wie*.
+
+Definition in `config.js`, Sektion `PERSONALITIES`. Vorhandene Profile
+(Default-Balancing, in `config.js` justierbar):
+
+| Profil | Charakter | Schlüsselparameter (Auszug) |
+|--------|-----------|-----------------------------|
+| **Aggressiv** | greift früh und oft an, dünne Mauer, viele Äxte | `aggressionMult 1.6`, `marginMult 0.8`, `minAxe 8`, Bau-Bias `barracks +2`, `wall −1` |
+| **Expansiv** | sammelt früh Strukturen, baut Wirtschaft, Held früh | `structureBias 2.0`, `heroBarracksReq 3`, `expandEager true`, `shareResources true` |
+| **Defensiv** | massiert Wall/Tower/Bogen, greift selten, dann sicher | `aggressionMult 0.5`, `marginMult 1.4`, `archerBias 0.2`, Bau-Bias `wall +2`, `tower +2` |
+| **Dampfwalze** | wartet lange, schickt riesige Truppmasse | `minAxe 30`, `batchMult 1.8`, `aggressionMult 1.3` |
+
+Parameter, die in `ai.js` ausgewertet werden:
+
+- `aggressionMult` — Multiplikator auf die Schwierigkeits-Aggression.
+- `marginMult` — Multiplikator auf den Boredom-Margin-Schwellwert.
+- `minAxe` — minimale Anzahl Axtkämpfer vor Angriffsstart.
+- `offShareBonus` — verschiebt die Trainings-Mischung in Richtung Offensive.
+- `archerBias` — zusätzlicher Bogenschützen-Anteil unabhängig von Belagerungs-Bedarf.
+- `defenseMinMult`, `supportThreshMult` — feinjustiert die Defensive-Heuristik.
+- `structureBias` — Gewicht der Strukturen-Angriffe in `pickStructureTarget`.
+- `heroBarracksReq` — Kaserne-Stufe ab der Helden ausgebildet werden.
+- `batchMult` — Multiplikator auf Trainings-Batch-Größe.
+- `buildBias` — Map `{gebäude: Bonus}` für `manageEconomy`-Priorisierung.
+- `shareResources` — KI nutzt Rohstoff-Logistik zwischen eigenen Burgen.
+- `expandEager` — tritt früher in den Expansionsmodus.
+
+Zuweisung in `newGame`: Jeder KI-Hausindex wird zufällig (deterministisch
+aus dem Seed) einem Profil aus `PERSONALITY_ORDER` zugeordnet. Der Wert
+liegt in `house.personality` und wird vom Save übernommen.
+
 ---
 
 # Erweitertes Siedlungs-/Strukturkonzept (in Arbeit)
@@ -278,6 +315,7 @@ Vier eroberbare Rohstoff-Strukturen, jede liefert genau **einen** Rohstoff:
 |--------------|------------|------------------------------|
 | Holzfäller   | Holz       | im/am Wald (Bäume entfernt oder Hintergrund-Sprite) |
 | Eisenmine    | Eisen      | direkt neben Gebirge         |
+| Steinbruch   | Stein      | direkt neben Gebirge (gleicher Slot wie Eisenmine) |
 | Hof          | Nahrung    | offene Fläche                |
 | Schaffarm    | Nahrung    | offene Fläche                |
 | Hafen        | (offen)    | nur an Küsten — Funktion später |
@@ -463,6 +501,11 @@ Burg-Angriffen dargestellt (`js/ui.js`, `renderMap` und Sidebar).
   `entityById` auf — Burg ODER Struktur als Quelle führen zur exakten
   Distanz. Bugfix nach Schritt 7: vorher kollabierte die Strukturen-
   Rückkehr auf `minTravel` (8 s) wegen fehlender Koordinaten-Auflösung.
+- **Reiner Versorgungstross** (Support nur mit Rohstoffen, keine
+  Truppen): nutzt `MOVEMENT.resourceSpeed` (Default 20 Spielsekunden
+  pro Feld) — bewusst langsam, weil ein Fuhrwerk schwerer ist als eine
+  Marscharmee. Rohstoffe werden bei Versand sofort aus dem Quell-Lager
+  abgebucht und beim Eintreffen ins Ziel-Lager gutgeschrieben.
 
 ## Beute-Gutschrift
 
@@ -496,6 +539,29 @@ Burg-Angriffen dargestellt (`js/ui.js`, `renderMap` und Sidebar).
 
 ---
 
+# Spielsteuerung (Schritt 10/10b)
+
+Singleplayer-Spielfluss-Regler im HUD:
+
+- **Spielgeschwindigkeit** (`state.speedMultiplier`): Pause (0×),
+  Echtzeit (1×), beschleunigt (2× / 4× / 8×). Wirkt multiplikativ auf
+  `TIME_SCALE` (= 1) im Tick. Default für neue Welten: **4×**. Wert
+  bleibt im Save erhalten.
+- **Auto-Pause bei Kampfbericht** (`state.pauseOnReport`, Default
+  `true`): Beim Öffnen eines Kampfberichts hält die Spielzeit an. Im
+  Bericht-Overlay gibt es eine Checkbox „Zeit beim Kampfbericht
+  anhalten", die diesen Modus jederzeit umschaltet (auch live während
+  geöffnetem Bericht). Einstellung bleibt im Save erhalten.
+
+# Ausbildungszeit-Helper `trainTimeFor`
+
+`village.js` exportiert `trainTimeFor(village, unitKey)` — liefert die
+**effektive** Ausbildungszeit pro Einheit in Spielsekunden, berücksichtigt
+die Kasernen-/Schießplatz-Stufe (höhere Stufen beschleunigen die
+Ausbildung). Wird sowohl beim Anlegen eines Trainings-Auftrags
+(`enqueueTrain`) als auch in der UI (Tabellen-Zeit-Anzeige) genutzt —
+beide Stellen rechnen damit identisch.
+
 # Balancing-Konstanten (Übersicht)
 
 Alle spielrelevanten Werte sind in `js/config.js` zentralisiert und
@@ -509,13 +575,14 @@ in `config.js` und sind sofort wirksam.
 | `UNITS` / `UNIT_ORDER` | Stats aller Einheiten inkl. Held (atk, defI, defA, speed, trainTime, carry, pop, cost) |
 | `COMBAT` | luckRange, lossExponent, wallDefPerLevel, wallBaseDef, towerArcherBonus, baseVillageDef, loyaltyPerWin/regen, morale.min |
 | `PRODUCTION` / `STORAGE` / `POPULATION` | Basis-Rohstoff- und Bevölkerungs-Skalierung |
-| `MOVEMENT` | minTravel, Typen-Verzeichnis (`attack`/`return`/`support`/`gather`/`capture`) |
-| `RESOURCE_STRUCTURES` / `RESOURCE_STRUCTURE_ORDER` | Strukturen-Definitionen (Name, produzierter Rohstoff, Map-Anzahl, Gelände) |
+| `MOVEMENT` | minTravel, **resourceSpeed (20)** für reine Versorgungs-Trosse, Typen-Verzeichnis (`attack`/`return`/`support`/`gather`/`capture`) |
+| `RESOURCE_STRUCTURES` / `RESOURCE_STRUCTURE_ORDER` | Strukturen-Definitionen (Name, produzierter Rohstoff, Map-Anzahl, Gelände). Enthält jetzt zusätzlich `stonemine` für direkt-Stein-Produktion |
 | `RESOURCE_STRUCTURE_LEVELS` | Strukturstufen 1–3: Produktion (10/20/30), Lager (5 000/12 500/20 000), Upgrade-Kosten (1 800/1 500/900 → 3 600/3 000/1 800), Bauzeit (240 s / 480 s) |
 | `STRUCTURE_GARRISON_CAP` | 100 (max. dauerhaft stationierte Einheiten pro Struktur) |
 | `STRUCTURE_POP_BONUS` | Pop-Bonus je Strukturstufe: `[0, 20, 40, 60]` |
 | `SIEGE` | Belagerungs-Konstanten: `wallMaxHP[lvl]`, `towerMaxHP[lvl]`, `unitSiegeWall`, `unitSiegeTower`, `wallSuppressionPerArcher` (0,003), `wallSuppressionMax` (0,5), `repairCostFactor` (0,3), `repairTimeFactor` (0,4), `repairQueueMax` (2) |
 | `AI` | KI-Anti-Turtle: `boredomFactor` je Difficulty (easy/normal/hard: 0,0005 / 0,001 / 0,002), `marginFloor` (1,0), `archerToSiegeRatio` (20), `maxStageThreshold` (townhall 6, econ 5), `pressureMultiplier` (1,2) |
+| `PERSONALITIES` / `PERSONALITY_ORDER` | KI-Persönlichkeiten: Aggressiv, Expansiv, Defensiv, Dampfwalze. Jede KI-Fraktion bekommt deterministisch ein Profil. Parameter siehe Abschnitt „KI-Persönlichkeiten" |
 | `DIFFICULTY` | Aggressions-/Wirtschafts-/Trainings-Skalierung je Schwierigkeitsstufe |
 | `SAVE` | IndexedDB-Slot, Auto-Save-Intervall |
 
@@ -529,6 +596,7 @@ in `config.js` und sind sofort wirksam.
 |   4     | nach Schritt 2 | `state.structures[]` als First-Class-Entitäten (id, type, x, y, level, ownerHouseId, assignedCastleId, storage, garrison) |
 |   5     | nach Schritt 6.5 | + Burg-HP-Felder (`wallHP`, `towerHP`, `repairQueue`); KI-Feld `lastAttackTime` |
 |   6     | nach Schritt 9 | + `structure.upgradeQueue` (verzögerte Upgrades); `state.gameOver` (Sieg/Niederlage); `state.stats` (Spielstatistik) |
+|   7     | aktuell        | + `state.speedMultiplier`, `state.pauseOnReport`; `house.personality`; Strukturtyp `stonemine`; `MOVEMENT.resourceSpeed`; `village.wallHP`/`towerHP` migrationsfest |
 
 Migration in `js/persistence.js`, Funktion `migrate(state)` —
 idempotent, läuft automatisch beim Laden alter Saves. Fehlende Felder

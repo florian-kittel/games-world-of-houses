@@ -169,6 +169,37 @@
     }, Math.min(C.SAVE.intervalMs, 3000));
   }
 
+  // ---------------------------------------------------------------------
+  // Service Worker (PWA). Nur unter http(s) sinnvoll; file:// wird ignoriert.
+  // ---------------------------------------------------------------------
+  function registerServiceWorker() {
+    if (!('serviceWorker' in navigator)) return;
+    if (location.protocol !== 'http:' && location.protocol !== 'https:') return;
+    window.addEventListener('load', function () {
+      // updateViaCache:'none' zwingt den Browser, sw.js immer frisch zu laden
+      // — sonst koennte ein alter SW im HTTP-Cache neue Versionen blockieren.
+      navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(function (reg) {
+        // Wenn ein neuer SW installiert wird, sofort uebernehmen und neu laden.
+        if (reg.waiting) reg.waiting.postMessage('skipWaiting');
+        reg.addEventListener('updatefound', function () {
+          var nw = reg.installing;
+          if (!nw) return;
+          nw.addEventListener('statechange', function () {
+            if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+              // Neuer SW bereit — Seite einmal automatisch reloaden, damit der
+              // Spieler nicht mit veralteten Assets weiterspielt.
+              if (window.console && console.log) console.log('Neue WoH-Version verfuegbar — Seite wird neu geladen.');
+              window.location.reload();
+            }
+          });
+        });
+      }).catch(function (err) {
+        if (window.console && console.warn) console.warn('SW-Registration fehlgeschlagen:', err);
+      });
+    });
+  }
+  registerServiceWorker();
+
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', boot);
   } else { boot(); }
