@@ -536,6 +536,18 @@ small{color:var(--muted)}
     font-size:14px;line-height:1}
 }
 
+/* ---- iPad & iPhone-Landscape: Rohstoffzeile unter Name/Steuerung legen ----
+   Touch-Geräte ab 600px (Phone-Portrait <600px ist bereits oben geregelt).
+   Verhindert das gequetschte Nebeneinander von Hausname und Rohstoffen:
+   Zeile 1 = Crest/Hausname + Burgwahl/Speed/Uhr, Zeile 2 = Rohstoffe (volle Breite). */
+@media (hover:none) and (pointer:coarse) and (min-width:600px){
+  #topbar{row-gap:6px;column-gap:12px}
+  .tb-left{order:1;flex:0 1 auto;min-width:0}
+  .tb-right{order:1;flex:0 1 auto;margin-left:auto}
+  .tb-res{order:2;flex:1 0 100%;justify-content:center;gap:18px;
+    padding:5px 0 1px;border-top:1px solid rgba(232,215,160,0.12)}
+}
+
 /* ---- Touch-Geräte: Hover-Effekte deaktivieren ---- */
 @media (hover:none){
   .btn:hover:not(:disabled){background:var(--panel2);border-color:var(--line)}
