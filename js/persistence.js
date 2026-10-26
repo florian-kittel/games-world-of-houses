@@ -132,6 +132,10 @@
     if (typeof state.speedMultiplier !== 'number') state.speedMultiplier = 4;
     // Schritt 10b: Auto-Pause bei Kampfbericht-Overlay (Default true).
     if (typeof state.pauseOnReport !== 'boolean') state.pauseOnReport = true;
+    // Laufzeit-Flag des offenen Kampfberichts; nach dem Laden ist kein
+    // Bericht offen. Sonst bleibt ein beim Reload offener Bericht als
+    // Dauerpause im Spielstand haengen.
+    state._reportPaused = false;
 
     // Wappen-Muster fuer Altspielstaende deterministisch nachziehen.
     if (state.houses) {

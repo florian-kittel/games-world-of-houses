@@ -46,14 +46,19 @@
   function resIcoTag(r, internal) {
     internal = internal || 32;
     var cls = internal <= 26 ? 'res-ico sm' : 'res-ico';
-    return '<canvas class="' + cls + '" data-res="' + r + '" width="' + internal + '" height="' + internal + '"></canvas>';
+    var label = r === 'population' ? 'Bevölkerung' : (C.RESOURCE_META[r] || {}).name || r;
+    return '<canvas class="' + cls + '" data-res="' + r + '" role="img" aria-label="' + label + '" width="' + internal + '" height="' + internal + '"></canvas>';
   }
   function paintResIcons(container) {
     if (!container) return;
     Array.prototype.forEach.call(container.querySelectorAll('canvas[data-res]'), function (c) {
       var ctx = c.getContext('2d'); ctx.imageSmoothingEnabled = false;
+      ctx.clearRect(0, 0, c.width, c.height);
       S.drawResourceIcon(ctx, 0, 0, c.width / 16, c.getAttribute('data-res'));
     });
+  }
+  function populationIconTag() {
+    return S.getGraphicsMode() === 'cinematic' ? resIcoTag('population', 32) : '⚑';
   }
   // Gemeinsamer Helfer fuer Einheiten-Icons (vorher in 5 Panels dupliziert).
   // ox/oy/scale erlauben die groesseren Overlay-Icons (3,0,4) vs. Sidebar (2,0,3).
@@ -61,8 +66,28 @@
     if (!container) return;
     ox = (ox == null) ? 2 : ox; oy = (oy == null) ? 0 : oy; scale = (scale == null) ? 3 : scale;
     Array.prototype.forEach.call(container.querySelectorAll('canvas[data-unit]'), function (c) {
+      var width = Number(c.getAttribute('data-logical-width')) || c.width;
+      var height = Number(c.getAttribute('data-logical-height')) || c.height;
+      c.setAttribute('data-logical-width', width); c.setAttribute('data-logical-height', height);
+      if (!c.hasAttribute('data-unit-scale')) {
+        c.setAttribute('data-unit-ox', ox); c.setAttribute('data-unit-oy', oy); c.setAttribute('data-unit-scale', scale);
+      }
+      c.style.width = width + 'px'; c.style.height = height + 'px';
+      c.setAttribute('role','img');
+      c.setAttribute('aria-label', (C.UNITS[c.getAttribute('data-unit')] || {}).name || c.getAttribute('data-unit'));
+      if (S.getGraphicsMode() === 'cinematic') {
+        var portraitScale = window.innerWidth <= 600 ? 4 / 3 : (width >= 30 ? 1.6 : 1.5);
+        var portraitWidth = Math.round(width * portraitScale), portraitHeight = Math.round(height * portraitScale);
+        c.style.width = portraitWidth + 'px'; c.style.height = portraitHeight + 'px';
+        var ratio = Math.min(2, window.devicePixelRatio || 1);
+        c.width = Math.round(portraitWidth * ratio); c.height = Math.round(portraitHeight * ratio);
+        var cinematicCtx = c.getContext('2d'); cinematicCtx.scale(ratio, ratio);
+        S.drawUnitIcon(cinematicCtx, 0, 0, portraitHeight / 8, c.getAttribute('data-unit'), portraitWidth, portraitHeight);
+        return;
+      }
+      c.width = width; c.height = height;
       var ctx = c.getContext('2d'); ctx.imageSmoothingEnabled = false;
-      S.drawUnitIcon(ctx, ox, oy, scale, c.getAttribute('data-unit'));
+      S.drawUnitIcon(ctx, Number(c.getAttribute('data-unit-ox')), Number(c.getAttribute('data-unit-oy')), Number(c.getAttribute('data-unit-scale')), c.getAttribute('data-unit'));
     });
   }
 
@@ -193,6 +218,15 @@
     // Rebuild only the terrain. Keep the camera, selection, open dialogs and
     // simulation state intact; bind() would reset those UI choices.
     if (changed && state) terrainCanvas = S.buildTerrainCanvas(state.map, state.structures);
+    if (changed) {
+      var population = document.querySelector('#tb-res .pop');
+      if (population) {
+        var value = population.querySelector('.pop-val');
+        population.innerHTML = populationIconTag() + ' <span class="pop-val">' + (value ? value.innerHTML : '–') + '</span>';
+      }
+      paintResIcons(document);
+      paintUnitIcons(document);
+    }
   }
 
   function activeVillage() {
@@ -394,6 +428,7 @@
   //  - fremde Burg     -> Angriffsziel selektieren + Sidebar oeffnen (auf Touch)
   //  - fremde Struktur -> Aktion-Picker selektieren + Sidebar oeffnen (auf Touch)
   function handleMapDblTap(e) {
+    if (!state) return;
     var rect = dom.canvas.getBoundingClientRect();
     var w = screenToWorld(e.clientX - rect.left, e.clientY - rect.top);
     var ts = C.MAP.tileSize;
@@ -432,6 +467,7 @@
   }
 
   function villageAtEvent(e) {
+    if (!state) return null;
     var rect = dom.canvas.getBoundingClientRect();
     var w = screenToWorld(e.clientX - rect.left, e.clientY - rect.top);
     var ts = C.MAP.tileSize;
@@ -448,6 +484,7 @@
   // Hit-Test fuer Rohstoff-Strukturen (analog villageAtEvent, etwas
   // kleinerer Trefferradius).
   function structureAtEvent(e) {
+    if (!state) return null;
     var rect = dom.canvas.getBoundingClientRect();
     var w = screenToWorld(e.clientX - rect.left, e.clientY - rect.top);
     var ts = C.MAP.tileSize;
@@ -466,6 +503,7 @@
     // Klick-Prioritaet: das geometrisch naehere Element gewinnt (Burg oder
     // Struktur). Dadurch koennen Strukturen direkt neben Burgen sauber
     // selektiert werden.
+    if (!state) return;
     var rect = dom.canvas.getBoundingClientRect();
     var w = screenToWorld(e.clientX - rect.left, e.clientY - rect.top);
     var v = villageAtEvent(e);
@@ -575,6 +613,7 @@
     // Bewegungslinien — Burgen UND Strukturen als Ziel/Quelle.
     // entityById liefert {x,y,ownerHouseId} fuer Burg oder Struktur einheitlich.
     var threatenedStructIds = {};  // fuer Ziel-Highlight unten
+    var marchMarkers = [];
     state.movements.forEach(function (m) {
       var from = G.entityById ? G.entityById(state, m.fromId) : null;
       var to   = G.entityById ? G.entityById(state, m.toId)   : null;
@@ -594,6 +633,7 @@
       var tx = to.x * ts + ts / 2, ty = to.y * ts + ts / 2;
       var px = fx + (tx - fx) * prog, py = fy + (ty - fy) * prog;
       var isPlayerAtt = m.ownerHouseId === state.playerHouseId;
+      var returning = m.type === 'return';
       // Eingehend = feindliches Movement gegen eigenes Asset (Burg ODER Struktur).
       var hostile = (m.type === 'attack' || m.type === 'gather' || m.type === 'capture');
       var incoming = hostile && !isPlayerAtt && to.ownerHouseId === state.playerHouseId;
@@ -604,7 +644,8 @@
       var isSupport = (m.type === 'support');
       var isSupply  = isSupport && m.resources && WOH.Combat.totalUnits(m.units || {}) <= 0;
       var lineCol, dotCol;
-      if (incoming) { lineCol = 'rgba(210,70,70,0.7)'; dotCol = '#d24646'; }
+      if (returning && S.getGraphicsMode() === 'cinematic') { lineCol = 'rgba(186,178,170,0.6)'; dotCol = '#bdb6ae'; }
+      else if (incoming) { lineCol = 'rgba(210,70,70,0.7)'; dotCol = '#d24646'; }
       else if (isPlayerAtt && isSupply) { lineCol = 'rgba(200,162,74,0.6)'; dotCol = '#c8a24a'; }
       else if (isPlayerAtt && isSupport) { lineCol = 'rgba(90,160,216,0.6)'; dotCol = '#5aa0d8'; }
       else if (isPlayerAtt) { lineCol = 'rgba(110,207,151,0.6)'; dotCol = '#6fcf97'; }
@@ -616,7 +657,9 @@
       ctx.setLineDash([]);
       // Marschpunkt: Rohstoff-Tross als kleines Quadrat (Fuhrwerk), sonst Kreis.
       ctx.fillStyle = dotCol;
-      if (isSupply) {
+      if ((hostile || returning) && S.getGraphicsMode() === 'cinematic') {
+        marchMarkers.push({ x: px, y: py, house: state.houses[m.ownerHouseId] || state.houses[returning ? to.ownerHouseId : from.ownerHouseId], phase: (fx+fy)*.013, returning: returning });
+      } else if (isSupply) {
         var sq = 4 / cam.zoom + 2;
         ctx.fillRect(px - sq, py - sq, sq * 2, sq * 2);
       } else {
@@ -682,7 +725,8 @@
       var bx = Math.round(sp.x - boxW / 2), by = Math.round(sp.y + ts * 0.5);
       ctx.fillStyle = isP ? (classic ? 'rgba(38,92,170,0.95)' : 'rgba(37,62,76,0.95)') : 'rgba(12,16,20,0.72)';
       ctx.fillRect(bx, by, boxW, BOXH);
-      S.drawCrest(ctx, bx + PADX, by + PADY, SHIELD, h2.sigil);
+      if (classic) S.drawCrest(ctx, bx + PADX, by + PADY, SHIELD, h2.sigil);
+      else S.drawShieldCrest(ctx, bx + PADX + 1, by + PADY, SHIELD - 2, SHIELD, h2.sigil);
       var tx = bx + PADX + SHIELD + GAP;
       ctx.font = F1;
       ctx.fillStyle = isP ? '#ffffff' : '#e2e6ec';
@@ -707,6 +751,14 @@
         ctx.fillText(nm, sp2.x, sp2.y + ts * 0.5 + 10);
       });
     }
+    // Draw over scenery/labels in screen pixels so heraldry stays legible at
+    // both zoom extremes, including when a march starts beside a castle.
+    var animationSeconds = performance.now() / 1000;
+    marchMarkers.forEach(function (marker) {
+      var position = worldToScreen(marker.x, marker.y);
+      if (position.x < -40 || position.y < -40 || position.x > dom.viewWidth+40 || position.y > dom.viewHeight+40) return;
+      S.drawAttackMarker(ctx,position.x,position.y,marker.house,animationSeconds,marker.phase,marker.returning);
+    });
   }
 
   // ---------------------------------------------------------------------
@@ -728,7 +780,7 @@
       rhtml += '<span class="res" data-r="' + r + '" title="' + C.RESOURCE_META[r].name + '">' +
         resIcoTag(r, 32) + ' <span class="res-val">–</span></span>';
     });
-    rhtml += '<span class="res pop" title="Bevölkerung">⚑ <span class="pop-val">–</span></span>';
+    rhtml += '<span class="res pop" title="Bevölkerung">' + populationIconTag() + ' <span class="pop-val">–</span></span>';
     res.innerHTML = rhtml;
     dom.topbar.appendChild(res);
     paintResIcons(res);
@@ -1620,6 +1672,13 @@
     // Icons zeichnen
     paintResIcons(dom.villageBody);
     Array.prototype.forEach.call(dom.villageBody.querySelectorAll('canvas[data-bld]'), function (c) {
+      if (S.getGraphicsMode() === 'cinematic') {
+        var ratio = Math.min(2, window.devicePixelRatio || 1);
+        c.width = c.height = Math.round(40 * ratio);
+        var cinematicCtx = c.getContext('2d'); cinematicCtx.scale(ratio, ratio);
+        S.drawBuildingIcon(cinematicCtx, 0, 0, 40 / 12, c.getAttribute('data-bld'));
+        return;
+      }
       var ctx = c.getContext('2d'); ctx.imageSmoothingEnabled = false;
       S.drawBuildingIcon(ctx, 2, 2, 3, c.getAttribute('data-bld'));
     });

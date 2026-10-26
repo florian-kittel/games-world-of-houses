@@ -1,7 +1,7 @@
 /* =========================================================================
  * World of Houses – Grafik (echte Pixel-Art-Assets aus /assets)
  * Gelände, Siedlungen und Ressourcen-Icons stammen aus den Spritesheets;
- * Gebäude-/Einheiten-Icons der Dorfansicht bleiben prozedural.
+ * Cinematic-Menüsymbole sind Einzelbilder; Classic nutzt Atlas und Matrizen.
  * Quelle: assets/tileset2.png (16x16-Raster), assets/water.png (animiert).
  * ========================================================================= */
 (function (WOH) {
@@ -50,6 +50,14 @@
   // Geladene Bild-Assets
   var IMG = {};
   var ready = false;
+  // Approved Cinematic construction icons; source studies are not loaded.
+  var BUILDING_ICONS = {
+    townhall: 'townhall-building-v3', woodcutter: 'woodcutter-close-v3',
+    quarry: 'quarry-close-v3', mine: 'ironmine-right-angle-v5',
+    farm: 'farm-aligned-v4', warehouse: 'warehouse-building-v3',
+    barracks: 'barracks-aligned-v4', range: 'range-aligned-v4',
+    wall: 'wall-aligned-v4', tower: 'tower-aligned-v4'
+  };
 
   // Fallback-Basisfarben (falls ein Asset fehlt)
   var TERRAIN_BASE = {
@@ -61,6 +69,15 @@
   function loadAssets() {
     var cinematicAssets = (WOH.Cinematic && WOH.Cinematic.assets) || {};
     Object.keys(cinematicAssets).forEach(function (key) { SHEETS[key] = cinematicAssets[key]; });
+    Object.keys(BUILDING_ICONS).forEach(function (key) {
+      SHEETS['ui_bld_' + key] = 'assets/cinematic/ui/' + BUILDING_ICONS[key] + '.png';
+    });
+    ['food','wood','stone','iron','population'].forEach(function (key) {
+      SHEETS['ui_res_' + key] = 'assets/cinematic/ui/resource-' + key + '.png';
+    });
+    ['spear','sword','axe','archer','hero'].forEach(function (key) {
+      SHEETS['ui_unit_' + key] = 'assets/cinematic/ui/unit-' + key + '.png';
+    });
     var keys = Object.keys(SHEETS);
     return Promise.all(keys.map(function (k) {
       return new Promise(function (resolve) {
@@ -312,6 +329,47 @@
     }
   }
 
+  // Shared shield silhouette for Cinematic heraldry, fitted to its label/token.
+  function drawShieldCrest(ctx, x, y, width, height, sigil) {
+    function outline() {
+      ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x+width,y);
+      ctx.lineTo(x+width,y+height*9/19);
+      ctx.quadraticCurveTo(x+width,y+height*14/19,x+width/2,y+height);
+      ctx.quadraticCurveTo(x,y+height*14/19,x,y+height*9/19); ctx.closePath();
+    }
+    ctx.save(); outline(); ctx.save(); ctx.clip();
+    ctx.translate(x,y); ctx.scale(width/100,height/100);
+    drawCrest(ctx,0,0,100,sigil); ctx.restore();
+    outline(); ctx.strokeStyle = '#d5c5a0'; ctx.lineWidth = 1; ctx.stroke(); ctx.restore();
+  }
+
+  // Screen-space attack token. The two expanding waves sit beneath the badge;
+  // real time keeps the effect calm regardless of simulation speed or pause.
+  function drawAttackMarker(ctx, x, y, house, seconds, phase, returning) {
+    var radius = 14;
+    ctx.save();
+    ctx.setLineDash([]);
+    for (var wave = 0; !returning && wave < 2; wave++) {
+      var progress = ((seconds / 1.8 + (phase || 0) + wave / 2) % 1 + 1) % 1;
+      var spread = radius + 3 + progress * 22, opacity = (1-progress)*(1-progress);
+      var glow = ctx.createRadialGradient(x,y,radius,x,y,spread);
+      glow.addColorStop(0,'rgba(210,48,48,0)');
+      glow.addColorStop(.75,'rgba(210,48,48,' + (.10*opacity) + ')');
+      glow.addColorStop(1,'rgba(210,48,48,0)');
+      ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(x,y,spread,0,Math.PI*2); ctx.fill();
+      ctx.strokeStyle = 'rgba(232,64,57,' + (.52*opacity) + ')';
+      ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(x,y,spread,0,Math.PI*2); ctx.stroke();
+    }
+    ctx.shadowColor = 'rgba(0,0,0,.65)'; ctx.shadowBlur = 5; ctx.shadowOffsetY = 2;
+    ctx.fillStyle = '#191b20'; ctx.beginPath(); ctx.arc(x,y,radius,0,Math.PI*2); ctx.fill();
+    ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+    ctx.strokeStyle = returning ? '#bdb6ae' : '#ee5148'; ctx.lineWidth = 2; ctx.stroke();
+    // Clip the existing faction motif to a pointed shield, preserving every
+    // house's colours/pattern rather than inventing a second heraldry system.
+    drawShieldCrest(ctx,x-8,y-9,16,19,house && house.sigil);
+    ctx.restore();
+  }
+
   // Garnisons-Schild: kleines rotes Schild mit goldenem Schwert-Kreuz.
   // Wird neben Strukturen gezeichnet, sobald eine Garnison stationiert ist.
   function drawGarrisonShield(ctx, x, y, sz) {
@@ -369,21 +427,27 @@
   var resIconCache = {};
   function resourceIconURL(res, px) {
     px = px || 2;
-    var key = res + '_' + px;
+    var key = graphicsMode + '_' + res + '_' + px;
     if (resIconCache[key]) return resIconCache[key];
     var size = T * px;
     var cv = document.createElement('canvas');
     cv.width = size; cv.height = size;
     var ctx = cv.getContext('2d'); ctx.imageSmoothingEnabled = false;
-    var coord = RES_TILE[res];
-    if (IMG.ts2 && coord) {
-      ctx.drawImage(IMG.ts2, coord[0] * T, coord[1] * T, T, T, 0, 0, size, size);
-    }
+    drawResourceIcon(ctx, 0, 0, px, res);
     var url = cv.toDataURL();
     resIconCache[key] = url;
     return url;
   }
   function drawResourceIcon(ctx, x, y, px, res) {
+    var icon = graphicsMode === 'cinematic' && IMG['ui_res_' + res];
+    if (icon) {
+      ctx.save(); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(icon, x, y, T * px, T * px); ctx.restore(); return;
+    }
+    if (res === 'population') {
+      ctx.fillStyle = '#d8c48d'; ctx.fillRect(x+3*px,y+2*px,2*px,12*px);
+      ctx.fillRect(x+5*px,y+2*px,8*px,6*px); return;
+    }
     var coord = RES_TILE[res];
     if (IMG.ts2 && coord) ctx.drawImage(IMG.ts2, coord[0] * T, coord[1] * T, T, T, x, y, T * px, T * px);
   }
@@ -412,6 +476,11 @@
     y: '#6b6660', z: '#5b5550', A: '#2b4a7d'
   };
   function drawBuildingIcon(ctx, x, y, px, key) {
+    var icon = graphicsMode === 'cinematic' && IMG['ui_bld_' + key];
+    if (icon) {
+      ctx.save(); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(icon, x, y, px * 12, px * 12); ctx.restore(); return;
+    }
     var art = BUILDING_ART[key]; if (!art) return;
     drawMatrix(ctx, x, y, px, art, BUILDING_PAL);
   }
@@ -437,7 +506,12 @@
     l: '#2a2622', k: '#cdd8e8', a: '#7d2b2b', w: '#6b4a1f',
     g: '#e8c84a', j: '#b23b3b'
   };
-  function drawUnitIcon(ctx, x, y, px, key) {
+  function drawUnitIcon(ctx, x, y, px, key, width, height) {
+    var icon = graphicsMode === 'cinematic' && IMG['ui_unit_' + key];
+    if (icon) {
+      ctx.save(); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(icon, x, y, width || px * 6, height || px * 8); ctx.restore(); return;
+    }
     var art = UNIT_ART[key]; if (!art) return;
     drawMatrix(ctx, x, y, px, art, UNIT_PAL);
   }
@@ -456,6 +530,8 @@
     drawStructure: drawStructure,
     drawResourceStructure: drawResourceStructure,
     drawCrest: drawCrest,
+    drawShieldCrest: drawShieldCrest,
+    drawAttackMarker: drawAttackMarker,
     sizeTier: sizeTier,
     TERRAIN_BASE: TERRAIN_BASE,
     // Sprite-Indizes pro Strukturtyp/Level (zur Dokumentation; aus Atlas):

@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="de"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cinematic · Angriffsmarker</title>
+<style>
+:root{color-scheme:dark}body{margin:0;background:#12191d;color:#dddcd2;font:16px/1.6 system-ui,sans-serif}main{max-width:1000px;padding:28px;margin:auto}h1{color:#dec995;font:32px Georgia}a{color:#b8d8e8}canvas{display:block;width:100%;border:1px solid #354247;border-radius:8px;background:#30392c url('previews/cinematic-v2-repeat.png') center/cover}p{max-width:850px}button{background:#26343b;color:#eee;border:1px solid #76838b;padding:8px 16px;cursor:pointer}
+</style><main><h1>Cinematic · Angriffsmarker</h1>
+<p>Angriff: Fraktionsschild mit rotem Rahmen und ausblendenden Pulsen. Rückkehr: dasselbe Schild mit grauem Rahmen und grauer Route, ohne Puls. Die Vorschau verwendet denselben Marker wie das Spiel.</p>
+<canvas id="preview" aria-label="Animierte Angriffsroute und sechs verschiedene Fraktionsschilde"></canvas>
+<p><button id="pause">Animation anhalten</button> · <a href="../index.html">Zum Spiel</a> · <a href="asset-map.html">Asset-Map</a></p>
+</main>
+<script src="../js/config.js?v=2026102614"></script><script src="../js/sprites.js?v=2026102614"></script>
+<script>
+'use strict';
+var cv=document.getElementById('preview'),ctx=cv.getContext('2d'),dpr=Math.min(2,window.devicePixelRatio||1);
+cv.width=1000*dpr;cv.height=440*dpr;
+var patterns=['diagonal','horizontal','vertical','cross','triangleUp','triangleDown'];
+var colors=[['#7d2b2b','#e8d7a0'],['#315b75','#e2e8dd'],['#34513a','#d6c795'],['#49354d','#e8d3bd'],['#b59c55','#202831'],['#35476a','#e8e8de']];
+var paused=false,seconds=0,last=performance.now();
+document.getElementById('pause').onclick=function(){paused=!paused;this.textContent=paused?'Animation fortsetzen':'Animation anhalten';};
+function frame(now){
+  if(!paused)seconds+=(now-last)/1000;last=now;
+  ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,1000,440);
+  ctx.fillStyle='rgba(10,18,20,.48)';ctx.fillRect(0,0,1000,440);
+  ctx.strokeStyle='rgba(210,70,70,.8)';ctx.lineWidth=1.5;ctx.setLineDash([6,4]);
+  ctx.beginPath();ctx.moveTo(85,140);ctx.lineTo(915,140);ctx.stroke();ctx.setLineDash([]);
+  ctx.font='17px Georgia';ctx.textAlign='center';ctx.fillStyle='#f2e5bf';
+  ctx.fillText('Angreifende Fraktion',160,85);ctx.fillText('Ziel',910,110);
+  WOH.Sprites.drawAttackMarker(ctx,100+(seconds/24%1)*800,140,{sigil:{p:colors[0][0],s:colors[0][1],pattern:'diagonal'}},seconds,0);
+  ctx.strokeStyle='rgba(186,178,170,.7)';ctx.setLineDash([6,4]);
+  ctx.beginPath();ctx.moveTo(85,200);ctx.lineTo(915,200);ctx.stroke();ctx.setLineDash([]);
+  ctx.font='14px system-ui';ctx.fillStyle='#e1ddd6';ctx.fillText('Rückkehr · ohne Puls',500,180);
+  WOH.Sprites.drawAttackMarker(ctx,900-(seconds/24%1)*800,200,{sigil:{p:colors[0][0],s:colors[0][1],pattern:'diagonal'}},seconds,0,true);
+  ctx.font='15px system-ui';ctx.fillText('Die sechs vorhandenen Wappenmuster',500,235);
+  patterns.forEach(function(pattern,i){
+    var x=100+i*160;
+    WOH.Sprites.drawAttackMarker(ctx,x,310,{sigil:{p:colors[i][0],s:colors[i][1],pattern:pattern}},seconds,i/6);
+    ctx.fillStyle='#f2e5bf';ctx.fillText(pattern,x,380);
+  });
+  requestAnimationFrame(frame);
+}requestAnimationFrame(frame);
+</script></html>

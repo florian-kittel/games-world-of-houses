@@ -1,0 +1,38 @@
+{
+  "tool": "built-in imagegen",
+  "cameraReference": "warehouse-building-v3-source.png",
+  "assets": [
+    {
+      "id": "barracks-aligned-v4",
+      "refs": [
+        "D:/Development/github/games/World-of-Houses/assets/cinematic/ui/warehouse-building-v3-source.png",
+        "D:/Development/github/games/World-of-Houses/assets/cinematic/ui/barracks-building-v3-source.png"
+      ],
+      "prompt": "Precise-object-edit. Input1 is the APPROVED WAREHOUSE CAMERA REFERENCE. Input2 is the building to correct. Preserve its identity and materials but CHANGE ITS CAMERA / FACING DIRECTION to match input1, not mirrored lighting.\nFINAL SUBJECT: stone-and-timber BARRACKS with one central door, two narrow side windows, two upright spears at doorway and muted burgundy pennant. Retain its military identity and dark slate gable.\nEXACT CAMERA: viewed from FRONT-LEFT of structure, slightly upward, the SAME camera elevation and viewing angle as warehouse input1. MAIN FRONT FACADE occupies the RIGHT two-thirds, secondary LEFT SIDE WALL recedes toward LEFT edge. For gables ridge extends from main front gable near upper RIGHT towards upper LEFT. Do NOT show a receding right-hand wall. No dramatic upward tilt, no aerial view. Warehouse framing and near-object scale are the standard; keep same tight close crop and horizon perspective, mostly upright verticals.\nUse same neutral desaturated northern medieval cinematic materials and diffuse upper-left light. No additional structure or landscape. No whole diorama. Preserve recognizable major design and type-specific details of input2. Large readable masses for40px menu slot. Transparent RGBA background, no halo, no text, no people."
+    },
+    {
+      "id": "range-aligned-v4",
+      "refs": [
+        "D:/Development/github/games/World-of-Houses/assets/cinematic/ui/warehouse-building-v3-source.png",
+        "D:/Development/github/games/World-of-Houses/assets/cinematic/ui/range-building-v3-source.png"
+      ],
+      "prompt": "Precise-object-edit. Input1 is the APPROVED WAREHOUSE CAMERA REFERENCE. Input2 is the building to correct. Preserve its identity and materials but CHANGE ITS CAMERA / FACING DIRECTION to match input1, not mirrored lighting.\nFINAL SUBJECT: timber ARCHERY SHELTER with large round straw archery target under its gable canopy. The target hangs on the main FRONT plane on the RIGHT, under the canopy; LEFT frame/posts recede LEFT.\nEXACT CAMERA: viewed from FRONT-LEFT of structure, slightly upward, the SAME camera elevation and viewing angle as warehouse input1. MAIN FRONT FACADE occupies the RIGHT two-thirds, secondary LEFT SIDE WALL recedes toward LEFT edge. For gables ridge extends from main front gable near upper RIGHT towards upper LEFT. Do NOT show a receding right-hand wall. No dramatic upward tilt, no aerial view. Warehouse framing and near-object scale are the standard; keep same tight close crop and horizon perspective, mostly upright verticals.\nUse same neutral desaturated northern medieval cinematic materials and diffuse upper-left light. No additional structure or landscape. No whole diorama. Preserve recognizable major design and type-specific details of input2. Large readable masses for40px menu slot. Transparent RGBA background, no halo, no text, no people."
+    },
+    {
+      "id": "wall-aligned-v4",
+      "refs": [
+        "D:/Development/github/games/World-of-Houses/assets/cinematic/ui/warehouse-building-v3-source.png",
+        "D:/Development/github/games/World-of-Houses/assets/cinematic/ui/wall-building-v3-source.png"
+      ],
+      "prompt": "Precise-object-edit. Input1 is the APPROVED WAREHOUSE CAMERA REFERENCE. Input2 is the building to correct. Preserve its identity and materials but CHANGE ITS CAMERA / FACING DIRECTION to match input1, not mirrored lighting.\nFINAL SUBJECT: wooden PALISADE section with three sharpened stakes and crossbeam. Match the warehouse LEFT-RECEDING structural perspective: the dominant front stake faces/crossbeam are on the RIGHT, a short continuation recedes LEFT. Keep it a real defensive timber structure and tight close-up, not a building or stone wall.\nEXACT CAMERA: viewed from FRONT-LEFT of structure, slightly upward, the SAME camera elevation and viewing angle as warehouse input1. MAIN FRONT FACADE occupies the RIGHT two-thirds, secondary LEFT SIDE WALL recedes toward LEFT edge. For gables ridge extends from main front gable near upper RIGHT towards upper LEFT. Do NOT show a receding right-hand wall. No dramatic upward tilt, no aerial view. Warehouse framing and near-object scale are the standard; keep same tight close crop and horizon perspective, mostly upright verticals.\nUse same neutral desaturated northern medieval cinematic materials and diffuse upper-left light. No additional structure or landscape. No whole diorama. Preserve recognizable major design and type-specific details of input2. Large readable masses for40px menu slot. Transparent RGBA background, no halo, no text, no people."
+    },
+    {
+      "id": "tower-aligned-v4",
+      "refs": [
+        "D:/Development/github/games/World-of-Houses/assets/cinematic/ui/warehouse-building-v3-source.png",
+        "D:/Development/github/games/World-of-Houses/assets/cinematic/ui/tower-building-v3-source.png"
+      ],
+      "prompt": "Precise-object-edit. Input1 is the APPROVED WAREHOUSE CAMERA REFERENCE. Input2 is the building to correct. Preserve its identity and materials but CHANGE ITS CAMERA / FACING DIRECTION to match input1, not mirrored lighting.\nFINAL SUBJECT: square stone WATCHTOWER upper section with crenellations and arched lookout. Main window facade faces front on the RIGHT, secondary LEFT stone wall recedes to LEFT edge, exactly like the warehouse. Do not show a right-hand wall.\nEXACT CAMERA: viewed from FRONT-LEFT of structure, slightly upward, the SAME camera elevation and viewing angle as warehouse input1. MAIN FRONT FACADE occupies the RIGHT two-thirds, secondary LEFT SIDE WALL recedes toward LEFT edge. For gables ridge extends from main front gable near upper RIGHT towards upper LEFT. Do NOT show a receding right-hand wall. No dramatic upward tilt, no aerial view. Warehouse framing and near-object scale are the standard; keep same tight close crop and horizon perspective, mostly upright verticals.\nUse same neutral desaturated northern medieval cinematic materials and diffuse upper-left light. No additional structure or landscape. No whole diorama. Preserve recognizable major design and type-specific details of input2. Large readable masses for40px menu slot. Transparent RGBA background, no halo, no text, no people."
+    }
+  ]
+}

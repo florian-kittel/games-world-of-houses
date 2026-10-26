@@ -2718,5 +2718,203 @@
         "mirrorY": false
       }
     }
-  ]
+  ],
+  "cinematicUI": {
+    "status": "Approved and integrated into Cinematic construction menu",
+    "tool": "built-in imagegen",
+    "displayPixels": 40,
+    "cameraReference": "warehouse-building-v3",
+    "camera": "Front facade on right, left wall receding left, slightly upward view",
+    "prompts": [
+      "construction-v3-prompts.json",
+      "construction-v4-corrections.json",
+      "building-alignment-v4-prompts.json",
+      "ironmine-right-angle-v5-prompt.json"
+    ],
+    "icons": [
+      {
+        "id": "woodcutter-close-v3",
+        "label": "Holzfäller",
+        "kind": "activity",
+        "note": "Axt und Holz, enger Ausschnitt",
+        "file": "woodcutter-close-v3.png",
+        "source": "woodcutter-close-v3-source.png"
+      },
+      {
+        "id": "quarry-close-v3",
+        "label": "Steinbruch",
+        "kind": "activity",
+        "note": "Hammer, Meißel und Kalkstein",
+        "file": "quarry-close-v3.png",
+        "source": "quarry-close-v3-source.png"
+      },
+      {
+        "id": "ironmine-right-angle-v5",
+        "label": "Eisenmine",
+        "kind": "activity",
+        "note": "Kopf und Stiel im rechten Winkel",
+        "file": "ironmine-right-angle-v5.png",
+        "source": "ironmine-right-angle-v5-source.png"
+      },
+      {
+        "id": "warehouse-building-v3",
+        "label": "Lager",
+        "kind": "building",
+        "note": "Referenz für Richtung und Perspektive",
+        "file": "warehouse-building-v3.png",
+        "source": "warehouse-building-v3-source.png"
+      },
+      {
+        "id": "farm-aligned-v4",
+        "label": "Bauernhof",
+        "kind": "building",
+        "note": "Hofgebäude mit Reetdach",
+        "file": "farm-aligned-v4.png",
+        "source": "farm-aligned-v4-source.png"
+      },
+      {
+        "id": "townhall-building-v3",
+        "label": "Halle",
+        "kind": "building",
+        "note": "Eingang der Burghalle",
+        "file": "townhall-building-v3.png",
+        "source": "townhall-building-v3-source.png"
+      },
+      {
+        "id": "barracks-aligned-v4",
+        "label": "Kaserne",
+        "kind": "building",
+        "note": "Unterkunft mit militärischen Merkmalen",
+        "file": "barracks-aligned-v4.png",
+        "source": "barracks-aligned-v4-source.png"
+      },
+      {
+        "id": "range-aligned-v4",
+        "label": "Schießplatz",
+        "kind": "building",
+        "note": "Überdachter Schießstand mit Zielscheibe",
+        "file": "range-aligned-v4.png",
+        "source": "range-aligned-v4-source.png"
+      },
+      {
+        "id": "wall-aligned-v4",
+        "label": "Palisade",
+        "kind": "building",
+        "note": "Abschnitt der Holzbefestigung",
+        "file": "wall-aligned-v4.png",
+        "source": "wall-aligned-v4-source.png"
+      },
+      {
+        "id": "tower-aligned-v4",
+        "label": "Wachturm",
+        "kind": "building",
+        "note": "Zinnen und Ausguck",
+        "file": "tower-aligned-v4.png",
+        "source": "tower-aligned-v4-source.png"
+      }
+    ]
+  },
+  "cinematicResources": {
+    "tool": "built-in imagegen",
+    "status": "Integrated in Cinematic HUD and all resource-cost canvases",
+    "prompt": "resource-prompts.json",
+    "icons": [
+      {
+        "key": "food",
+        "label": "Nahrung",
+        "file": "resource-food.png",
+        "source": "resource-food-source.png",
+        "pixels": 256
+      },
+      {
+        "key": "wood",
+        "label": "Holz",
+        "file": "resource-wood.png",
+        "source": "resource-wood-source.png",
+        "pixels": 256
+      },
+      {
+        "key": "stone",
+        "label": "Stein",
+        "file": "resource-stone.png",
+        "source": "resource-stone-source.png",
+        "pixels": 256
+      },
+      {
+        "key": "iron",
+        "label": "Eisen",
+        "file": "resource-iron.png",
+        "source": "resource-iron-source.png",
+        "pixels": 256
+      },
+      {
+        "key": "population",
+        "label": "Bevölkerung",
+        "file": "resource-population.png",
+        "source": "resource-population-source.png",
+        "pixels": 256
+      }
+    ]
+  },
+  "cinematicUnits": {
+    "tool": "built-in imagegen",
+    "status": "Integrated in Cinematic unit canvases",
+    "prompt": "unit-prompts.json",
+    "displaySizes": [
+      [
+        48,
+        58
+      ],
+      [
+        36,
+        45
+      ],
+      [
+        33,
+        42
+      ]
+    ],
+    "icons": [
+      {
+        "key": "spear",
+        "label": "Speerträger",
+        "file": "unit-spear.png",
+        "source": "unit-spear-source.png",
+        "width": 256,
+        "height": 308
+      },
+      {
+        "key": "sword",
+        "label": "Schwertkämpfer",
+        "file": "unit-sword.png",
+        "source": "unit-sword-source.png",
+        "width": 256,
+        "height": 308
+      },
+      {
+        "key": "axe",
+        "label": "Axtkämpfer",
+        "file": "unit-axe.png",
+        "source": "unit-axe-source.png",
+        "width": 256,
+        "height": 308
+      },
+      {
+        "key": "archer",
+        "label": "Bogenschütze",
+        "file": "unit-archer.png",
+        "source": "unit-archer-source.png",
+        "width": 256,
+        "height": 308
+      },
+      {
+        "key": "hero",
+        "label": "Held",
+        "file": "unit-hero.png",
+        "source": "unit-hero-source.png",
+        "width": 256,
+        "height": 308
+      }
+    ]
+  }
 }

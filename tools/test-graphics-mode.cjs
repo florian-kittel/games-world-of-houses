@@ -28,7 +28,7 @@ function setup(saved, blocked, missingCinematic) {
     assert.equal(tag, 'canvas');
     return { width: 0, height: 0, getContext() { return drawing; } };
   } } };
-  const drawing = { fillRect() {}, drawImage(...args) { draws.push(args); } };
+  const drawing = { fills: 0, fillRect() { this.fills++; }, drawImage(...args) { draws.push(args); }, save() {}, restore() {} };
   vm.runInNewContext(fs.readFileSync(path.join(root, 'js/atlas.js'), 'utf8'), context);
   vm.runInNewContext(fs.readFileSync(path.join(root, 'js/sprites.js'), 'utf8'), context);
   return { sprites: woh.Sprites, draws, calls, stored, drawing };
@@ -38,10 +38,45 @@ function setup(saved, blocked, missingCinematic) {
   const map = { width: 3, height: 3, tiles: Array(9).fill('grass') };
   await test.sprites.loadAssets();
   assert.equal(test.sprites.getGraphicsMode(), 'cinematic');
+  for(const key of ['spear','sword','axe','archer','hero']) {
+    test.sprites.drawUnitIcon(test.drawing,0,0,4,key,30,36);
+    assert.equal(test.draws.at(-1)[0].url,'assets/cinematic/ui/unit-'+key+'.png','Correct unit portrait '+key);
+    assert.deepEqual(test.draws.at(-1).slice(1),[0,0,30,36],'Full portrait slot');
+  }
+  for(const key of ['food','wood','stone','iron','population']) {
+    test.sprites.drawResourceIcon(test.drawing,0,0,18/16,key);
+    assert.equal(test.draws.at(-1)[0].url,'assets/cinematic/ui/resource-'+key+'.png','Cinematic resource '+key);
+    assert.deepEqual(test.draws.at(-1).slice(1),[0,0,18,18]);
+  }
+  const menuIcons = {
+    townhall:'townhall-building-v3', woodcutter:'woodcutter-close-v3', quarry:'quarry-close-v3',
+    mine:'ironmine-right-angle-v5', farm:'farm-aligned-v4', warehouse:'warehouse-building-v3',
+    barracks:'barracks-aligned-v4', range:'range-aligned-v4', wall:'wall-aligned-v4', tower:'tower-aligned-v4'
+  };
+  const sw = { self: { addEventListener() {} } };
+  vm.runInNewContext(fs.readFileSync(path.join(root,'sw.js'),'utf8'),sw);
+  for (const [key,id] of Object.entries(menuIcons)) {
+    test.sprites.drawBuildingIcon(test.drawing,0,0,40/12,key);
+    assert.equal(test.draws.at(-1)[0].url,'assets/cinematic/ui/'+id+'.png','Approved icon for '+key);
+    assert.deepEqual(test.draws.at(-1).slice(1),[0,0,40,40],'Use entire menu slot');
+    const bytes = fs.readFileSync(path.join(root,'assets/cinematic/ui',id+'.png'));
+    assert.equal(bytes.readUInt32BE(16),256); assert.equal(bytes[25],6,'RGBA icon');
+    assert.ok(sw.ASSETS.includes('./assets/cinematic/ui/'+id+'.png'),'Offline icon '+key);
+  }
   assert.equal(test.sprites.buildTerrainCanvas(map), 'cinematic-terrain');
   test.sprites.drawStructure(test.drawing, 16, 16, 32, 'castle', 2);
   assert.deepEqual(test.calls.at(-1), ['structure', 'castle', 2]);
   assert.equal(test.sprites.setGraphicsMode('classic'), true);
+  const oldUnitDraws=test.draws.length,oldUnitFills=test.drawing.fills;
+  for(const key of ['spear','sword','axe','archer','hero']) test.sprites.drawUnitIcon(test.drawing,3,0,4,key);
+  assert.equal(test.draws.length,oldUnitDraws,'Classic keeps procedural soldiers');
+  assert.ok(test.drawing.fills>oldUnitFills);
+  test.sprites.drawResourceIcon(test.drawing,0,0,1,'wood');
+  assert.equal(test.draws.at(-1)[0].url,'assets/tileset2.png','Classic resource uses its original atlas');
+  const beforeClassicIcons = test.draws.length, beforeClassicFills = test.drawing.fills;
+  for (const key of Object.keys(menuIcons)) test.sprites.drawBuildingIcon(test.drawing,2,2,3,key);
+  assert.equal(test.draws.length,beforeClassicIcons,'Classic keeps procedural icons');
+  assert.ok(test.drawing.fills>beforeClassicFills,'Classic icons still render');
   assert.equal(test.stored.get('woh.graphicsMode'), 'classic');
   const terrain = test.sprites.buildTerrainCanvas(map);
   assert.equal(terrain.width, 96);
@@ -72,5 +107,19 @@ function setup(saved, blocked, missingCinematic) {
   assert.equal(missing.sprites.buildTerrainCanvas(map).width, 96);
   missing.sprites.drawStructure(missing.drawing, 16, 16, 32, 'castle', 2);
   assert.equal(missing.draws.at(-1)[2], 7 * 16);
+  const beforeFallback = missing.drawing.fills;
+  missing.sprites.drawBuildingIcon(missing.drawing,0,0,40/12,'mine');
+  assert.ok(missing.drawing.fills>beforeFallback,'Missing UI icon falls back to procedural drawing');
+  missing.sprites.drawResourceIcon(missing.drawing,0,0,1,'iron');
+  assert.equal(missing.draws.at(-1)[0].url,'assets/tileset2.png','Missing resource falls back to atlas');
+  const popFills=missing.drawing.fills;
+  missing.sprites.drawResourceIcon(missing.drawing,0,0,1,'population');
+  assert.ok(missing.drawing.fills>popFills,'Population retains visible flag fallback');
+  const fallbackUnitFills=missing.drawing.fills;
+  missing.sprites.drawUnitIcon(missing.drawing,0,0,4,'archer',30,36);
+  assert.ok(missing.drawing.fills>fallbackUnitFills,'Missing portrait uses procedural fallback');
+  console.log('PASS: five Cinematic soldiers, correct slots, Classic and missing-portrait fallback.');
+  console.log('PASS: all five Cinematic resources, original Classic icons, missing resource/population fallback.');
+  console.log('PASS: all ten approved construction icons, 40px fit, RGBA/offline assets, Classic and missing-image fallback.');
   console.log('PASS: Classic/Cinematic routing, three castle drawings, persistence, invalid/blocked storage, missing-asset fallback.');
 })().catch(error => { console.error(error); process.exitCode = 1; });

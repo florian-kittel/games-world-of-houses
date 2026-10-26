@@ -215,7 +215,14 @@ Spalten. Für Steinbruch existiert keine eigene Originalfamilie.
 | Garnison, Auswahl, Bedrohung, Marsch, Beschriftung | Renderer / UI | Dynamische Spielinformation; getrennt von der Gebäudegrafik erhalten |
 
 Die Gebäudeicons der Verwaltung sind keine Bauzustände der Kartengebäude.
-Eine Überarbeitung dieser Icons wäre ein eigener, nachrangiger Assetblock.
+Die zehn Gebäudeicons sind inzwischen für Cinematic durch freigegebene Nahansichten
+ersetzt: `assets/cinematic/ui/construction-review.json` dokumentiert die Auswahl.
+Classic und der Rückfall bei fehlenden Bildern behalten die prozeduralen Icons.
+Cinematic verwendet für Einheiten fünf Kopf-/Waffenporträts aus
+`assets/cinematic/ui/unit-icons.json`; Classic behält seine prozeduralen Figuren.
+Cinematic verwendet
+für Nahrung, Holz, Stein, Eisen und Bevölkerung eigene Bilder aus
+`assets/cinematic/ui/resource-icons.json`, gemeinsam für HUD und Kostenanzeigen.
 Die großen Gebirge in `mountains.png` und viele Motive in `tileset.png` erstrecken
 sich über mehrere Rasterzellen. Ihre Einzelzellen ergeben keine unabhängigen
 kleinen Berge; für spätere Nutzung müssten vollständige Motivgrenzen festgelegt

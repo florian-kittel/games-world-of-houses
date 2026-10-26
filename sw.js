@@ -5,7 +5,7 @@
  */
 'use strict';
 
-var CACHE_VERSION = 'woh-cinematic-2026102611';
+var CACHE_VERSION = 'woh-cinematic-2026102622';
 var ASSETS = [
   './',
   './index.html',
@@ -45,10 +45,21 @@ var ASSETS = [
   var folder = './assets/cinematic/v2/topdown/';
   for (var level = 1; level <= 3; level++) ASSETS.push(folder + type + '-0' + level + '.png');
 });
+['townhall-building-v3','woodcutter-close-v3','quarry-close-v3','ironmine-right-angle-v5',
+ 'farm-aligned-v4','warehouse-building-v3','barracks-aligned-v4','range-aligned-v4',
+ 'wall-aligned-v4','tower-aligned-v4'].forEach(function (id) {
+  ASSETS.push('./assets/cinematic/ui/' + id + '.png');
+});
+['food','wood','stone','iron','population'].forEach(function (key) {
+  ASSETS.push('./assets/cinematic/ui/resource-' + key + '.png');
+});
+['spear','sword','axe','archer','hero'].forEach(function (key) {
+  ASSETS.push('./assets/cinematic/ui/unit-' + key + '.png');
+});
 // index.html uses revisioned script/style URLs; cache those exact requests offline.
 ASSETS = ASSETS.concat(ASSETS.filter(function (url) {
   return /\.(js|css)$/.test(url);
-}).map(function (url) { return url + '?v=2026102611'; }));
+}).map(function (url) { return url + '?v=2026102622'; }));
 
 self.addEventListener('message', function (e) {
   if (e.data === 'skipWaiting') self.skipWaiting();

@@ -1,0 +1,42 @@
+{
+  "tool": "built-in imagegen",
+  "status": "Integrated in Cinematic HUD and all resource-cost canvases",
+  "prompt": "resource-prompts.json",
+  "icons": [
+    {
+      "key": "food",
+      "label": "Nahrung",
+      "file": "resource-food.png",
+      "source": "resource-food-source.png",
+      "pixels": 256
+    },
+    {
+      "key": "wood",
+      "label": "Holz",
+      "file": "resource-wood.png",
+      "source": "resource-wood-source.png",
+      "pixels": 256
+    },
+    {
+      "key": "stone",
+      "label": "Stein",
+      "file": "resource-stone.png",
+      "source": "resource-stone-source.png",
+      "pixels": 256
+    },
+    {
+      "key": "iron",
+      "label": "Eisen",
+      "file": "resource-iron.png",
+      "source": "resource-iron-source.png",
+      "pixels": 256
+    },
+    {
+      "key": "population",
+      "label": "Bevölkerung",
+      "file": "resource-population.png",
+      "source": "resource-population-source.png",
+      "pixels": 256
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="de"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Holzfäller · Symbolentwurf</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#11191f;color:#deddd4;font:15px/1.5 system-ui,sans-serif}main{max-width:940px;margin:auto;padding:36px 24px}h1{font:30px Georgia;color:#dec995;margin:0 0 14px}h2{font-size:17px;color:#dec995}p{max-width:720px;color:#acbbc0}.compare{display:flex;gap:20px;flex-wrap:wrap;margin:26px 0}.example{width:270px}.card{border:1px solid #465052;background:#1c2528;border-radius:5px;padding:8px}.head{display:flex;gap:8px;align-items:center}.icon{display:block;width:40px;height:40px;flex:none;border-radius:4px;background:#0e171f}.name{color:#f4f0e4;font-size:14px}.level{display:block;font-size:12px;color:#dec995}.prod{color:#72c796;margin-top:12px;font-size:13px}.cost{font-size:13px;margin:8px 0;color:#d8c59a}.button{border:1px solid #4b5659;border-radius:4px;padding:4px;text-align:center;font-size:13px;background:#283236}.sizes{display:flex;align-items:flex-end;gap:32px;margin:24px 0;padding:20px;background:#182229;border:1px solid #354247;border-radius:6px}.size{text-align:center}.size img{display:block;margin:auto auto 12px;background:#0e171f;border-radius:4px}.size small{color:#aab9bc}a{color:#b8d8e8}.note{border-left:3px solid #a68c57;padding-left:14px}
+</style>
+<main><h1>Holzfäller · ein Symbol, große Formen</h1>
+<p><a href="production-icon-pilot.html">Neuer Entwurf: Holzfäller, Steinbruch und Eisenmine in gedeckteren Farben →</a></p>
+<p>Axt und Holzstamm als Nahansicht. Der Entwurf wird hier in derselben Größe wie im Baumenü gezeigt: <b>40 × 40 Pixel</b>.</p>
+<div class="compare">
+<section class="example"><h2>Bisheriges Symbol · 40 px</h2><div class="card"><div class="head"><canvas id="classic" class="icon" width="40" height="40" aria-label="Bisheriges Holzfällersymbol"></canvas><div><b class="name">Holzfäller</b><span class="level">Stufe 1</span></div></div><div class="prod">+3.5 Holz/s</div><div class="cost">Holz 200 · Stein 120 · Eisen 80</div><div class="button">Ausbauen →2</div></div></section>
+<section class="example"><h2>Cinematic-Entwurf · 40 px</h2><div class="card"><div class="head"><img class="icon" src="../assets/cinematic/ui/woodcutter-pilot.png" alt="Große Axt im Holzstamm"><div><b class="name">Holzfäller</b><span class="level">Stufe 1</span></div></div><div class="prod">+3.5 Holz/s</div><div class="cost">Holz 200 · Stein 120 · Eisen 80</div><div class="button">Ausbauen →2</div></div></section>
+</div>
+<h2>Lesbarkeit in verschiedenen Größen</h2><div class="sizes">
+<div class="size"><img width="40" height="40" src="../assets/cinematic/ui/woodcutter-pilot.png" alt="Entwurf in 40 Pixeln"><small>40 px · Baumenü</small></div>
+<div class="size"><img width="64" height="64" src="../assets/cinematic/ui/woodcutter-pilot.png" alt="Entwurf in 64 Pixeln"><small>64 px</small></div>
+<div class="size"><img width="128" height="128" src="../assets/cinematic/ui/woodcutter-pilot.png" alt="Vergrößerte Materialansicht"><small>128 px · Materialansicht</small></div>
+</div>
+<p class="note">Stilprobe für den Holzfäller. Noch nicht in das Spiel übernommen; die anderen Symbole werden erst nach Festlegung des Stils gestaltet.</p>
+<p><a href="../assets/cinematic/ui/woodcutter-pilot-prompt.json">Generierungsprompt</a> · <a href="../index.html">Zum Spiel</a></p></main>
+<script src="../js/config.js?v=2026102614"></script><script src="../js/sprites.js?v=2026102614"></script><script>WOH.Sprites.drawBuildingIcon(document.getElementById('classic').getContext('2d'),2,2,3,'woodcutter');</script>
+</html>

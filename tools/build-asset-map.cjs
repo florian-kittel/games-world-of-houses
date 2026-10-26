@@ -91,6 +91,9 @@ data.cinematicV2 = Object.entries(cinematicContext.window.WOH.Cinematic.assets).
     level: /^(castle|woodcutter|ironmine|stonemine|farmstead|sheepfarm)-/.test(id) ? Number(id.slice(-2)) : null,
     transforms: { rotate: false, mirrorX: false, mirrorY: false } };
 });
+data.cinematicUI = JSON.parse(fs.readFileSync(path.join(root, 'assets/cinematic/ui/construction-review.json'), 'utf8'));
+data.cinematicResources = JSON.parse(fs.readFileSync(path.join(root, 'assets/cinematic/ui/resource-icons.json'), 'utf8'));
+data.cinematicUnits = JSON.parse(fs.readFileSync(path.join(root, 'assets/cinematic/ui/unit-icons.json'), 'utf8'));
 fs.writeFileSync(jsonPath, JSON.stringify(data, null, 2) + '\n');
 const esc = s => String(s).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
 const groups = [...new Set(entries.map(e => e.group))];
@@ -121,5 +124,5 @@ fs.writeFileSync(path.join(root, 'docs/asset-map.html'), `<!doctype html>
 ${cinematicSection}
 ${sections}
 <section><h2>Weitere vorhandene Sheets</h2><p>Diese Bilder sind im Projekt vorhanden, werden aber vom Kartenrenderer nicht als Bildquelle verwendet. Sie zeigen teilweise zusammenhängende Motive über mehrere Zellen; nicht pauschal als einzelne 16-Pixel-Sprites behandeln.</p><details><summary>Große Berge und Schneeberge · mountains.png</summary><img src="../assets/reference/mountains_labeled.png" alt="Beschriftete große Gebirgsmotive"></details><details><summary>Gelände, Straßen, Mauern, Burgen und Dekoration · tileset.png</summary><img src="../assets/reference/tileset_labeled.png" alt="Beschriftetes zusätzliches Terrain- und Architektursheet"></details><details><summary>water.png · vorhanden, kein Lade- oder Animationspfad im aktuellen Renderer</summary><img src="../assets/water.png" alt="Vorhandenes Wassersheet"></details></section>
-<section><h2>Prozedurale Grafiken</h2><p>10 Gebäudeicons, 5 Einheitenicons, dynamische Hauswappen mit 6 Mustern sowie Garnisons-, Auswahl-, Bedrohungs- und Marschmarkierungen entstehen im Code. Sie sind keine Ausschnitte aus tileset2. Details und Abgrenzung stehen in der Analyse.</p></section></main></html>\n`);
+<section><h2>Menüsymbole und prozedurale Grafiken</h2><p>Cinematic nutzt zehn <a href="construction-icon-pilot.html">Gebäude-Nahansichten</a>, fünf <a href="resource-icon-preview.html">Ressourcen-/Bevölkerungssymbole</a> und fünf <a href="unit-icon-preview.html">Einheitenporträts mit Waffen</a>. Classic verwendet weiterhin seine ursprünglichen Atlas- und prozeduralen Symbole. Hauswappen mit sechs Mustern sowie Garnisons-, Auswahl-, Bedrohungs- und Marschmarkierungen entstehen im Code. Details und Abgrenzung stehen in der Analyse.</p></section></main></html>\n`);
 console.log(JSON.stringify({ entries: entries.length, uniqueCells: new Set(entries.map(e => e.cell.join(','))).size, images, outputs: ['docs/asset-map.json', 'docs/asset-map.html'] }, null, 2));

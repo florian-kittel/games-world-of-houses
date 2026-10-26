@@ -80,7 +80,20 @@ against full-resolution structures anymore.
 The loader currently loads both modes' images at startup; source PNGs increase
 download/decode size. Classic still uses its original tiles and development
 stages. Unsupported reserve city/harbor calls retain the Classic fallback.
-Icons and game overlays remain procedural/Classic as documented in the asset map.
+The Cinematic construction menu uses ten approved close-up icons from `../ui/`.
+Cinematic resource and population icons also use dedicated images from `../ui/`.
+Cinematic unit portraits likewise use dedicated images from `../ui/`.
+Classic and other game overlays retain their existing rendering.
+
+Cinematic offensive marches (attack, gather, capture) use a screen-sized faction
+shield in a red circular frame. Two offset red waves expand and fade beneath it,
+using real time independently of game speed. Tokens render above scenery and
+labels; route colours and support/supply markers retain their existing meaning.
+`docs/attack-marker-preview.html` previews the same renderer with all six sigil
+patterns. Classic retains its original circular march dots.
+Returning armies use the same faction shield with a grey frame and grey route,
+without pulse waves. The movement's stored owner determines the heraldry, even
+when the return starts at an enemy castle or structure.
 
 Checks:
 

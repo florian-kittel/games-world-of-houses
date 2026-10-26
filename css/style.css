@@ -41,6 +41,7 @@ body[data-graphics-mode="classic"] #overlay-title{font-family:inherit}
 .res-ico{width:18px;height:18px;vertical-align:middle;image-rendering:pixelated;
   image-rendering:crisp-edges}
 .res-ico.sm{width:13px;height:13px}
+[data-graphics-mode="cinematic"] .res-ico{image-rendering:auto}
 .costtag{display:inline-flex;align-items:center;gap:2px;margin-right:7px;
   font-variant-numeric:tabular-nums}
 .costtag.lack{color:#e06a8a}
@@ -220,6 +221,9 @@ body[data-graphics-mode="classic"] #overlay-title{font-family:inherit}
 .unit-table tr.off{background:rgba(125,43,43,.12)}
 .unit-table tr.def{background:rgba(43,74,125,.12)}
 .unit-ico{background:#0e171f;border-radius:3px;vertical-align:middle}
+[data-graphics-mode="cinematic"] .unit-ico{flex-shrink:0}
+[data-graphics-mode="cinematic"] .unit-table td:first-child{padding:8px}
+[data-graphics-mode="cinematic"] .garr-row{grid-template-columns:33px 96px minmax(0,1fr) auto}
 .cnt{font-weight:700;color:var(--gold)}
 .train-n,.send-n{background:var(--bg);color:var(--text);border:1px solid var(--line);
   border-radius:4px;padding:3px}

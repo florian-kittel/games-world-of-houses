@@ -1,0 +1,61 @@
+{
+  "tool": "built-in imagegen",
+  "status": "Integrated in Cinematic unit canvases",
+  "prompt": "unit-prompts.json",
+  "displaySizes": [
+    [
+      48,
+      58
+    ],
+    [
+      36,
+      45
+    ],
+    [
+      33,
+      42
+    ]
+  ],
+  "icons": [
+    {
+      "key": "spear",
+      "label": "Speerträger",
+      "file": "unit-spear.png",
+      "source": "unit-spear-source.png",
+      "width": 256,
+      "height": 308
+    },
+    {
+      "key": "sword",
+      "label": "Schwertkämpfer",
+      "file": "unit-sword.png",
+      "source": "unit-sword-source.png",
+      "width": 256,
+      "height": 308
+    },
+    {
+      "key": "axe",
+      "label": "Axtkämpfer",
+      "file": "unit-axe.png",
+      "source": "unit-axe-source.png",
+      "width": 256,
+      "height": 308
+    },
+    {
+      "key": "archer",
+      "label": "Bogenschütze",
+      "file": "unit-archer.png",
+      "source": "unit-archer-source.png",
+      "width": 256,
+      "height": 308
+    },
+    {
+      "key": "hero",
+      "label": "Held",
+      "file": "unit-hero.png",
+      "source": "unit-hero-source.png",
+      "width": 256,
+      "height": 308
+    }
+  ]
+}

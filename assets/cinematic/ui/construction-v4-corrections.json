@@ -1,0 +1,21 @@
+{
+  "tool": "built-in imagegen",
+  "approvedCameraReference": "warehouse-building-v3",
+  "corrections": [
+    {
+      "id": "ironmine-corrected-v4",
+      "refs": [
+        "C:/Users/Florian Kittel/.codex/generated_images/01a178d9-6f4e-70d1-893e-c6c96266d28c/exec-3789df4e-9919-4a9a-ba2b-2d478ddb5a70.png"
+      ],
+      "prompt": "Precise-object-edit. Image1 is the EDIT TARGET. Fix ONLY the geometrically impossible WOODEN SHAFT and its junction at the pickaxe head. Preserve the existing pick head shape, two pointed ends, dark ore, crop, muted colours and lighting.\nThe current wooden stub sticking out ABOVE the head is NOT collinear with the shaft BELOW the head. This is a drawing ERROR. Remove the erroneous upper protruding wooden stub altogether. Reconstruct one clean physically plausible central oval steel eye/socket. A SINGLE perfectly straight slender wooden shaft fits squarely through that central socket and extends down-right out of frame. The shaft has continuous straight parallel/slightly tapered edges and unbroken wood grain. No elbow, no kink, no offset, no swollen twisted connector, no second shaft or fork. The handle's centre axis must intersect the CENTRE OF THE STEEL EYE. For clarity the top end of the handle is FLUSH with the eye and not protruding above; only one straight lower haft is visible. Make the tool mechanically buildable. Do not redesign the icon. Keep transparent background, same composition and resolution."
+    },
+    {
+      "id": "farm-aligned-v4",
+      "refs": [
+        "C:/Users/Florian Kittel/.codex/generated_images/01a178d9-6f4e-70d1-893e-c6c96266d28c/exec-384ac7f1-aade-4a1b-aca2-85b1b65ec820.png",
+        "C:/Users/Florian Kittel/.codex/generated_images/01a178d9-6f4e-70d1-893e-c6c96266d28c/exec-92b43da4-547f-403e-8721-d217465cf434.png"
+      ],
+      "prompt": "Precise architectural camera correction. Input1 is the APPROVED CAMERA, FRAMING AND LIGHTING REFERENCE (warehouse). Input2 is the FARMHOUSE EDIT TARGET. Recreate the farmhouse of input2, but match input1 EXACTLY in camera direction and viewing height: FRONT GABLE FACADE occupies the RIGHT two-thirds, LEFT SIDE WALL recedes toward the LEFT EDGE. Roof ridge runs diagonally from front gable near upper RIGHT towards rear upper LEFT. This is viewed from the building's FRONT-LEFT corner, slightly upward at the gable, NOT front-right, NOT roof aerial. Use the same tight crop, same object scale and same neutral cool upper-left light as input1. Keep farmhouse identity: desaturated grey-brown thatch rather than slate, timber and pale plaster front wall, simple rustic door, one modest window, tiny subdued wheat bundle. Do not turn it into a warehouse, do not add crates. The door is on the RIGHT FRONT facade, the smaller side window is on the receding LEFT wall. Crop entire scene closely at sides and bottom like input1. Keep RGBA transparency. Grounded realistic materials, muted cinematic medieval northern palette. No text, no people, no landscape."
+    }
+  ]
+}
