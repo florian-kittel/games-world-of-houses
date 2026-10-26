@@ -107,6 +107,7 @@
   // ---------------------------------------------------------------------
   function init(_api) {
     api = _api;
+    document.body.setAttribute('data-graphics-mode', S.getGraphicsMode());
     dom.topbar = $('topbar');
     dom.mapView = $('map-view');
     dom.sidebar = $('sidebar');
@@ -121,6 +122,9 @@
     dom.battleTitle = $('battle-title');
     attachCanvasEvents();
     window.addEventListener('resize', resizeCanvas);
+    // HUD wrapping can resize the map without a window resize. Keep the bitmap
+    // and pointer coordinates aligned with the actual displayed canvas.
+    if (window.ResizeObserver) new ResizeObserver(resizeCanvas).observe(dom.mapView);
     $('overlay-close').addEventListener('click', closeVillage);
     dom.overlay.querySelector('.overlay-backdrop').addEventListener('click', closeVillage);
     $('battle-close').addEventListener('click', closeBattle);
@@ -157,7 +161,7 @@
 
   function bind(s) {
     state = s;
-    terrainCanvas = S.buildTerrainCanvas(state.map);
+    terrainCanvas = S.buildTerrainCanvas(state.map, state.structures);
     activeVillageId = state.playerVillageId;
     targetVillageId = null;
     overlayOpen = false;
@@ -168,6 +172,27 @@
     if (pv) centerOn(pv);
     buildTopbar();
     renderSidebar();
+  }
+
+  function graphicsModeControl(id) {
+    var mode = S.getGraphicsMode();
+    return '<label class="graphics-choice" for="' + id + '">Grafik ' +
+      '<select id="' + id + '" class="graphics-select" data-graphics-select>' +
+      '<option value="classic"' + (mode === 'classic' ? ' selected' : '') + '>Classic</option>' +
+      '<option value="cinematic"' + (mode === 'cinematic' ? ' selected' : '') + '>Cinematic</option>' +
+      '</select></label>';
+  }
+
+  function setGraphicsMode(mode) {
+    var changed = S.setGraphicsMode(mode);
+    var current = S.getGraphicsMode();
+    document.body.setAttribute('data-graphics-mode', current);
+    Array.prototype.forEach.call(document.querySelectorAll('[data-graphics-select]'), function (select) {
+      select.value = current;
+    });
+    // Rebuild only the terrain. Keep the camera, selection, open dialogs and
+    // simulation state intact; bind() would reset those UI choices.
+    if (changed && state) terrainCanvas = S.buildTerrainCanvas(state.map, state.structures);
   }
 
   function activeVillage() {
@@ -187,20 +212,23 @@
   function resizeCanvas() {
     if (!dom.canvas) return;
     var rect = dom.mapView.getBoundingClientRect();
-    dom.canvas.width = Math.max(100, rect.width);
-    dom.canvas.height = Math.max(100, rect.height);
+    dom.viewWidth = Math.max(100, Math.round(rect.width));
+    dom.viewHeight = Math.max(100, Math.round(rect.height));
+    dom.pixelRatio = Math.min(2, window.devicePixelRatio || 1);
+    dom.canvas.width = Math.round(dom.viewWidth * dom.pixelRatio);
+    dom.canvas.height = Math.round(dom.viewHeight * dom.pixelRatio);
     if (overlayOpen && dom.overlay) dom.overlay.style.top = dom.topbar.offsetHeight + 'px';
   }
   function centerOn(v) {
     var ts = C.MAP.tileSize;
-    cam.x = v.x * ts - dom.canvas.width / (2 * cam.zoom);
-    cam.y = v.y * ts - dom.canvas.height / (2 * cam.zoom);
+    cam.x = v.x * ts - dom.viewWidth / (2 * cam.zoom);
+    cam.y = v.y * ts - dom.viewHeight / (2 * cam.zoom);
     clampCam();
   }
   function clampCam() {
     var ts = C.MAP.tileSize;
     var worldW = state.map.width * ts, worldH = state.map.height * ts;
-    var viewW = dom.canvas.width / cam.zoom, viewH = dom.canvas.height / cam.zoom;
+    var viewW = dom.viewWidth / cam.zoom, viewH = dom.viewHeight / cam.zoom;
     cam.x = Math.max(-40, Math.min(worldW - viewW + 40, cam.x));
     cam.y = Math.max(-40, Math.min(worldH - viewH + 40, cam.y));
   }
@@ -531,14 +559,19 @@
 
   function renderMap() {
     var ctx = dom.ctx, cv = dom.canvas, ts = C.MAP.tileSize;
+    ctx.setTransform(dom.pixelRatio, 0, 0, dom.pixelRatio, 0, 0);
     ctx.fillStyle = '#0c1418';
-    ctx.fillRect(0, 0, cv.width, cv.height);
-    ctx.imageSmoothingEnabled = false;
+    ctx.fillRect(0, 0, dom.viewWidth, dom.viewHeight);
+    ctx.imageSmoothingEnabled = S.getGraphicsMode() === 'cinematic';
     ctx.save();
     ctx.translate(-cam.x * cam.zoom, -cam.y * cam.zoom);
     ctx.scale(cam.zoom, cam.zoom);
     // Terrain
-    if (terrainCanvas) ctx.drawImage(terrainCanvas, 0, 0);
+    if (terrainCanvas && terrainCanvas.draw) terrainCanvas.draw(ctx, {
+      x: cam.x, y: cam.y, width: dom.viewWidth / cam.zoom, height: dom.viewHeight / cam.zoom,
+      zoom: cam.zoom, pixelRatio: dom.pixelRatio
+    });
+    else if (terrainCanvas) ctx.drawImage(terrainCanvas, 0, 0, state.map.width * ts, state.map.height * ts);
     // Bewegungslinien — Burgen UND Strukturen als Ziel/Quelle.
     // entityById liefert {x,y,ownerHouseId} fuer Burg oder Struktur einheitlich.
     var threatenedStructIds = {};  // fuer Ziel-Highlight unten
@@ -630,11 +663,13 @@
     // Zeile 1 = Burgname, Zeile 2 = Hausname. Spieler: blauer Hintergrund.
     ctx.textAlign = 'left';
     var SHIELD = 20, GAP = 6, PADX = 5, PADY = 4;
-    var F1 = 'bold 11px monospace', F2 = '10px monospace';
+    var classic = S.getGraphicsMode() === 'classic';
+    var F1 = classic ? 'bold 11px monospace' : 'bold 12px Georgia';
+    var F2 = classic ? '10px monospace' : '11px Segoe UI';
     for (var id2 in state.villages) {
       var v2 = state.villages[id2];
       var sp = worldToScreen(v2.x * ts + ts / 2, v2.y * ts + ts / 2);
-      if (sp.x < -80 || sp.x > cv.width + 80 || sp.y < -40 || sp.y > cv.height + 40) continue;
+      if (sp.x < -80 || sp.x > dom.viewWidth + 80 || sp.y < -40 || sp.y > dom.viewHeight + 40) continue;
       var h2 = state.houses[v2.houseId];
       var isP = v2.houseId === state.playerHouseId;
       var line1 = v2.name + villageTag(v2);   // Burgname
@@ -645,7 +680,7 @@
       var boxW = PADX + SHIELD + GAP + textW + PADX;
       var BOXH = SHIELD + PADY * 2;
       var bx = Math.round(sp.x - boxW / 2), by = Math.round(sp.y + ts * 0.5);
-      ctx.fillStyle = isP ? 'rgba(38,92,170,0.95)' : 'rgba(12,16,20,0.72)';
+      ctx.fillStyle = isP ? (classic ? 'rgba(38,92,170,0.95)' : 'rgba(37,62,76,0.95)') : 'rgba(12,16,20,0.72)';
       ctx.fillRect(bx, by, boxW, BOXH);
       S.drawCrest(ctx, bx + PADX, by + PADY, SHIELD, h2.sigil);
       var tx = bx + PADX + SHIELD + GAP;
@@ -663,7 +698,7 @@
       var sM = C.RESOURCE_STRUCTURES || {};
       (state.structures || []).forEach(function (st) {
         var sp2 = worldToScreen(st.x * ts + ts / 2, st.y * ts + ts / 2);
-        if (sp2.x < -40 || sp2.x > cv.width + 40 || sp2.y < -40 || sp2.y > cv.height + 40) return;
+        if (sp2.x < -40 || sp2.x > dom.viewWidth + 40 || sp2.y < -40 || sp2.y > dom.viewHeight + 40) return;
         var nm = (sM[st.type] && sM[st.type].name) || st.type;
         var tw2 = ctx.measureText(nm).width;
         ctx.fillStyle = 'rgba(0,0,0,0.5)';
@@ -699,6 +734,11 @@
     paintResIcons(res);
 
     var right = el('div', 'tb-right');
+    var graphics = el('span', 'tb-graphics', graphicsModeControl('graphics-mode'));
+    right.appendChild(graphics);
+    graphics.querySelector('select').addEventListener('change', function (e) {
+      setGraphicsMode(e.target.value);
+    });
     var sel = el('select', 'vill-select'); sel.id = 'vill-select';
     sel.addEventListener('change', function () {
       activeVillageId = sel.value;
@@ -2408,7 +2448,7 @@
 
   WOH.UI = {
     init: init, bind: bind, frame: frame,
+    graphicsModeControl: graphicsModeControl, setGraphicsMode: setGraphicsMode,
     refreshPanels: refreshPanels, setSaveStatus: setSaveStatus, toast: toast
   };
 })(window.WOH = window.WOH || {});
-

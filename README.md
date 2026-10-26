@@ -13,6 +13,25 @@ gesichert — nicht-blockierend, sodass das Spiel beim Neuladen oder Browser-Neu
 fortgesetzt werden kann. Beim Fortsetzen wird der Aufbau für die Offline-Zeit
 (gedeckelt auf 2 Stunden) nachsimuliert.
 
+## Grafikmodus
+
+Im Startmenü und in der oberen Spielleiste lässt sich unter **Grafik** zwischen
+**Classic** (ursprüngliche Pixelgrafik mit eigenen Ausbaustufen) und **Cinematic**
+(Landschaftstexturen und freigestellte Gebäudemotive) wechseln. Die Auswahl wird
+pro Browser gespeichert; ohne bisherige Auswahl ist Cinematic voreingestellt.
+Der Wechsel im Spiel erhält Kameraposition, Zoom, Auswahl und laufenden Spielstand.
+Wenn Browserspeicher gesperrt ist, gilt die Auswahl für die aktuelle Sitzung.
+
+Die [Asset-Map](docs/asset-map.html) zeigt die Originalgrafiken und ihre Zuordnungen;
+die [Analyse](docs/ASSET-MAP.md) dokumentiert den Stand des Cinematic-Prototyps und
+die Planung weiterer Assets. Der Moduswechsel verwendet die vorhandenen Bilder.
+
+Cinematic v2 verwendet 28 einzelne hochauflösende Assets: drei Wald- und drei
+Felsvarianten, zwei Wiesenböden, Acker/Wasser sowie drei Ausbauzustände für Burg
+und jeden aktiven Produktionstyp. Die Landschaft wird ohne Spiegeln oder Drehen
+aus überlappenden Motiven aufgebaut und beim Zoomen in passender Auflösung
+zwischengespeichert. Details und Prompts: [Cinematic v2](assets/cinematic/v2/README.md).
+
 ## Spielprinzip
 
 Eine prozedural erzeugte Karte (Value-Noise) mit zufällig platzierten Dörfern. Jedes

@@ -1,0 +1,174 @@
+{
+  "tool": "built-in imagegen",
+  "date": "2026-10-26",
+  "assets": [
+    {
+      "id": "forest-01",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production sprite for a photorealistic dark northern medieval top-down strategy game. Orthographic aerial camera fixed at 65 degrees above ground (25 degrees from vertical), looking from screen bottom toward screen top. Realistic fine materials, subdued daylight from upper left, shadow toward lower right, muted natural palette. Not isometric diamond, no horizon, no cartoon or pixel art. Genuine transparent alpha around the entire object, no square ground tile, no text, no frame, no watermark. Full object isolated, centered, 10 percent transparent padding on all sides. Subject: a compact irregular grove of seven tall northern spruce trees of differing heights, healthy dark olive green needles, realistically layered branches and trunks, viewed mostly as crowns with a little south-facing trunk visible. Rounded asymmetric footprint, a few low ferns and roots beneath crowns, no soil slab or surrounding scenery. Height-to-width of whole grove close to square. This cluster will repeat across a forest, so no focal landmarks, no rocks, no strong directional composition.",
+      "file": "forest-01.png"
+    },
+    {
+      "id": "castle-01",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production sprite for a photorealistic dark northern medieval top-down strategy game. Orthographic aerial camera fixed at 65 degrees above ground (25 degrees from vertical), looking from screen bottom toward screen top. Realistic fine materials, subdued daylight from upper left, shadow toward lower right, muted natural palette. Not isometric diamond, no horizon, no cartoon or pixel art. Genuine transparent alpha around the entire object, no square ground tile, no text, no frame, no watermark. Full object isolated, centered, 10 percent transparent padding on all sides. Subject: first development stage of a medieval lord's seat: a modest squat square stone keep with dark weathered slate roof, low timber palisade surrounding a tiny irregular courtyard, small gatehouse facing screen bottom, one wooden shed. Believable rugged northern architecture. Footprint fits within a square but no artificial square terrain base. The view must expose roofs and courtyard primarily, only short front facades. Small early fortified manor, NOT a huge four-tower castle. No heraldic symbols or baked coloured banners.",
+      "file": "castle-01.png"
+    },
+    {
+      "id": "forest-02",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production sprite for a photorealistic dark northern medieval top-down strategy game. Orthographic aerial camera fixed at 65 degrees above ground (25 degrees from vertical), looking from screen bottom toward screen top. Realistic fine materials, subdued daylight from upper left, shadow toward lower right, muted natural palette. Not isometric diamond, no horizon, no cartoon or pixel art. Genuine transparent alpha around the entire object, no square ground tile, no text, no frame, no watermark. Full object isolated, centered, 10 percent transparent padding on all sides. Subject: a broad irregular group of five northern fir and spruce trees, two mature trees at left, three shorter trees towards right and front. Muted forest green, fine textured branches, sparse ferns and roots below, mostly tree crowns. No soil platform, no landscape. Natural asymmetry; no central tallest Christmas tree. Same camera and lighting throughout.",
+      "file": "forest-02.png"
+    },
+    {
+      "id": "forest-03",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production sprite for a photorealistic dark northern medieval top-down strategy game. Orthographic aerial camera fixed at 65 degrees above ground (25 degrees from vertical), looking from screen bottom toward screen top. Realistic fine materials, subdued daylight from upper left, shadow toward lower right, muted natural palette. Not isometric diamond, no horizon, no cartoon or pixel art. Genuine transparent alpha around the entire object, no square ground tile, no text, no frame, no watermark. Full object isolated, centered, 10 percent transparent padding on all sides. Subject: an irregular sparse cluster of three mature Scots pine trees with spreading rounded needle crowns and two small spruces. Muted olive needles, weathered grey brown trunks, tiny undergrowth beneath crowns, mostly viewed from above. No terrain platform, no landscape. A natural small northern woodland cluster, same scale and camera as realistic spruce grove.",
+      "file": "forest-03.png"
+    },
+    {
+      "id": "rock-01",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production sprite for a photorealistic dark northern medieval top-down strategy game. Orthographic aerial camera fixed at 65 degrees above ground (25 degrees from vertical), looking from screen bottom toward screen top. Realistic fine materials, subdued daylight from upper left, shadow toward lower right, muted natural palette. Not isometric diamond, no horizon, no cartoon or pixel art. Genuine transparent alpha around the entire object, no square ground tile, no text, no frame, no watermark. Full object isolated, centered, 10 percent transparent padding on all sides. Subject: a compact low rugged outcrop of fractured grey slate rock, three asymmetric craggy peaks and mossy scree around their bases, an irregular rounded footprint. Seen from above, finely detailed geology, muted grey and lichen olive, realistic short front cliffs. No snow, no trees, no landscape, no square base. This will repeat across a mountain range; no landmark-like dramatic isolated spire.",
+      "file": "rock-01.png"
+    },
+    {
+      "id": "grass-01",
+      "transparentBackground": false,
+      "prompt": "Use case: photorealistic-natural. Production seamless ground material for a dark northern medieval strategy game. Square 1536 by 1536 texture, camera directly perpendicular to FLAT GROUND. Fine short mossy olive grass interspersed with sparse dry blades, extremely even broad scale colour and lighting, small subtle earthy specks. Ground covers entire frame edge to edge, tileable on all four sides. No trees, no rocks, no bushes, no path, no focal object, no perspective, no horizon, no shadows, no large patches or borders. Realistic material detail intended to repeat many times, restrained medium olive and grey green, not neon and not nearly black.",
+      "file": "grass-01.png"
+    },
+    {
+      "id": "rock-02",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production sprite for a photorealistic dark northern medieval top-down strategy game. Orthographic aerial camera fixed at 65 degrees above ground (25 degrees from vertical), looking from screen bottom toward screen top. Realistic fine materials, subdued daylight from upper left, shadow toward lower right, muted natural palette. Not isometric diamond, no horizon, no cartoon or pixel art. Genuine transparent alpha around the entire object, no square ground tile, no text, no frame, no watermark. Full object isolated, centered, 10 percent transparent padding on all sides. Subject: a broad low irregular ridge of dark grey limestone with four worn fractured ledges, moss in cracks, fine gravel at the foot. One taller crag on the LEFT, low boulders on the RIGHT. Mostly upper surfaces visible, short south-facing cliff. No snow, no trees, no square terrain slab. A repeating mountain cluster rather than a landmark.",
+      "file": "rock-02.png"
+    },
+    {
+      "id": "rock-03",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production sprite for a photorealistic dark northern medieval top-down strategy game. Orthographic aerial camera fixed at 65 degrees above ground (25 degrees from vertical), looking from screen bottom toward screen top. Realistic fine materials, subdued daylight from upper left, shadow toward lower right, muted natural palette. Not isometric diamond, no horizon, no cartoon or pixel art. Genuine transparent alpha around the entire object, no square ground tile, no text, no frame, no watermark. Full object isolated, centered, 10 percent transparent padding on all sides. Subject: an asymmetric tight group of rounded granite boulders and a low fractured rock crest, taller crag on the RIGHT and scattered smaller grey rocks on the LEFT, subtle olive lichen and gravel near bases. Mostly top surfaces visible, short south-facing faces. No snow, no trees, no landscape or square platform. Designed to combine with other rock clusters.",
+      "file": "rock-03.png"
+    },
+    {
+      "id": "grass-02",
+      "transparentBackground": false,
+      "prompt": "Use case: photorealistic-natural. Seamless square ground texture for a northern medieval strategy game, 1536 square requested. Flat orthographic perpendicular view of the surface, even diffuse light, all four edges tileable, fine even small-scale detail, no border, no vignette, no focal landmarks, no text, no large shadows, no horizon. Subject: short grey olive meadow grass mixed with fine moss, tiny sparse brown soil flecks, moderately dry. Very subtle light and dark variation across the whole surface, natural muted medium olive green. No trees, no stones, no bushes, no tall tufts. Must closely match ordinary mossy olive grass, not become a contrasting brown patch.",
+      "file": "grass-02.png"
+    },
+    {
+      "id": "field-01",
+      "transparentBackground": false,
+      "prompt": "Use case: photorealistic-natural. Seamless square ground texture for a northern medieval strategy game, 1536 square requested. Flat orthographic perpendicular view of the surface, even diffuse light, all four edges tileable, fine even small-scale detail, no border, no vignette, no focal landmarks, no text, no large shadows, no horizon. Subject: evenly ploughed medieval farmland, many fine narrow parallel soil furrows running horizontally from left to right. Restrained earthy brown and muted dry straw, a little stubble, fine realistic dark earth. No crops standing tall, no buildings, no field boundaries, no patchwork. Uniform scale and brightness, no diagonal furrows.",
+      "file": "field-01.png"
+    },
+    {
+      "id": "water-01",
+      "transparentBackground": false,
+      "prompt": "Use case: photorealistic-natural. Seamless square ground texture for a northern medieval strategy game, 1536 square requested. Flat orthographic perpendicular view of the surface, even diffuse light, all four edges tileable, fine even small-scale detail, no border, no vignette, no focal landmarks, no text, no large shadows, no horizon. Subject: calm deep slate blue green lake surface viewed straight down, very subtle small horizontal wind ripples. Restrained dark northern water, evenly lit, no sky reflection, no shore, no objects, no boats, no large waves, no bright white flecks. Extremely low macro contrast, no repeating focal shape.",
+      "file": "water-01.png"
+    },
+    {
+      "id": "castle-02",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production sprite for a photorealistic dark northern medieval top-down strategy game. Orthographic aerial camera fixed at 65 degrees above ground (25 degrees from vertical), looking from screen bottom toward screen top. Realistic fine materials, subdued daylight from upper left, shadow toward lower right, muted natural palette. Not isometric diamond, no horizon, no cartoon or pixel art. Genuine transparent alpha around the entire object, no square ground tile, no text, no frame, no watermark. Full object isolated, centered, 10 percent transparent padding on all sides. Subject: second development stage of a northern medieval lord's seat: square slate-roofed grey stone keep, complete low stone curtain wall enclosing courtyard, two small round towers flanking gatehouse at screen bottom, a stable and storehouse. Intermediate fortified castle, clearly larger architectural complexity than a palisaded manor but less than a major fortress. Same square footprint and camera as a modest manor. No heraldic symbols or coloured banners.",
+      "file": "castle-02.png"
+    },
+    {
+      "id": "castle-03",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production sprite for a photorealistic dark northern medieval top-down strategy game. Orthographic aerial camera fixed at 65 degrees above ground (25 degrees from vertical), looking from screen bottom toward screen top. Realistic fine materials, subdued daylight from upper left, shadow toward lower right, muted natural palette. Not isometric diamond, no horizon, no cartoon or pixel art. Genuine transparent alpha around the entire object, no square ground tile, no text, no frame, no watermark. Full object isolated, centered, 10 percent transparent padding on all sides. Subject: third final development stage of a northern medieval lord's seat: imposing grey stone fortress with square slate-roofed central keep, four round corner towers, complete crenellated curtain wall, strong twin-tower gate at screen bottom, tightly packed courtyard and two annexes. Clear recognisable advanced architectural silhouette, same centered square footprint and camera as smaller castle states. No heraldic symbols or coloured banners.",
+      "file": "castle-03.png"
+    },
+    {
+      "id": "woodcutter-01",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production sprite for a photorealistic dark northern medieval top-down strategy game. Orthographic aerial camera fixed at 65 degrees above ground (25 degrees from vertical), looking from screen bottom toward screen top. Realistic fine materials, subdued daylight from upper left, shadow toward lower right, muted natural palette. Not isometric diamond, no horizon, no cartoon or pixel art. Genuine transparent alpha around the entire object, no square ground tile, no text, no frame, no watermark. Full object isolated, centered, 10 percent transparent padding on all sides. Subject: a small weathered timber woodcutter cabin with steep dark slate roof, modest stack of chopped logs, chopping block and handcart. A compact self-contained production-site sprite. All parts grouped tightly inside one rounded irregular footprint with small amounts of worn earth only immediately beneath structures. No surrounding landscape, no road beyond the object, no distant trees, no heraldic symbols. Preserve the same ground scale and camera for all three development stages.",
+      "file": "woodcutter-01.png"
+    },
+    {
+      "id": "woodcutter-02",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production sprite for a photorealistic dark northern medieval top-down strategy game. Orthographic aerial camera fixed at 65 degrees above ground (25 degrees from vertical), looking from screen bottom toward screen top. Realistic fine materials, subdued daylight from upper left, shadow toward lower right, muted natural palette. Not isometric diamond, no horizon, no cartoon or pixel art. Genuine transparent alpha around the entire object, no square ground tile, no text, no frame, no watermark. Full object isolated, centered, 10 percent transparent padding on all sides. Subject: an expanded timber logging lodge with two connected dark slate roof sections, covered log store, sawbench and larger timber stacks. A compact self-contained production-site sprite. All parts grouped tightly inside one rounded irregular footprint with small amounts of worn earth only immediately beneath structures. No surrounding landscape, no road beyond the object, no distant trees, no heraldic symbols. Preserve the same ground scale and camera for all three development stages.",
+      "file": "woodcutter-02.png"
+    },
+    {
+      "id": "woodcutter-03",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production sprite for a photorealistic dark northern medieval top-down strategy game. Orthographic aerial camera fixed at 65 degrees above ground (25 degrees from vertical), looking from screen bottom toward screen top. Realistic fine materials, subdued daylight from upper left, shadow toward lower right, muted natural palette. Not isometric diamond, no horizon, no cartoon or pixel art. Genuine transparent alpha around the entire object, no square ground tile, no text, no frame, no watermark. Full object isolated, centered, 10 percent transparent padding on all sides. Subject: a substantial medieval logging yard with large timber hall, two sheds, a wooden saw frame, many orderly log piles and carts. A compact self-contained production-site sprite. All parts grouped tightly inside one rounded irregular footprint with small amounts of worn earth only immediately beneath structures. No surrounding landscape, no road beyond the object, no distant trees, no heraldic symbols. Preserve the same ground scale and camera for all three development stages.",
+      "file": "woodcutter-03.png"
+    },
+    {
+      "id": "ironmine-01",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production sprite for a photorealistic dark northern medieval top-down strategy game. Orthographic aerial camera fixed at 65 degrees above ground (25 degrees from vertical), looking from screen bottom toward screen top. Realistic fine materials, subdued daylight from upper left, shadow toward lower right, muted natural palette. Not isometric diamond, no horizon, no cartoon or pixel art. Genuine transparent alpha around the entire object, no square ground tile, no text, no frame, no watermark. Full object isolated, centered, 10 percent transparent padding on all sides. Subject: a small dark hillside iron mine entrance under a low rocky mound, rough timber pit supports, single ore cart and small brown-grey iron ore pile. A compact self-contained production-site sprite. All parts grouped tightly inside one rounded irregular footprint with small amounts of worn earth only immediately beneath structures. No surrounding landscape, no road beyond the object, no distant trees, no heraldic symbols. Preserve the same ground scale and camera for all three development stages.",
+      "file": "ironmine-01.png"
+    },
+    {
+      "id": "ironmine-02",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production sprite for a photorealistic dark northern medieval top-down strategy game. Orthographic aerial camera fixed at 65 degrees above ground (25 degrees from vertical), looking from screen bottom toward screen top. Realistic fine materials, subdued daylight from upper left, shadow toward lower right, muted natural palette. Not isometric diamond, no horizon, no cartoon or pixel art. Genuine transparent alpha around the entire object, no square ground tile, no text, no frame, no watermark. Full object isolated, centered, 10 percent transparent padding on all sides. Subject: an expanded iron mining works, two timber-supported dark mine tunnels in a low rock outcrop, a wooden winch frame, ore carts and a small roofed ore store. A compact self-contained production-site sprite. All parts grouped tightly inside one rounded irregular footprint with small amounts of worn earth only immediately beneath structures. No surrounding landscape, no road beyond the object, no distant trees, no heraldic symbols. Preserve the same ground scale and camera for all three development stages.",
+      "file": "ironmine-02.png"
+    },
+    {
+      "id": "ironmine-03",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production sprite for a photorealistic dark northern medieval top-down strategy game. Orthographic aerial camera fixed at 65 degrees above ground (25 degrees from vertical), looking from screen bottom toward screen top. Realistic fine materials, subdued daylight from upper left, shadow toward lower right, muted natural palette. Not isometric diamond, no horizon, no cartoon or pixel art. Genuine transparent alpha around the entire object, no square ground tile, no text, no frame, no watermark. Full object isolated, centered, 10 percent transparent padding on all sides. Subject: a developed medieval iron mine complex with two dark tunnels, tall timber lifting derrick, roofed processing shed, several ore wagons and dark rusty iron ore heaps. A compact self-contained production-site sprite. All parts grouped tightly inside one rounded irregular footprint with small amounts of worn earth only immediately beneath structures. No surrounding landscape, no road beyond the object, no distant trees, no heraldic symbols. Preserve the same ground scale and camera for all three development stages.",
+      "file": "ironmine-03.png"
+    },
+    {
+      "id": "stonemine-01",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production sprite for a photorealistic dark northern medieval top-down strategy game. Orthographic aerial camera fixed at 65 degrees above ground (25 degrees from vertical), looking from screen bottom toward screen top. Realistic fine materials, subdued daylight from upper left, shadow toward lower right, muted natural palette. Not isometric diamond, no horizon, no cartoon or pixel art. Genuine transparent alpha around the entire object, no square ground tile, no text, no frame, no watermark. Full object isolated, centered, 10 percent transparent padding on all sides. Subject: a small open stone quarry with pale grey exposed rock cutting face, a few squared limestone blocks, hand tools and a small wooden shelter; no underground tunnel. A compact self-contained production-site sprite. All parts grouped tightly inside one rounded irregular footprint with small amounts of worn earth only immediately beneath structures. No surrounding landscape, no road beyond the object, no distant trees, no heraldic symbols. Preserve the same ground scale and camera for all three development stages.",
+      "file": "stonemine-01.png"
+    },
+    {
+      "id": "stonemine-02",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production sprite for a photorealistic dark northern medieval top-down strategy game. Orthographic aerial camera fixed at 65 degrees above ground (25 degrees from vertical), looking from screen bottom toward screen top. Realistic fine materials, subdued daylight from upper left, shadow toward lower right, muted natural palette. Not isometric diamond, no horizon, no cartoon or pixel art. Genuine transparent alpha around the entire object, no square ground tile, no text, no frame, no watermark. Full object isolated, centered, 10 percent transparent padding on all sides. Subject: an expanded open stone quarry with two stepped pale grey rock cutting terraces, a timber lifting crane, neatly stacked squared masonry blocks and a cart; no dark tunnel. A compact self-contained production-site sprite. All parts grouped tightly inside one rounded irregular footprint with small amounts of worn earth only immediately beneath structures. No surrounding landscape, no road beyond the object, no distant trees, no heraldic symbols. Preserve the same ground scale and camera for all three development stages.",
+      "file": "stonemine-02.png"
+    },
+    {
+      "id": "stonemine-03",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production sprite for a photorealistic dark northern medieval top-down strategy game. Orthographic aerial camera fixed at 65 degrees above ground (25 degrees from vertical), looking from screen bottom toward screen top. Realistic fine materials, subdued daylight from upper left, shadow toward lower right, muted natural palette. Not isometric diamond, no horizon, no cartoon or pixel art. Genuine transparent alpha around the entire object, no square ground tile, no text, no frame, no watermark. Full object isolated, centered, 10 percent transparent padding on all sides. Subject: a developed open stone quarry with several pale grey stepped stone benches, two timber lifting cranes, a masonry work shed, stacks of precisely cut stone blocks and carts; no underground tunnel. A compact self-contained production-site sprite. All parts grouped tightly inside one rounded irregular footprint with small amounts of worn earth only immediately beneath structures. No surrounding landscape, no road beyond the object, no distant trees, no heraldic symbols. Preserve the same ground scale and camera for all three development stages.",
+      "file": "stonemine-03.png"
+    },
+    {
+      "id": "farmstead-01",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production sprite for a photorealistic dark northern medieval top-down strategy game. Orthographic aerial camera fixed at 65 degrees above ground (25 degrees from vertical), looking from screen bottom toward screen top. Realistic fine materials, subdued daylight from upper left, shadow toward lower right, muted natural palette. Not isometric diamond, no horizon, no cartoon or pixel art. Genuine transparent alpha around the entire object, no square ground tile, no text, no frame, no watermark. Full object isolated, centered, 10 percent transparent padding on all sides. Subject: a modest medieval farmstead, one thatched cottage and small timber barn, tiny fenced vegetable patch, haystack and a handcart; no sheep. A compact self-contained production-site sprite. All parts grouped tightly inside one rounded irregular footprint with small amounts of worn earth only immediately beneath structures. No surrounding landscape, no road beyond the object, no distant trees, no heraldic symbols. Preserve the same ground scale and camera for all three development stages.",
+      "file": "farmstead-01.png"
+    },
+    {
+      "id": "farmstead-02",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production sprite for a photorealistic dark northern medieval top-down strategy game. Orthographic aerial camera fixed at 65 degrees above ground (25 degrees from vertical), looking from screen bottom toward screen top. Realistic fine materials, subdued daylight from upper left, shadow toward lower right, muted natural palette. Not isometric diamond, no horizon, no cartoon or pixel art. Genuine transparent alpha around the entire object, no square ground tile, no text, no frame, no watermark. Full object isolated, centered, 10 percent transparent padding on all sides. Subject: an expanded medieval farmstead, larger thatched farmhouse, two timber barns, hay shed, fenced vegetable rows and a harvest cart; no sheep. A compact self-contained production-site sprite. All parts grouped tightly inside one rounded irregular footprint with small amounts of worn earth only immediately beneath structures. No surrounding landscape, no road beyond the object, no distant trees, no heraldic symbols. Preserve the same ground scale and camera for all three development stages.",
+      "file": "farmstead-02.png"
+    },
+    {
+      "id": "farmstead-03",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production sprite for a photorealistic dark northern medieval top-down strategy game. Orthographic aerial camera fixed at 65 degrees above ground (25 degrees from vertical), looking from screen bottom toward screen top. Realistic fine materials, subdued daylight from upper left, shadow toward lower right, muted natural palette. Not isometric diamond, no horizon, no cartoon or pixel art. Genuine transparent alpha around the entire object, no square ground tile, no text, no frame, no watermark. Full object isolated, centered, 10 percent transparent padding on all sides. Subject: a prosperous medieval agricultural estate with large thatched farmhouse, three barns enclosing a yard, granary, loaded harvest carts and plentiful hay; no sheep. A compact self-contained production-site sprite. All parts grouped tightly inside one rounded irregular footprint with small amounts of worn earth only immediately beneath structures. No surrounding landscape, no road beyond the object, no distant trees, no heraldic symbols. Preserve the same ground scale and camera for all three development stages.",
+      "file": "farmstead-03.png"
+    },
+    {
+      "id": "sheepfarm-01",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production sprite for a photorealistic dark northern medieval top-down strategy game. Orthographic aerial camera fixed at 65 degrees above ground (25 degrees from vertical), looking from screen bottom toward screen top. Realistic fine materials, subdued daylight from upper left, shadow toward lower right, muted natural palette. Not isometric diamond, no horizon, no cartoon or pixel art. Genuine transparent alpha around the entire object, no square ground tile, no text, no frame, no watermark. Full object isolated, centered, 10 percent transparent padding on all sides. Subject: a modest medieval sheep farm, one small thatched shepherd cottage and irregular timber fence enclosing four clearly visible cream-white sheep. A compact self-contained production-site sprite. All parts grouped tightly inside one rounded irregular footprint with small amounts of worn earth only immediately beneath structures. No surrounding landscape, no road beyond the object, no distant trees, no heraldic symbols. Preserve the same ground scale and camera for all three development stages.",
+      "file": "sheepfarm-01.png"
+    },
+    {
+      "id": "sheepfarm-02",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production sprite for a photorealistic dark northern medieval top-down strategy game. Orthographic aerial camera fixed at 65 degrees above ground (25 degrees from vertical), looking from screen bottom toward screen top. Realistic fine materials, subdued daylight from upper left, shadow toward lower right, muted natural palette. Not isometric diamond, no horizon, no cartoon or pixel art. Genuine transparent alpha around the entire object, no square ground tile, no text, no frame, no watermark. Full object isolated, centered, 10 percent transparent padding on all sides. Subject: an expanded medieval sheep farm, thatched shepherd farmhouse, small wool barn and two irregular timber fenced pens with eight clearly visible cream-white sheep. A compact self-contained production-site sprite. All parts grouped tightly inside one rounded irregular footprint with small amounts of worn earth only immediately beneath structures. No surrounding landscape, no road beyond the object, no distant trees, no heraldic symbols. Preserve the same ground scale and camera for all three development stages.",
+      "file": "sheepfarm-02.png"
+    },
+    {
+      "id": "sheepfarm-03",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production sprite for a photorealistic dark northern medieval top-down strategy game. Orthographic aerial camera fixed at 65 degrees above ground (25 degrees from vertical), looking from screen bottom toward screen top. Realistic fine materials, subdued daylight from upper left, shadow toward lower right, muted natural palette. Not isometric diamond, no horizon, no cartoon or pixel art. Genuine transparent alpha around the entire object, no square ground tile, no text, no frame, no watermark. Full object isolated, centered, 10 percent transparent padding on all sides. Subject: a developed medieval sheep breeding estate, large thatched shepherd hall, wool barn and shearing shelter, three irregular timber fenced pens with many clearly visible cream-white sheep. A compact self-contained production-site sprite. All parts grouped tightly inside one rounded irregular footprint with small amounts of worn earth only immediately beneath structures. No surrounding landscape, no road beyond the object, no distant trees, no heraldic symbols. Preserve the same ground scale and camera for all three development stages.",
+      "file": "sheepfarm-03.png"
+    }
+  ]
+}

@@ -45,7 +45,9 @@
       '<div class="start-card">' +
       '<h1>World of Houses</h1>' +
       '<p class="tagline">Echtzeit-Strategie im Stil von „Die Stämme“ — erhebe dein Haus, baue deine Burg aus, ' +
-      'erobere das Land. Top-Down-Pixel-Art.</p>' +
+      'erobere das Land. Eine raue Welt aus Stein, Wald und Eisen.</p>' +
+      '<div class="start-graphics">' + WOH.UI.graphicsModeControl('start-graphics-mode') +
+        '<small>Classic: Pixelgrafik · Cinematic: realistische Texturen. Jederzeit im Spiel wechselbar.</small></div>' +
       (hasSave ? '<button class="btn big primary" id="btn-continue">Spiel fortsetzen</button>' +
         '<div class="save-info">Gespeichert: ' + new Date(savePayload.savedAt).toLocaleString('de-DE') + '</div>' : '') +
       '<h3>Neues Spiel</h3>' +
@@ -57,6 +59,9 @@
       '<div class="legal">Eigenständige Hausnamen & Wappen. Keine Markeninhalte Dritter.</div>' +
       '</div>';
     overlay.style.display = 'flex';
+    document.getElementById('start-graphics-mode').onchange = function (e) {
+      WOH.UI.setGraphicsMode(e.target.value);
+    };
 
     if (hasSave) {
       document.getElementById('btn-continue').onclick = function () {

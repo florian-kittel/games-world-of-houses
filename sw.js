@@ -5,7 +5,7 @@
  */
 'use strict';
 
-var CACHE_VERSION = 'woh-v3-2026061303';
+var CACHE_VERSION = 'woh-cinematic-2026102611';
 var ASSETS = [
   './',
   './index.html',
@@ -17,6 +17,7 @@ var ASSETS = [
   './js/mapgen.js',
   './js/atlas.js',
   './js/sprites.js',
+  './js/cinematic-v2.js',
   './js/village.js',
   './js/combat.js',
   './js/game.js',
@@ -33,6 +34,21 @@ var ASSETS = [
   './assets/icon-512.png',
   './assets/apple-touch-icon.png'
 ];
+['grass-01', 'grass-02', 'field-01', 'water-01'].forEach(function (id) {
+  ASSETS.push('./assets/cinematic/v2/' + id + '.png');
+});
+['forest-01', 'forest-02', 'forest-03', 'rock-01', 'rock-02', 'rock-03',
+ 'rock-ore-01', 'rock-ore-02', 'rock-quarry-01', 'rock-quarry-02'].forEach(function (id) {
+  ASSETS.push('./assets/cinematic/v2/topdown/' + id + '.png');
+});
+['castle', 'woodcutter', 'ironmine', 'stonemine', 'farmstead', 'sheepfarm'].forEach(function (type) {
+  var folder = './assets/cinematic/v2/topdown/';
+  for (var level = 1; level <= 3; level++) ASSETS.push(folder + type + '-0' + level + '.png');
+});
+// index.html uses revisioned script/style URLs; cache those exact requests offline.
+ASSETS = ASSETS.concat(ASSETS.filter(function (url) {
+  return /\.(js|css)$/.test(url);
+}).map(function (url) { return url + '?v=2026102611'; }));
 
 self.addEventListener('message', function (e) {
   if (e.data === 'skipWaiting') self.skipWaiting();

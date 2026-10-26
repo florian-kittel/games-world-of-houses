@@ -1,0 +1,2722 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Analyse und Generierungsplanung; kein Laufzeitmanifest",
+  "coordinateConvention": "Nullbasiert [Spalte, Zeile], Originalzelle 16 × 16 px",
+  "sources": [
+    "js/atlas.js",
+    "assets/tiles.json",
+    "assets/reference/tileset2_labeled.png",
+    "js/sprites.js",
+    "js/ui.js",
+    "js/cinematic.js",
+    "js/cinematic-v2.js"
+  ],
+  "knownManifestDrift": [
+    "structures.stonemine existiert in js/atlas.js, fehlt aber in assets/tiles.json"
+  ],
+  "images": [
+    {
+      "file": "assets/tileset2.png",
+      "width": 224,
+      "height": 160
+    },
+    {
+      "file": "assets/tileset.png",
+      "width": 256,
+      "height": 336
+    },
+    {
+      "file": "assets/mountains.png",
+      "width": 192,
+      "height": 160
+    },
+    {
+      "file": "assets/water.png",
+      "width": 480,
+      "height": 48
+    },
+    {
+      "file": "assets/cinematic/terrain.png",
+      "width": 1254,
+      "height": 1254
+    },
+    {
+      "file": "assets/cinematic/structures.png",
+      "width": 1254,
+      "height": 1254
+    }
+  ],
+  "entries": [
+    {
+      "id": "terrain.grass",
+      "group": "Gelände",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        1,
+        1
+      ],
+      "sourceRect": {
+        "x": 16,
+        "y": 16,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Classic aktiv; Cinematic-Fallback",
+      "note": "Wiese",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "terrain.forest",
+      "group": "Gelände",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        5,
+        0
+      ],
+      "sourceRect": {
+        "x": 80,
+        "y": 0,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Classic aktiv; Cinematic-Fallback",
+      "note": "Wald",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "terrain.mountain",
+      "group": "Gelände",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        6,
+        0
+      ],
+      "sourceRect": {
+        "x": 96,
+        "y": 0,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Classic aktiv; Cinematic-Fallback",
+      "note": "Gebirge",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "water.open",
+      "group": "Wasser",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        3,
+        2
+      ],
+      "sourceRect": {
+        "x": 48,
+        "y": 32,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Classic aktiv; Cinematic-Fallback",
+      "note": "Offenes Wasser",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "water.waves.0",
+      "group": "Wasser",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        4,
+        2
+      ],
+      "sourceRect": {
+        "x": 64,
+        "y": 32,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Classic aktiv; Cinematic-Fallback",
+      "note": "Statische Wellenvariante, keine Laufzeitanimation",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "water.waves.1",
+      "group": "Wasser",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        5,
+        2
+      ],
+      "sourceRect": {
+        "x": 80,
+        "y": 32,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Classic aktiv; Cinematic-Fallback",
+      "note": "Statische Wellenvariante, keine Laufzeitanimation",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "water.waves.2",
+      "group": "Wasser",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        6,
+        2
+      ],
+      "sourceRect": {
+        "x": 96,
+        "y": 32,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Classic aktiv; Cinematic-Fallback",
+      "note": "Statische Wellenvariante, keine Laufzeitanimation",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "water.waves.3",
+      "group": "Wasser",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        7,
+        2
+      ],
+      "sourceRect": {
+        "x": 112,
+        "y": 32,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Classic aktiv; Cinematic-Fallback",
+      "note": "Statische Wellenvariante, keine Laufzeitanimation",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "water.waves.4",
+      "group": "Wasser",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        8,
+        2
+      ],
+      "sourceRect": {
+        "x": 128,
+        "y": 32,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Classic aktiv; Cinematic-Fallback",
+      "note": "Statische Wellenvariante, keine Laufzeitanimation",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "water.edge.n",
+      "group": "Wasser",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        1,
+        2
+      ],
+      "sourceRect": {
+        "x": 16,
+        "y": 32,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Classic aktiv; Cinematic-Fallback",
+      "note": "Eigene Richtungszeichnung; siehe Wasser-Semantik in ASSET-MAP.md",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "water.edge.s",
+      "group": "Wasser",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        1,
+        0
+      ],
+      "sourceRect": {
+        "x": 16,
+        "y": 0,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Classic aktiv; Cinematic-Fallback",
+      "note": "Eigene Richtungszeichnung; siehe Wasser-Semantik in ASSET-MAP.md",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "water.edge.w",
+      "group": "Wasser",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        2,
+        1
+      ],
+      "sourceRect": {
+        "x": 32,
+        "y": 16,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Classic aktiv; Cinematic-Fallback",
+      "note": "Eigene Richtungszeichnung; siehe Wasser-Semantik in ASSET-MAP.md",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "water.edge.e",
+      "group": "Wasser",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        0,
+        1
+      ],
+      "sourceRect": {
+        "x": 0,
+        "y": 16,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Classic aktiv; Cinematic-Fallback",
+      "note": "Eigene Richtungszeichnung; siehe Wasser-Semantik in ASSET-MAP.md",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "water.outer.nw",
+      "group": "Wasser",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        3,
+        0
+      ],
+      "sourceRect": {
+        "x": 48,
+        "y": 0,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Classic aktiv; Cinematic-Fallback",
+      "note": "Eigene Richtungszeichnung; siehe Wasser-Semantik in ASSET-MAP.md",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "water.outer.ne",
+      "group": "Wasser",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        4,
+        0
+      ],
+      "sourceRect": {
+        "x": 64,
+        "y": 0,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Classic aktiv; Cinematic-Fallback",
+      "note": "Eigene Richtungszeichnung; siehe Wasser-Semantik in ASSET-MAP.md",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "water.outer.sw",
+      "group": "Wasser",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        3,
+        1
+      ],
+      "sourceRect": {
+        "x": 48,
+        "y": 16,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Classic aktiv; Cinematic-Fallback",
+      "note": "Eigene Richtungszeichnung; siehe Wasser-Semantik in ASSET-MAP.md",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "water.outer.se",
+      "group": "Wasser",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        4,
+        1
+      ],
+      "sourceRect": {
+        "x": 64,
+        "y": 16,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Classic aktiv; Cinematic-Fallback",
+      "note": "Eigene Richtungszeichnung; siehe Wasser-Semantik in ASSET-MAP.md",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "water.inner.ne",
+      "group": "Wasser",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        0,
+        2
+      ],
+      "sourceRect": {
+        "x": 0,
+        "y": 32,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Classic aktiv; Cinematic-Fallback",
+      "note": "Eigene Richtungszeichnung; siehe Wasser-Semantik in ASSET-MAP.md",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "water.inner.nw",
+      "group": "Wasser",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        2,
+        2
+      ],
+      "sourceRect": {
+        "x": 32,
+        "y": 32,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Classic aktiv; Cinematic-Fallback",
+      "note": "Eigene Richtungszeichnung; siehe Wasser-Semantik in ASSET-MAP.md",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "water.inner.se",
+      "group": "Wasser",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        0,
+        0
+      ],
+      "sourceRect": {
+        "x": 0,
+        "y": 0,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Classic aktiv; Cinematic-Fallback",
+      "note": "Eigene Richtungszeichnung; siehe Wasser-Semantik in ASSET-MAP.md",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "water.inner.sw",
+      "group": "Wasser",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        2,
+        0
+      ],
+      "sourceRect": {
+        "x": 32,
+        "y": 0,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Classic aktiv; Cinematic-Fallback",
+      "note": "Eigene Richtungszeichnung; siehe Wasser-Semantik in ASSET-MAP.md",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "resource.food",
+      "group": "Rohstofficons",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        3,
+        4
+      ],
+      "sourceRect": {
+        "x": 48,
+        "y": 64,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Weiterhin aktiv im HUD und in Dialogen",
+      "note": "Nahrung",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "resource.wood",
+      "group": "Rohstofficons",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        0,
+        4
+      ],
+      "sourceRect": {
+        "x": 0,
+        "y": 64,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Weiterhin aktiv im HUD und in Dialogen",
+      "note": "Holz",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "resource.stone",
+      "group": "Rohstofficons",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        1,
+        4
+      ],
+      "sourceRect": {
+        "x": 16,
+        "y": 64,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Weiterhin aktiv im HUD und in Dialogen",
+      "note": "Stein",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "resource.iron",
+      "group": "Rohstofficons",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        6,
+        4
+      ],
+      "sourceRect": {
+        "x": 96,
+        "y": 64,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Weiterhin aktiv im HUD und in Dialogen",
+      "note": "Eisen",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "structure.woodcutter.1",
+      "group": "Bauten und Ausbaustufen",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        0,
+        5
+      ],
+      "sourceRect": {
+        "x": 0,
+        "y": 80,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Classic aktiv; in Cinematic ersetzt / Fallback",
+      "note": "Holzfäller – Bildstufe 1",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "structure.woodcutter.2",
+      "group": "Bauten und Ausbaustufen",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        0,
+        6
+      ],
+      "sourceRect": {
+        "x": 0,
+        "y": 96,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Classic aktiv; in Cinematic ersetzt / Fallback",
+      "note": "Holzfäller – Bildstufe 2",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "structure.woodcutter.3",
+      "group": "Bauten und Ausbaustufen",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        0,
+        7
+      ],
+      "sourceRect": {
+        "x": 0,
+        "y": 112,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Classic aktiv; in Cinematic ersetzt / Fallback",
+      "note": "Holzfäller – Bildstufe 3",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "structure.ironmine.1",
+      "group": "Bauten und Ausbaustufen",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        2,
+        5
+      ],
+      "sourceRect": {
+        "x": 32,
+        "y": 80,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Classic aktiv; in Cinematic ersetzt / Fallback",
+      "note": "Eisenmine – Bildstufe 1",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "structure.ironmine.2",
+      "group": "Bauten und Ausbaustufen",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        2,
+        6
+      ],
+      "sourceRect": {
+        "x": 32,
+        "y": 96,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Classic aktiv; in Cinematic ersetzt / Fallback",
+      "note": "Eisenmine – Bildstufe 2",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "structure.ironmine.3",
+      "group": "Bauten und Ausbaustufen",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        2,
+        7
+      ],
+      "sourceRect": {
+        "x": 32,
+        "y": 112,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Classic aktiv; in Cinematic ersetzt / Fallback",
+      "note": "Eisenmine – Bildstufe 3",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "structure.stonemine.1",
+      "group": "Bauten und Ausbaustufen",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        2,
+        5
+      ],
+      "sourceRect": {
+        "x": 32,
+        "y": 80,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Classic aktiv; in Cinematic ersetzt / Fallback",
+      "note": "Steinbruch – Bildstufe 1; teilt Originalbild mit Eisenmine",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "structure.stonemine.2",
+      "group": "Bauten und Ausbaustufen",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        2,
+        6
+      ],
+      "sourceRect": {
+        "x": 32,
+        "y": 96,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Classic aktiv; in Cinematic ersetzt / Fallback",
+      "note": "Steinbruch – Bildstufe 2; teilt Originalbild mit Eisenmine",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "structure.stonemine.3",
+      "group": "Bauten und Ausbaustufen",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        2,
+        7
+      ],
+      "sourceRect": {
+        "x": 32,
+        "y": 112,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Classic aktiv; in Cinematic ersetzt / Fallback",
+      "note": "Steinbruch – Bildstufe 3; teilt Originalbild mit Eisenmine",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "structure.farmstead.1",
+      "group": "Bauten und Ausbaustufen",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        4,
+        5
+      ],
+      "sourceRect": {
+        "x": 64,
+        "y": 80,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Classic aktiv; in Cinematic ersetzt / Fallback",
+      "note": "Hof – Bildstufe 1",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "structure.farmstead.2",
+      "group": "Bauten und Ausbaustufen",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        4,
+        6
+      ],
+      "sourceRect": {
+        "x": 64,
+        "y": 96,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Classic aktiv; in Cinematic ersetzt / Fallback",
+      "note": "Hof – Bildstufe 2",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "structure.farmstead.3",
+      "group": "Bauten und Ausbaustufen",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        4,
+        7
+      ],
+      "sourceRect": {
+        "x": 64,
+        "y": 112,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Classic aktiv; in Cinematic ersetzt / Fallback",
+      "note": "Hof – Bildstufe 3",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "structure.sheepfarm.1",
+      "group": "Bauten und Ausbaustufen",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        6,
+        5
+      ],
+      "sourceRect": {
+        "x": 96,
+        "y": 80,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Classic aktiv; in Cinematic ersetzt / Fallback",
+      "note": "Schaffarm – Bildstufe 1",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "structure.sheepfarm.2",
+      "group": "Bauten und Ausbaustufen",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        6,
+        6
+      ],
+      "sourceRect": {
+        "x": 96,
+        "y": 96,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Classic aktiv; in Cinematic ersetzt / Fallback",
+      "note": "Schaffarm – Bildstufe 2",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "structure.sheepfarm.3",
+      "group": "Bauten und Ausbaustufen",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        6,
+        7
+      ],
+      "sourceRect": {
+        "x": 96,
+        "y": 112,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Classic aktiv; in Cinematic ersetzt / Fallback",
+      "note": "Schaffarm – Bildstufe 3",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "structure.castle.1",
+      "group": "Bauten und Ausbaustufen",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        8,
+        5
+      ],
+      "sourceRect": {
+        "x": 128,
+        "y": 80,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Classic aktiv; in Cinematic ersetzt / Fallback",
+      "note": "Burg – Bildstufe 1; Halle 1–2",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "structure.castle.2",
+      "group": "Bauten und Ausbaustufen",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        8,
+        6
+      ],
+      "sourceRect": {
+        "x": 128,
+        "y": 96,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Classic aktiv; in Cinematic ersetzt / Fallback",
+      "note": "Burg – Bildstufe 2; Halle 3–4",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "structure.castle.3",
+      "group": "Bauten und Ausbaustufen",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        8,
+        7
+      ],
+      "sourceRect": {
+        "x": 128,
+        "y": 112,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Classic aktiv; in Cinematic ersetzt / Fallback",
+      "note": "Burg – Bildstufe 3; Halle 5–6",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "structure.harbor.1",
+      "group": "Bauten und Ausbaustufen",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        10,
+        5
+      ],
+      "sourceRect": {
+        "x": 160,
+        "y": 80,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Reserve / Renderer unterstützt; regulär ungenutzt",
+      "note": "Hafen – Bildstufe 1; im Atlas vorhanden, kein regulär platzierter Kartentyp",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "structure.harbor.2",
+      "group": "Bauten und Ausbaustufen",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        10,
+        6
+      ],
+      "sourceRect": {
+        "x": 160,
+        "y": 96,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Reserve / Renderer unterstützt; regulär ungenutzt",
+      "note": "Hafen – Bildstufe 2; im Atlas vorhanden, kein regulär platzierter Kartentyp",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "structure.harbor.3",
+      "group": "Bauten und Ausbaustufen",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        10,
+        7
+      ],
+      "sourceRect": {
+        "x": 160,
+        "y": 112,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Reserve / Renderer unterstützt; regulär ungenutzt",
+      "note": "Hafen – Bildstufe 3; im Atlas vorhanden, kein regulär platzierter Kartentyp",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "structure.city.1",
+      "group": "Bauten und Ausbaustufen",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        12,
+        5
+      ],
+      "sourceRect": {
+        "x": 192,
+        "y": 80,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Reserve / Renderer unterstützt; regulär ungenutzt",
+      "note": "Stadt – Bildstufe 1; im Atlas vorhanden, kein regulär platzierter Kartentyp",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "structure.city.2",
+      "group": "Bauten und Ausbaustufen",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        12,
+        6
+      ],
+      "sourceRect": {
+        "x": 192,
+        "y": 96,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Reserve / Renderer unterstützt; regulär ungenutzt",
+      "note": "Stadt – Bildstufe 2; im Atlas vorhanden, kein regulär platzierter Kartentyp",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "structure.city.3",
+      "group": "Bauten und Ausbaustufen",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        12,
+        7
+      ],
+      "sourceRect": {
+        "x": 192,
+        "y": 112,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Reserve / Renderer unterstützt; regulär ungenutzt",
+      "note": "Stadt – Bildstufe 3; im Atlas vorhanden, kein regulär platzierter Kartentyp",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "structure.city.4",
+      "group": "Bauten und Ausbaustufen",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        12,
+        8
+      ],
+      "sourceRect": {
+        "x": 192,
+        "y": 128,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Reserve / Renderer unterstützt; regulär ungenutzt",
+      "note": "Stadt – Bildstufe 4; im Atlas vorhanden, kein regulär platzierter Kartentyp",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "border.tl",
+      "group": "Kartenrahmen",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        11,
+        1
+      ],
+      "sourceRect": {
+        "x": 176,
+        "y": 16,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Classic aktiv; Cinematic-Fallback",
+      "note": "Positionsgebundenes Rahmenteil",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "border.t",
+      "group": "Kartenrahmen",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        12,
+        1
+      ],
+      "sourceRect": {
+        "x": 192,
+        "y": 16,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Classic aktiv; Cinematic-Fallback",
+      "note": "Positionsgebundenes Rahmenteil",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "border.tr",
+      "group": "Kartenrahmen",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        13,
+        1
+      ],
+      "sourceRect": {
+        "x": 208,
+        "y": 16,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Classic aktiv; Cinematic-Fallback",
+      "note": "Positionsgebundenes Rahmenteil",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "border.l",
+      "group": "Kartenrahmen",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        11,
+        2
+      ],
+      "sourceRect": {
+        "x": 176,
+        "y": 32,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Classic aktiv; Cinematic-Fallback",
+      "note": "Positionsgebundenes Rahmenteil",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "border.r",
+      "group": "Kartenrahmen",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        13,
+        2
+      ],
+      "sourceRect": {
+        "x": 208,
+        "y": 32,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Classic aktiv; Cinematic-Fallback",
+      "note": "Positionsgebundenes Rahmenteil",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "border.bl",
+      "group": "Kartenrahmen",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        11,
+        3
+      ],
+      "sourceRect": {
+        "x": 176,
+        "y": 48,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Classic aktiv; Cinematic-Fallback",
+      "note": "Positionsgebundenes Rahmenteil",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "border.b",
+      "group": "Kartenrahmen",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        12,
+        3
+      ],
+      "sourceRect": {
+        "x": 192,
+        "y": 48,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Classic aktiv; Cinematic-Fallback",
+      "note": "Positionsgebundenes Rahmenteil",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "border.br",
+      "group": "Kartenrahmen",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        13,
+        3
+      ],
+      "sourceRect": {
+        "x": 208,
+        "y": 48,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Classic aktiv; Cinematic-Fallback",
+      "note": "Positionsgebundenes Rahmenteil",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "catalog.forest_overlay",
+      "group": "Weitere vorhandene Assets",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        5,
+        1
+      ],
+      "sourceRect": {
+        "x": 80,
+        "y": 16,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Katalogisiert, im Kartenrenderer ungenutzt",
+      "note": "Transparente Geländeauflage",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "catalog.mountain_overlay",
+      "group": "Weitere vorhandene Assets",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        6,
+        1
+      ],
+      "sourceRect": {
+        "x": 96,
+        "y": 16,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Katalogisiert, im Kartenrenderer ungenutzt",
+      "note": "Transparente Geländeauflage",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "catalog.icon.hammer",
+      "group": "Weitere vorhandene Assets",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        5,
+        4
+      ],
+      "sourceRect": {
+        "x": 80,
+        "y": 64,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Katalogisiert, im Renderer ungenutzt",
+      "note": "hammer",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "catalog.icon.wool",
+      "group": "Weitere vorhandene Assets",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        4,
+        4
+      ],
+      "sourceRect": {
+        "x": 64,
+        "y": 64,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Katalogisiert, im Renderer ungenutzt",
+      "note": "wool",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "catalog.icon.coin",
+      "group": "Weitere vorhandene Assets",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        7,
+        4
+      ],
+      "sourceRect": {
+        "x": 112,
+        "y": 64,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Katalogisiert, im Renderer ungenutzt",
+      "note": "coin",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "catalog.icon.villager",
+      "group": "Weitere vorhandene Assets",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        8,
+        4
+      ],
+      "sourceRect": {
+        "x": 128,
+        "y": 64,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Katalogisiert, im Renderer ungenutzt",
+      "note": "villager",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "catalog.icon.ore",
+      "group": "Weitere vorhandene Assets",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        2,
+        4
+      ],
+      "sourceRect": {
+        "x": 32,
+        "y": 64,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Nur visuell identifiziert; keine Atlaszuordnung",
+      "note": "Helle Stein-/Erzvariante; Rohstoffbedeutung nicht festgelegt",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "catalog.ship.0",
+      "group": "Schiffe",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        0,
+        9
+      ],
+      "sourceRect": {
+        "x": 0,
+        "y": 144,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Katalogisiert, im Renderer ungenutzt",
+      "note": "Richtungs-/Zustandsvariante; keine gesicherte Animationsreihenfolge",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "catalog.ship.1",
+      "group": "Schiffe",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        1,
+        9
+      ],
+      "sourceRect": {
+        "x": 16,
+        "y": 144,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Katalogisiert, im Renderer ungenutzt",
+      "note": "Richtungs-/Zustandsvariante; keine gesicherte Animationsreihenfolge",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "catalog.ship.2",
+      "group": "Schiffe",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        2,
+        9
+      ],
+      "sourceRect": {
+        "x": 32,
+        "y": 144,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Katalogisiert, im Renderer ungenutzt",
+      "note": "Richtungs-/Zustandsvariante; keine gesicherte Animationsreihenfolge",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "catalog.ship.3",
+      "group": "Schiffe",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        3,
+        9
+      ],
+      "sourceRect": {
+        "x": 48,
+        "y": 144,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Katalogisiert, im Renderer ungenutzt",
+      "note": "Richtungs-/Zustandsvariante; keine gesicherte Animationsreihenfolge",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "catalog.ship.4",
+      "group": "Schiffe",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        4,
+        9
+      ],
+      "sourceRect": {
+        "x": 64,
+        "y": 144,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Katalogisiert, im Renderer ungenutzt",
+      "note": "Richtungs-/Zustandsvariante; keine gesicherte Animationsreihenfolge",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "catalog.ship.5",
+      "group": "Schiffe",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        5,
+        9
+      ],
+      "sourceRect": {
+        "x": 80,
+        "y": 144,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Katalogisiert, im Renderer ungenutzt",
+      "note": "Richtungs-/Zustandsvariante; keine gesicherte Animationsreihenfolge",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "catalog.ship.6",
+      "group": "Schiffe",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        6,
+        9
+      ],
+      "sourceRect": {
+        "x": 96,
+        "y": 144,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Katalogisiert, im Renderer ungenutzt",
+      "note": "Richtungs-/Zustandsvariante; keine gesicherte Animationsreihenfolge",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "catalog.ship.7",
+      "group": "Schiffe",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        7,
+        9
+      ],
+      "sourceRect": {
+        "x": 112,
+        "y": 144,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Katalogisiert, im Renderer ungenutzt",
+      "note": "Richtungs-/Zustandsvariante; keine gesicherte Animationsreihenfolge",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "catalog.waveOverlay.0",
+      "group": "Weitere vorhandene Assets",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        4,
+        3
+      ],
+      "sourceRect": {
+        "x": 64,
+        "y": 48,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Visuell vorhanden, im Renderer ungenutzt",
+      "note": "Welle auf transparentem Grund",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "catalog.waveOverlay.1",
+      "group": "Weitere vorhandene Assets",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        5,
+        3
+      ],
+      "sourceRect": {
+        "x": 80,
+        "y": 48,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Visuell vorhanden, im Renderer ungenutzt",
+      "note": "Welle auf transparentem Grund",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "catalog.waveOverlay.2",
+      "group": "Weitere vorhandene Assets",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        6,
+        3
+      ],
+      "sourceRect": {
+        "x": 96,
+        "y": 48,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Visuell vorhanden, im Renderer ungenutzt",
+      "note": "Welle auf transparentem Grund",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "catalog.waveOverlay.3",
+      "group": "Weitere vorhandene Assets",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        7,
+        3
+      ],
+      "sourceRect": {
+        "x": 112,
+        "y": 48,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Visuell vorhanden, im Renderer ungenutzt",
+      "note": "Welle auf transparentem Grund",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "catalog.waveOverlay.4",
+      "group": "Weitere vorhandene Assets",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        8,
+        3
+      ],
+      "sourceRect": {
+        "x": 128,
+        "y": 48,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Visuell vorhanden, im Renderer ungenutzt",
+      "note": "Welle auf transparentem Grund",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "catalog.withBackground.woodcutter.1",
+      "group": "Bauten mit Hintergrund",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        1,
+        5
+      ],
+      "sourceRect": {
+        "x": 16,
+        "y": 80,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Vorhanden, bewusst nicht auf der Karte verwendet",
+      "note": "Holzfäller mit festem Boden; keine neue Generierung nötig",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "catalog.withBackground.woodcutter.2",
+      "group": "Bauten mit Hintergrund",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        1,
+        6
+      ],
+      "sourceRect": {
+        "x": 16,
+        "y": 96,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Vorhanden, bewusst nicht auf der Karte verwendet",
+      "note": "Holzfäller mit festem Boden; keine neue Generierung nötig",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "catalog.withBackground.woodcutter.3",
+      "group": "Bauten mit Hintergrund",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        1,
+        7
+      ],
+      "sourceRect": {
+        "x": 16,
+        "y": 112,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Vorhanden, bewusst nicht auf der Karte verwendet",
+      "note": "Holzfäller mit festem Boden; keine neue Generierung nötig",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "catalog.withBackground.ironmine.1",
+      "group": "Bauten mit Hintergrund",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        3,
+        5
+      ],
+      "sourceRect": {
+        "x": 48,
+        "y": 80,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Vorhanden, bewusst nicht auf der Karte verwendet",
+      "note": "Eisenmine mit festem Boden; keine neue Generierung nötig",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "catalog.withBackground.ironmine.2",
+      "group": "Bauten mit Hintergrund",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        3,
+        6
+      ],
+      "sourceRect": {
+        "x": 48,
+        "y": 96,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Vorhanden, bewusst nicht auf der Karte verwendet",
+      "note": "Eisenmine mit festem Boden; keine neue Generierung nötig",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "catalog.withBackground.ironmine.3",
+      "group": "Bauten mit Hintergrund",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        3,
+        7
+      ],
+      "sourceRect": {
+        "x": 48,
+        "y": 112,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Vorhanden, bewusst nicht auf der Karte verwendet",
+      "note": "Eisenmine mit festem Boden; keine neue Generierung nötig",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "catalog.withBackground.farmstead.1",
+      "group": "Bauten mit Hintergrund",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        5,
+        5
+      ],
+      "sourceRect": {
+        "x": 80,
+        "y": 80,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Vorhanden, bewusst nicht auf der Karte verwendet",
+      "note": "Hof mit festem Boden; keine neue Generierung nötig",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "catalog.withBackground.farmstead.2",
+      "group": "Bauten mit Hintergrund",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        5,
+        6
+      ],
+      "sourceRect": {
+        "x": 80,
+        "y": 96,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Vorhanden, bewusst nicht auf der Karte verwendet",
+      "note": "Hof mit festem Boden; keine neue Generierung nötig",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "catalog.withBackground.farmstead.3",
+      "group": "Bauten mit Hintergrund",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        5,
+        7
+      ],
+      "sourceRect": {
+        "x": 80,
+        "y": 112,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Vorhanden, bewusst nicht auf der Karte verwendet",
+      "note": "Hof mit festem Boden; keine neue Generierung nötig",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "catalog.withBackground.sheepfarm.1",
+      "group": "Bauten mit Hintergrund",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        7,
+        5
+      ],
+      "sourceRect": {
+        "x": 112,
+        "y": 80,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Vorhanden, bewusst nicht auf der Karte verwendet",
+      "note": "Schaffarm mit festem Boden; keine neue Generierung nötig",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "catalog.withBackground.sheepfarm.2",
+      "group": "Bauten mit Hintergrund",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        7,
+        6
+      ],
+      "sourceRect": {
+        "x": 112,
+        "y": 96,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Vorhanden, bewusst nicht auf der Karte verwendet",
+      "note": "Schaffarm mit festem Boden; keine neue Generierung nötig",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "catalog.withBackground.sheepfarm.3",
+      "group": "Bauten mit Hintergrund",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        7,
+        7
+      ],
+      "sourceRect": {
+        "x": 112,
+        "y": 112,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Vorhanden, bewusst nicht auf der Karte verwendet",
+      "note": "Schaffarm mit festem Boden; keine neue Generierung nötig",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "catalog.withBackground.castle.1",
+      "group": "Bauten mit Hintergrund",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        9,
+        5
+      ],
+      "sourceRect": {
+        "x": 144,
+        "y": 80,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Vorhanden, bewusst nicht auf der Karte verwendet",
+      "note": "Burg mit festem Boden; keine neue Generierung nötig",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "catalog.withBackground.castle.2",
+      "group": "Bauten mit Hintergrund",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        9,
+        6
+      ],
+      "sourceRect": {
+        "x": 144,
+        "y": 96,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Vorhanden, bewusst nicht auf der Karte verwendet",
+      "note": "Burg mit festem Boden; keine neue Generierung nötig",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "catalog.withBackground.castle.3",
+      "group": "Bauten mit Hintergrund",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        9,
+        7
+      ],
+      "sourceRect": {
+        "x": 144,
+        "y": 112,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Vorhanden, bewusst nicht auf der Karte verwendet",
+      "note": "Burg mit festem Boden; keine neue Generierung nötig",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "catalog.withBackground.harbor.1",
+      "group": "Bauten mit Hintergrund",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        11,
+        5
+      ],
+      "sourceRect": {
+        "x": 176,
+        "y": 80,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Vorhanden, bewusst nicht auf der Karte verwendet",
+      "note": "Hafen mit festem Boden; keine neue Generierung nötig",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "catalog.withBackground.harbor.2",
+      "group": "Bauten mit Hintergrund",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        11,
+        6
+      ],
+      "sourceRect": {
+        "x": 176,
+        "y": 96,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Vorhanden, bewusst nicht auf der Karte verwendet",
+      "note": "Hafen mit festem Boden; keine neue Generierung nötig",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "catalog.withBackground.harbor.3",
+      "group": "Bauten mit Hintergrund",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        11,
+        7
+      ],
+      "sourceRect": {
+        "x": 176,
+        "y": 112,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Vorhanden, bewusst nicht auf der Karte verwendet",
+      "note": "Hafen mit festem Boden; keine neue Generierung nötig",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "catalog.withBackground.city.1",
+      "group": "Bauten mit Hintergrund",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        13,
+        5
+      ],
+      "sourceRect": {
+        "x": 208,
+        "y": 80,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Vorhanden, bewusst nicht auf der Karte verwendet",
+      "note": "Stadt mit festem Boden; keine neue Generierung nötig",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "catalog.withBackground.city.2",
+      "group": "Bauten mit Hintergrund",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        13,
+        6
+      ],
+      "sourceRect": {
+        "x": 208,
+        "y": 96,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Vorhanden, bewusst nicht auf der Karte verwendet",
+      "note": "Stadt mit festem Boden; keine neue Generierung nötig",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "catalog.withBackground.city.3",
+      "group": "Bauten mit Hintergrund",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        13,
+        7
+      ],
+      "sourceRect": {
+        "x": 208,
+        "y": 112,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Vorhanden, bewusst nicht auf der Karte verwendet",
+      "note": "Stadt mit festem Boden; keine neue Generierung nötig",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "catalog.withBackground.city.4",
+      "group": "Bauten mit Hintergrund",
+      "sheet": "assets/tileset2.png",
+      "cell": [
+        13,
+        8
+      ],
+      "sourceRect": {
+        "x": 208,
+        "y": 128,
+        "width": 16,
+        "height": 16
+      },
+      "usage": "Vorhanden, bewusst nicht auf der Karte verwendet",
+      "note": "Stadt mit festem Boden; keine neue Generierung nötig",
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    }
+  ],
+  "procedural": {
+    "terrain": [
+      "field",
+      "grass decorations"
+    ],
+    "buildingIcons": [
+      "townhall",
+      "woodcutter",
+      "quarry",
+      "mine",
+      "farm",
+      "warehouse",
+      "barracks",
+      "range",
+      "wall",
+      "tower"
+    ],
+    "unitIcons": [
+      "spear",
+      "sword",
+      "axe",
+      "archer",
+      "hero"
+    ],
+    "overlays": [
+      "house crest: 6 patterns, dynamic colours",
+      "garrison shield",
+      "selection/hover/threat",
+      "movement lines/markers",
+      "labels"
+    ]
+  },
+  "nextGenerationProposal": {
+    "camera": "Eine feste schräge Draufsicht für alle erhöhten Objekte; Winkel anhand Pilotassets festlegen",
+    "rotate": false,
+    "mirrorX": false,
+    "mirrorY": false,
+    "lighting": "Eine feste Lichtquelle links oben",
+    "activeStructureImages": 18,
+    "activeStructureTypes": [
+      "castle",
+      "woodcutter",
+      "ironmine",
+      "stonemine",
+      "farmstead",
+      "sheepfarm"
+    ],
+    "reservedStructureImages": 7,
+    "waterImagesForExistingContract": 18,
+    "proposedMinimumTilePixels": 256,
+    "proposedMinimumStructurePixels": 512,
+    "note": "Vorschlag, keine bereits erzeugten Assets. Endgültige Geländevariantenzahl nach Pilot festlegen."
+  },
+  "cinematicV2": [
+    {
+      "id": "grass-01",
+      "file": "assets/cinematic/v2/grass-01.png",
+      "width": 1254,
+      "height": 1254,
+      "classicType": "grass",
+      "level": null,
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "grass-02",
+      "file": "assets/cinematic/v2/grass-02.png",
+      "width": 1254,
+      "height": 1254,
+      "classicType": "grass",
+      "level": null,
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "field-01",
+      "file": "assets/cinematic/v2/field-01.png",
+      "width": 1254,
+      "height": 1254,
+      "classicType": "field",
+      "level": null,
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "water-01",
+      "file": "assets/cinematic/v2/water-01.png",
+      "width": 1254,
+      "height": 1254,
+      "classicType": "water",
+      "level": null,
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "forest-01",
+      "file": "assets/cinematic/v2/topdown/forest-01.png",
+      "width": 1283,
+      "height": 1226,
+      "classicType": "forest",
+      "level": null,
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "forest-02",
+      "file": "assets/cinematic/v2/topdown/forest-02.png",
+      "width": 1536,
+      "height": 1024,
+      "classicType": "forest",
+      "level": null,
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "forest-03",
+      "file": "assets/cinematic/v2/topdown/forest-03.png",
+      "width": 1278,
+      "height": 1230,
+      "classicType": "forest",
+      "level": null,
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "rock-01",
+      "file": "assets/cinematic/v2/topdown/rock-01.png",
+      "width": 1312,
+      "height": 1199,
+      "classicType": "mountain",
+      "level": null,
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "rock-02",
+      "file": "assets/cinematic/v2/topdown/rock-02.png",
+      "width": 1536,
+      "height": 1024,
+      "classicType": "mountain",
+      "level": null,
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "rock-03",
+      "file": "assets/cinematic/v2/topdown/rock-03.png",
+      "width": 1312,
+      "height": 1199,
+      "classicType": "mountain",
+      "level": null,
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "castle-01",
+      "file": "assets/cinematic/v2/topdown/castle-01.png",
+      "width": 1312,
+      "height": 1199,
+      "classicType": "castle",
+      "level": 1,
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "castle-02",
+      "file": "assets/cinematic/v2/topdown/castle-02.png",
+      "width": 1312,
+      "height": 1199,
+      "classicType": "castle",
+      "level": 2,
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "castle-03",
+      "file": "assets/cinematic/v2/topdown/castle-03.png",
+      "width": 1312,
+      "height": 1199,
+      "classicType": "castle",
+      "level": 3,
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "woodcutter-01",
+      "file": "assets/cinematic/v2/topdown/woodcutter-01.png",
+      "width": 1312,
+      "height": 1199,
+      "classicType": "woodcutter",
+      "level": 1,
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "woodcutter-02",
+      "file": "assets/cinematic/v2/topdown/woodcutter-02.png",
+      "width": 1536,
+      "height": 1024,
+      "classicType": "woodcutter",
+      "level": 2,
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "woodcutter-03",
+      "file": "assets/cinematic/v2/topdown/woodcutter-03.png",
+      "width": 1536,
+      "height": 1024,
+      "classicType": "woodcutter",
+      "level": 3,
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "ironmine-01",
+      "file": "assets/cinematic/v2/topdown/ironmine-01.png",
+      "width": 1536,
+      "height": 1024,
+      "classicType": "ironmine",
+      "level": 1,
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "ironmine-02",
+      "file": "assets/cinematic/v2/topdown/ironmine-02.png",
+      "width": 1536,
+      "height": 1024,
+      "classicType": "ironmine",
+      "level": 2,
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "ironmine-03",
+      "file": "assets/cinematic/v2/topdown/ironmine-03.png",
+      "width": 1312,
+      "height": 1199,
+      "classicType": "ironmine",
+      "level": 3,
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "stonemine-01",
+      "file": "assets/cinematic/v2/topdown/stonemine-01.png",
+      "width": 1312,
+      "height": 1199,
+      "classicType": "stonemine",
+      "level": 1,
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "stonemine-02",
+      "file": "assets/cinematic/v2/topdown/stonemine-02.png",
+      "width": 1312,
+      "height": 1199,
+      "classicType": "stonemine",
+      "level": 2,
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "stonemine-03",
+      "file": "assets/cinematic/v2/topdown/stonemine-03.png",
+      "width": 1312,
+      "height": 1199,
+      "classicType": "stonemine",
+      "level": 3,
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "farmstead-01",
+      "file": "assets/cinematic/v2/topdown/farmstead-01.png",
+      "width": 1312,
+      "height": 1199,
+      "classicType": "farmstead",
+      "level": 1,
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "farmstead-02",
+      "file": "assets/cinematic/v2/topdown/farmstead-02.png",
+      "width": 1536,
+      "height": 1024,
+      "classicType": "farmstead",
+      "level": 2,
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "farmstead-03",
+      "file": "assets/cinematic/v2/topdown/farmstead-03.png",
+      "width": 1312,
+      "height": 1199,
+      "classicType": "farmstead",
+      "level": 3,
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "sheepfarm-01",
+      "file": "assets/cinematic/v2/topdown/sheepfarm-01.png",
+      "width": 1536,
+      "height": 1024,
+      "classicType": "sheepfarm",
+      "level": 1,
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "sheepfarm-02",
+      "file": "assets/cinematic/v2/topdown/sheepfarm-02.png",
+      "width": 1536,
+      "height": 1024,
+      "classicType": "sheepfarm",
+      "level": 2,
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "sheepfarm-03",
+      "file": "assets/cinematic/v2/topdown/sheepfarm-03.png",
+      "width": 1374,
+      "height": 1145,
+      "classicType": "sheepfarm",
+      "level": 3,
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "rock-ore-01",
+      "file": "assets/cinematic/v2/topdown/rock-ore-01.png",
+      "width": 1312,
+      "height": 1199,
+      "classicType": "mountain",
+      "level": null,
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "rock-ore-02",
+      "file": "assets/cinematic/v2/topdown/rock-ore-02.png",
+      "width": 1312,
+      "height": 1199,
+      "classicType": "mountain",
+      "level": null,
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "rock-quarry-01",
+      "file": "assets/cinematic/v2/topdown/rock-quarry-01.png",
+      "width": 1312,
+      "height": 1199,
+      "classicType": "mountain",
+      "level": null,
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    },
+    {
+      "id": "rock-quarry-02",
+      "file": "assets/cinematic/v2/topdown/rock-quarry-02.png",
+      "width": 1312,
+      "height": 1199,
+      "classicType": "mountain",
+      "level": null,
+      "transforms": {
+        "rotate": false,
+        "mirrorX": false,
+        "mirrorY": false
+      }
+    }
+  ]
+}

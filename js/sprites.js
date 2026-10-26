@@ -7,6 +7,21 @@
 (function (WOH) {
   'use strict';
   var C = WOH.Config;
+  // Device preference, deliberately separate from the simulation/save format.
+  var MODE_KEY = 'woh.graphicsMode';
+  var graphicsMode = 'cinematic';
+  try {
+    var savedMode = window.localStorage.getItem(MODE_KEY);
+    if (savedMode === 'classic' || savedMode === 'cinematic') graphicsMode = savedMode;
+  } catch (e) { /* Private/file browsing may deny storage; keep session choice. */ }
+
+  function setGraphicsMode(mode) {
+    if (mode !== 'classic' && mode !== 'cinematic') return false;
+    if (mode === graphicsMode) return false;
+    graphicsMode = mode;
+    try { window.localStorage.setItem(MODE_KEY, mode); } catch (e) { /* Session only. */ }
+    return true;
+  }
 
   // Tile-Atlas (aus js/atlas.js, generiert aus assets/tiles.json).
   var A = WOH.Atlas || {};
@@ -44,6 +59,8 @@
 
   // ---- Asset-Loader (Promise) -----------------------------------------
   function loadAssets() {
+    var cinematicAssets = (WOH.Cinematic && WOH.Cinematic.assets) || {};
+    Object.keys(cinematicAssets).forEach(function (key) { SHEETS[key] = cinematicAssets[key]; });
     var keys = Object.keys(SHEETS);
     return Promise.all(keys.map(function (k) {
       return new Promise(function (resolve) {
@@ -109,7 +126,8 @@
   }
 
   // ---- Gelände einmalig rendern ---------------------------------------
-  function buildTerrainCanvas(map) {
+  function buildTerrainCanvas(map, structures) {
+    if (graphicsMode === 'cinematic' && WOH.Cinematic && WOH.Cinematic.isReady(IMG)) return WOH.Cinematic.terrain(map, IMG, structures);
     var ts = C.MAP.tileSize;
     var cv = document.createElement('canvas');
     cv.width = map.width * ts; cv.height = map.height * ts;
@@ -196,6 +214,10 @@
   //   castle 8, city 12, woodcutter 0, ironmine 2, farmstead 4, sheepfarm 6,
   //   harbor 10; Reihen 5/6/7 = basic/medium/large (Stadt zusaetzlich 8).
   function drawStructure(ctx, px, py, size, type, tier) {
+    if (graphicsMode === 'cinematic' && WOH.Cinematic) {
+      var realistic = WOH.Cinematic.structure(ctx, IMG, px, py, size, type, tier);
+      if (realistic) return realistic;
+    }
     var variants = STRUCT[type] || STRUCT.castle;
     tier = Math.max(0, Math.min(variants.length - 1, tier | 0));
     var coord = variants[tier];
@@ -421,6 +443,8 @@
   }
 
   WOH.Sprites = {
+    getGraphicsMode: function () { return graphicsMode; },
+    setGraphicsMode: setGraphicsMode,
     loadAssets: loadAssets,
     isReady: function () { return ready; },
     buildTerrainCanvas: buildTerrainCanvas,
