@@ -41,7 +41,9 @@
     { p: '#1f4d4d', s: '#bfe0dc' }, // Petrol
     { p: '#7a5a1f', s: '#efe2b8' }, // Ocker
     { p: '#444c1f', s: '#d8dcb0' }, // Olive
-    { p: '#5a1f2b', s: '#e0b8c0' }  // Weinrot
+    { p: '#5a1f2b', s: '#e0b8c0' }, // Weinrot
+    { p: '#8a4a24', s: '#f0d0b0' }, // Rost
+    { p: '#24346a', s: '#e8d7a0' }  // Mitternacht/Gold
   ];
 
   var EMBLEMS = ['falke', 'rabe', 'wolf', 'baer', 'hirsch', 'turm', 'drache', 'schwert', 'sonne', 'fisch'];

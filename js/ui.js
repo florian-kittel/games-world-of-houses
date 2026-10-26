@@ -36,6 +36,74 @@
     return e;
   }
   function fmt(n) { return Math.floor(n).toLocaleString('de-DE'); }
+
+  // Panels werden periodisch aktualisiert. Statt innerHTML neu zu setzen,
+  // wird der neue Stand auf die bestehenden Knoten abgeglichen: unveraenderte
+  // Elemente bleiben erhalten, damit Hover-Zustand und Transitions nicht
+  // bei jedem Refresh neu starten.
+  function patchHtml(container, html) {
+    var tpl = document.createElement('template');
+    tpl.innerHTML = html;
+    patchChildren(container, tpl.content);
+  }
+  function patchChildren(target, source) {
+    var oldNode = target.firstChild, newNode = source.firstChild;
+    while (newNode) {
+      var nextNew = newNode.nextSibling;
+      if (!oldNode) {
+        target.appendChild(newNode);
+      } else if (oldNode.nodeType === newNode.nodeType && oldNode.nodeName === newNode.nodeName &&
+                 patchNode(oldNode, newNode)) {
+        oldNode = oldNode.nextSibling;
+      } else {
+        var nextOld = oldNode.nextSibling;
+        target.replaceChild(newNode, oldNode);
+        oldNode = nextOld;
+      }
+      newNode = nextNew;
+    }
+    while (oldNode) { var rest = oldNode.nextSibling; target.removeChild(oldNode); oldNode = rest; }
+  }
+  // Liefert false, wenn der Knoten ersetzt werden muss.
+  function patchNode(oldNode, newNode) {
+    if (oldNode.nodeType !== 1) {
+      if (oldNode.nodeValue !== newNode.nodeValue) oldNode.nodeValue = newNode.nodeValue;
+      return true;
+    }
+    var na = newNode.attributes, i;
+    // Icon-Canvases werden nach dem Rendern bemalt (Groesse, Style, data-*);
+    // gleiche Markup-Attribute => Bild behalten, sonst neu einsetzen.
+    if (oldNode.nodeName === 'CANVAS') {
+      for (i = 0; i < na.length; i++) {
+        if (na[i].name === 'width' || na[i].name === 'height') continue;
+        if (oldNode.getAttribute(na[i].name) !== na[i].value) return false;
+      }
+      return true;
+    }
+    for (i = 0; i < na.length; i++) {
+      if (oldNode.getAttribute(na[i].name) !== na[i].value) oldNode.setAttribute(na[i].name, na[i].value);
+    }
+    var oa = oldNode.attributes;
+    for (i = oa.length - 1; i >= 0; i--) {
+      if (!newNode.hasAttribute(oa[i].name)) oldNode.removeAttribute(oa[i].name);
+    }
+    // Formularwerte stehen in Properties, nicht (nur) in Attributen.
+    if (oldNode.nodeName === 'INPUT' && oldNode !== document.activeElement) {
+      if (oldNode.type === 'checkbox' || oldNode.type === 'radio') oldNode.checked = newNode.checked;
+      else if (oldNode.value !== newNode.value) oldNode.value = newNode.value;
+    }
+    patchChildren(oldNode, newNode);
+    if (oldNode.nodeName === 'SELECT' && oldNode !== document.activeElement) oldNode.value = newNode.value;
+    return true;
+  }
+  // Event-Handler fuer gepatchte Panels: Elemente ueberleben den Refresh,
+  // daher den vorherigen Handler gleichen Typs ersetzen statt zu stapeln.
+  function on(node, type, fn) {
+    var key = '_wohOn_' + type;
+    if (node[key]) node.removeEventListener(type, node[key]);
+    node[key] = fn;
+    node.addEventListener(type, fn);
+  }
   function fmtTime(sec) {
     sec = Math.max(0, Math.round(sec));
     var h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
@@ -1248,7 +1316,7 @@
     html += militaryHtml(v);
     html += '</div>';
     html += '</div>';
-    dom.villageBody.innerHTML = html;
+    patchHtml(dom.villageBody, html);
     attachVillageEvents(v);
   }
 
@@ -1298,7 +1366,7 @@
     html += '<div class="struct-side">' + supportPickerHtml(s, 'structure') + '</div>';
     html += '</div>'; // .struct-grid
 
-    dom.villageBody.innerHTML = html;
+    patchHtml(dom.villageBody, html);
     attachStructureEvents(dom.villageBody);
   }
 
@@ -1651,7 +1719,7 @@
     // Tab-Switch (Burgansicht): aktiver Tab nur via data-Attribut umschalten,
     // ohne Re-Render — flicker-frei und ohne State-Verlust in Inputs.
     Array.prototype.forEach.call(dom.villageBody.querySelectorAll('.burg-tab'), function (btn) {
-      btn.addEventListener('click', function () {
+      on(btn, 'click', function () {
         var t = btn.getAttribute('data-burg-tab');
         if (t !== 'buildings' && t !== 'military') return;
         if (activeBurgTab === t) return;
@@ -1686,21 +1754,21 @@
     // Hover-Info-Popup für Kriegernamen (fixed positioniert -> kein Clipping).
     Array.prototype.forEach.call(dom.villageBody.querySelectorAll('.unit-name[data-uinfo]'), function (nm) {
       var key = nm.getAttribute('data-uinfo');
-      nm.addEventListener('mouseenter', function () { showUnitTip(key, nm); });
-      nm.addEventListener('mouseleave', hideUnitTip);
-      nm.addEventListener('focus', function () { showUnitTip(key, nm); });
-      nm.addEventListener('blur', hideUnitTip);
+      on(nm, 'mouseenter', function () { showUnitTip(key, nm); });
+      on(nm, 'mouseleave', hideUnitTip);
+      on(nm, 'focus', function () { showUnitTip(key, nm); });
+      on(nm, 'blur', hideUnitTip);
     });
     // Gebäude-Namen: gleiches Info-Popup mit Gebäude-Werten.
     Array.prototype.forEach.call(dom.villageBody.querySelectorAll('.bld-name[data-binfo]'), function (nm) {
       var key = nm.getAttribute('data-binfo');
-      nm.addEventListener('mouseenter', function () { showInfoTip(buildingTooltipHtml(key, v), nm); });
-      nm.addEventListener('mouseleave', hideUnitTip);
-      nm.addEventListener('focus', function () { showInfoTip(buildingTooltipHtml(key, v), nm); });
-      nm.addEventListener('blur', hideUnitTip);
+      on(nm, 'mouseenter', function () { showInfoTip(buildingTooltipHtml(key, v), nm); });
+      on(nm, 'mouseleave', hideUnitTip);
+      on(nm, 'focus', function () { showInfoTip(buildingTooltipHtml(key, v), nm); });
+      on(nm, 'blur', hideUnitTip);
     });
     Array.prototype.forEach.call(dom.villageBody.querySelectorAll('[data-build]'), function (btn) {
-      btn.addEventListener('click', function () {
+      on(btn, 'click', function () {
         var r = G.enqueueBuild(state, v, btn.getAttribute('data-build'));
         if (!r.ok) toast(r.msg); else api.requestSave();
         renderVillageView();
@@ -1708,7 +1776,7 @@
     });
     // Warteschlangen-Aufträge abbrechen (50 % Rohstoffe zurück).
     Array.prototype.forEach.call(dom.villageBody.querySelectorAll('[data-cancel]'), function (btn) {
-      btn.addEventListener('click', function () {
+      on(btn, 'click', function () {
         var kind = btn.getAttribute('data-cancel');
         var idx = parseInt(btn.getAttribute('data-idx'), 10);
         var r = (kind === 'build') ? G.cancelBuild(state, v, idx) : G.cancelTrain(state, v, idx);
@@ -1720,10 +1788,10 @@
     });
     // Eingegebene Mengen merken, damit Aktualisierungen sie nicht zurücksetzen.
     Array.prototype.forEach.call(dom.villageBody.querySelectorAll('input.train-n'), function (inp) {
-      inp.addEventListener('input', function () { trainCounts[inp.getAttribute('data-unit')] = inp.value; });
+      on(inp, 'input', function () { trainCounts[inp.getAttribute('data-unit')] = inp.value; });
     });
     Array.prototype.forEach.call(dom.villageBody.querySelectorAll('[data-train]'), function (btn) {
-      btn.addEventListener('click', function () {
+      on(btn, 'click', function () {
         var key = btn.getAttribute('data-train');
         var u = C.UNITS[key];
         var raw = (trainCounts[key] != null ? trainCounts[key] : 5);
@@ -1735,7 +1803,7 @@
     });
     // Schritt 6.5: Reparatur-Buttons
     Array.prototype.forEach.call(dom.villageBody.querySelectorAll('[data-repair]'), function (btn) {
-      btn.addEventListener('click', function () {
+      on(btn, 'click', function () {
         var key = btn.getAttribute('data-repair');
         var r = G.startRepair(state, v, key);
         if (!r.ok) { toast(r.msg); return; }
@@ -1765,7 +1833,7 @@
     ensureSidebarStructure();
     // Wenn Struktur selektiert: Struktur-Panel statt klassischem Ziel-Panel.
     var middle = selectedStructureId ? structurePanelHtml() : targetHtml();
-    dom.sideTop.innerHTML = incomingHtml() + outgoingHtml() + middle;
+    patchHtml(dom.sideTop, incomingHtml() + outgoingHtml() + middle);
     attachSidebarEvents();
     if (selectedStructureId) attachStructureEvents();
   }
@@ -2202,18 +2270,18 @@
       etaBox.textContent = 'Marschzeit: ' + fmtTime(travel) + ' (Spielzeit)';
     }
     Array.prototype.forEach.call(dom.sidebar.querySelectorAll('input.send-n'), function (inp) {
-      inp.addEventListener('input', function () {
+      on(inp, 'input', function () {
         sendCounts[inp.getAttribute('data-unit')] = inp.value;
         updateEta();
       });
     });
     var fromSel = dom.sidebar.querySelector('.send-from');
-    if (fromSel) fromSel.addEventListener('change', function () {
+    if (fromSel) on(fromSel, 'change', function () {
       sendFromId = fromSel.value;
       renderSidebar(); // Garnison/Maxima/ETA für neues Quell-Dorf aktualisieren
     });
     var atk = dom.sidebar.querySelector('.attack-btn');
-    if (atk) atk.addEventListener('click', function () { send('attack'); });
+    if (atk) on(atk, 'click', function () { send('attack'); });
 
     // Support-Picker (eigene Burg als Ziel) wird direkt gerendert; nur verdrahten.
     wireSupportControls();
@@ -2241,7 +2309,7 @@
 
     // "Struktur verwalten" (Sidebar-Kurzpanel) öffnet das Overlay.
     var so = root.querySelector('.struct-open');
-    if (so) so.addEventListener('click', function () { openStructure(s.id); });
+    if (so) on(so, 'click', function () { openStructure(s.id); });
 
     // Unit-Icons in Inputs zeichnen
     paintUnitIcons(root);
@@ -2249,13 +2317,13 @@
 
     // Quelldorf-Selector (analog Angriff)
     var fromSel = root.querySelector('.send-from');
-    if (fromSel) fromSel.addEventListener('change', function () {
+    if (fromSel) on(fromSel, 'change', function () {
       sendFromId = fromSel.value; renderSidebar();
     });
 
     // Truppen-Mengen merken
     Array.prototype.forEach.call(root.querySelectorAll('input.send-n'), function (inp) {
-      inp.addEventListener('input', function () { sendCounts[inp.getAttribute('data-unit')] = inp.value; });
+      on(inp, 'input', function () { sendCounts[inp.getAttribute('data-unit')] = inp.value; });
     });
 
     function collectSend() {
@@ -2266,7 +2334,7 @@
 
     // Sammeln
     var gb = root.querySelector('.gather-btn');
-    if (gb) gb.addEventListener('click', function () {
+    if (gb) on(gb, 'click', function () {
       var src = sourceVillage();
       if (!src) { toast('Keine Quell-Burg.'); return; }
       var units = collectSend();
@@ -2282,7 +2350,7 @@
 
     // Eroberung
     var cb = root.querySelector('.capture-btn');
-    if (cb) cb.addEventListener('click', function () {
+    if (cb) on(cb, 'click', function () {
       var src = sourceVillage();
       if (!src) { toast('Keine Quell-Burg.'); return; }
       var units = collectSend();
@@ -2297,7 +2365,7 @@
 
     // Upgrade
     var ub = root.querySelector('.upgrade-btn');
-    if (ub) ub.addEventListener('click', function () {
+    if (ub) on(ub, 'click', function () {
       var r = G.upgradeStructure(state, s);
       if (!r.ok) { toast(r.msg); return; }
       api.requestSave();
@@ -2328,7 +2396,7 @@
       if (gt) { gt.textContent = sum; gt.className = 'gt-sum' + (sum > garrCap ? ' bad' : ''); }
     }
     Array.prototype.forEach.call(garrSliders, function (inp) {
-      inp.addEventListener('input', function () {
+      on(inp, 'input', function () {
         // Summe darf das Limit nicht überschreiten -> aktuellen Regler kappen.
         var over = sliderSum() - garrCap;
         if (over > 0) inp.value = Math.max(0, (parseInt(inp.value, 10) || 0) - over);
@@ -2337,7 +2405,7 @@
     });
     // Übernehmen: Differenzen pro Einheit berechnen und verschieben.
     var gap = root.querySelector('.garr-apply');
-    if (gap) gap.addEventListener('click', function () {
+    if (gap) on(gap, 'click', function () {
       if (!castleForGarr) { toast('Heimatburg fehlt.'); return; }
       var station = {}, withdraw = {}, stationTot = 0, withdrawTot = 0, targetSum = 0;
       Array.prototype.forEach.call(root.querySelectorAll('input.garr-slider'), function (inp) {
@@ -2372,7 +2440,7 @@
 
     // Heimatburg ändern
     var ha = root.querySelector('.home-apply');
-    if (ha) ha.addEventListener('click', function () {
+    if (ha) on(ha, 'click', function () {
       var sel2 = root.querySelector('.home-select');
       var newId = sel2 ? sel2.value : null;
       if (!newId) return;
@@ -2394,17 +2462,17 @@
   function wireSupportControls(root) {
     root = root || dom.sidebar;
     var ssel = root.querySelector('.support-source-sel');
-    if (ssel) ssel.addEventListener('change', function () {
+    if (ssel) on(ssel, 'change', function () {
       supportSourceId = ssel.value; supportCounts = {}; supportResCounts = {}; refreshPanels();
     });
     Array.prototype.forEach.call(root.querySelectorAll('input.sup-n'), function (inp) {
-      inp.addEventListener('input', function () { supportCounts['u_' + inp.getAttribute('data-unit')] = inp.value; });
+      on(inp, 'input', function () { supportCounts['u_' + inp.getAttribute('data-unit')] = inp.value; });
     });
     Array.prototype.forEach.call(root.querySelectorAll('input.sup-r'), function (inp) {
-      inp.addEventListener('input', function () { supportResCounts[inp.getAttribute('data-res')] = inp.value; });
+      on(inp, 'input', function () { supportResCounts[inp.getAttribute('data-res')] = inp.value; });
     });
     var ssend = root.querySelector('.support-send');
-    if (ssend) ssend.addEventListener('click', function () {
+    if (ssend) on(ssend, 'click', function () {
       var kind = ssend.getAttribute('data-kind');
       var tid = ssend.getAttribute('data-target');
       var target = (kind === 'village') ? state.villages[tid] : G.findStructureById(state, tid);

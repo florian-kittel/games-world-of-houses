@@ -279,10 +279,11 @@ body[data-graphics-mode="classic"] #overlay-title{font-family:inherit}
 .tagline{color:var(--muted);line-height:1.5;margin:0 0 18px}
 .start-card h3{margin:18px 0 8px;color:var(--text);font-size:15px}
 .diffs{display:flex;flex-direction:column;gap:6px}
-.diff{display:flex;flex-direction:column;background:var(--bg);border:1px solid var(--line);
-  border-radius:6px;padding:8px 10px;cursor:pointer}
-.diff input{margin-right:6px}
-.diff small{color:var(--muted);margin-top:2px}
+.diff{display:grid;grid-template-columns:1fr auto;column-gap:12px;align-items:center;
+  background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px;cursor:pointer}
+.diff b{grid-column:1;grid-row:1}
+.diff input{grid-column:2;grid-row:1 / span 2;margin:0}
+.diff small{grid-column:1;grid-row:2;color:var(--muted);margin-top:2px}
 .seed-row{display:block;margin:12px 0;color:var(--muted);font-size:13px}
 .seed-row input{background:var(--bg);color:var(--text);border:1px solid var(--line);
   border-radius:4px;padding:6px;margin-left:6px;width:140px}

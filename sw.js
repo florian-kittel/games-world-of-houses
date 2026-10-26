@@ -5,7 +5,7 @@
  */
 'use strict';
 
-var CACHE_VERSION = 'woh-cinematic-2026102622';
+var CACHE_VERSION = 'woh-cinematic-2026102701';
 var ASSETS = [
   './',
   './index.html',
@@ -59,7 +59,7 @@ var ASSETS = [
 // index.html uses revisioned script/style URLs; cache those exact requests offline.
 ASSETS = ASSETS.concat(ASSETS.filter(function (url) {
   return /\.(js|css)$/.test(url);
-}).map(function (url) { return url + '?v=2026102622'; }));
+}).map(function (url) { return url + '?v=2026102701'; }));
 
 self.addEventListener('message', function (e) {
   if (e.data === 'skipWaiting') self.skipWaiting();

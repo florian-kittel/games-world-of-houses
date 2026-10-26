@@ -19,7 +19,7 @@
     height: 40,
     tileSize: 32,         // Pixel pro Feld (Basis, wird gezoomt)
     villageCount: 5,      // Fallback gesamt (Spieler + Gegner)
-    maxEnemies: 5,        // Obergrenze Gegner im Startmenü
+    maxEnemies: 10,       // Obergrenze Gegner im Startmenü
     defaultEnemies: 4,    // Vorauswahl Gegner
     minVillageDist: 4,    // Mindestabstand zwischen Burgen (Felder)
     // Geländearten beeinflussen Standortboni
