@@ -785,8 +785,8 @@
       var lineCol, dotCol;
       if (returning && S.getGraphicsMode() === 'cinematic') { lineCol = 'rgba(186,178,170,0.6)'; dotCol = '#bdb6ae'; }
       else if (incoming) { lineCol = 'rgba(210,70,70,0.7)'; dotCol = '#d24646'; }
-      else if (isPlayerAtt && isSupply) { lineCol = 'rgba(200,162,74,0.6)'; dotCol = '#c8a24a'; }
-      else if (isPlayerAtt && isSupport) { lineCol = 'rgba(90,160,216,0.6)'; dotCol = '#5aa0d8'; }
+      else if (isSupply) { lineCol = 'rgba(200,162,74,0.6)'; dotCol = '#c8a24a'; }
+      else if (isSupport) { lineCol = 'rgba(90,160,216,0.6)'; dotCol = '#5aa0d8'; }
       else if (isPlayerAtt) { lineCol = 'rgba(110,207,151,0.6)'; dotCol = '#6fcf97'; }
       else { lineCol = 'rgba(186,178,170,0.6)'; dotCol = '#bdb6ae'; }
       ctx.strokeStyle = lineCol;
@@ -794,10 +794,11 @@
       ctx.setLineDash([6 / cam.zoom, 4 / cam.zoom]);
       ctx.beginPath(); ctx.moveTo(fx, fy); ctx.lineTo(tx, ty); ctx.stroke();
       ctx.setLineDash([]);
-      // Marschpunkt: Rohstoff-Tross als kleines Quadrat (Fuhrwerk), sonst Kreis.
+      // Cinematic: Hauswappen mit typgerechter Pulsfarbe für alle Sendungen.
+      // Classic: Rohstoff-Tross als Quadrat (Fuhrwerk), sonst Kreis.
       ctx.fillStyle = dotCol;
-      if ((hostile || returning) && S.getGraphicsMode() === 'cinematic') {
-        marchMarkers.push({ x: px, y: py, house: state.houses[m.ownerHouseId] || state.houses[returning ? to.ownerHouseId : from.ownerHouseId], phase: (fx+fy)*.013, returning: returning });
+      if ((hostile || returning || isSupport) && S.getGraphicsMode() === 'cinematic') {
+        marchMarkers.push({ x: px, y: py, house: state.houses[m.ownerHouseId] || state.houses[returning ? to.ownerHouseId : from.ownerHouseId], phase: (fx+fy)*.013, returning: returning, supportKind: isSupply ? 'supply' : isSupport ? 'support' : null });
       } else if (isSupply) {
         var sq = 4 / cam.zoom + 2;
         ctx.fillRect(px - sq, py - sq, sq * 2, sq * 2);
@@ -896,7 +897,7 @@
     marchMarkers.forEach(function (marker) {
       var position = worldToScreen(marker.x, marker.y);
       if (position.x < -40 || position.y < -40 || position.x > dom.viewWidth+40 || position.y > dom.viewHeight+40) return;
-      S.drawAttackMarker(ctx,position.x,position.y,marker.house,animationSeconds,marker.phase,marker.returning);
+      S.drawAttackMarker(ctx,position.x,position.y,marker.house,animationSeconds,marker.phase,marker.returning,marker.supportKind);
     });
   }
 

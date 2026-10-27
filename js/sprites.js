@@ -343,27 +343,33 @@
     outline(); ctx.strokeStyle = '#d5c5a0'; ctx.lineWidth = 1; ctx.stroke(); ctx.restore();
   }
 
-  // Screen-space attack token. The two expanding waves sit beneath the badge;
+  // Screen-space march token. The two expanding waves sit beneath the badge;
   // real time keeps the effect calm regardless of simulation speed or pause.
-  function drawAttackMarker(ctx, x, y, house, seconds, phase, returning) {
+  function drawAttackMarker(ctx, x, y, house, seconds, phase, returning, supportKind) {
     var radius = 14;
+    var glowRGB = '210,48,48', ringRGB = '232,64,57', border = '#ee5148';
+    if (supportKind === 'supply') {
+      glowRGB = ringRGB = '200,162,74'; border = '#c8a24a';
+    } else if (supportKind === 'support') {
+      glowRGB = ringRGB = '90,160,216'; border = '#5aa0d8';
+    }
     ctx.save();
     ctx.setLineDash([]);
     for (var wave = 0; !returning && wave < 2; wave++) {
       var progress = ((seconds / 1.8 + (phase || 0) + wave / 2) % 1 + 1) % 1;
       var spread = radius + 3 + progress * 22, opacity = (1-progress)*(1-progress);
       var glow = ctx.createRadialGradient(x,y,radius,x,y,spread);
-      glow.addColorStop(0,'rgba(210,48,48,0)');
-      glow.addColorStop(.75,'rgba(210,48,48,' + (.10*opacity) + ')');
-      glow.addColorStop(1,'rgba(210,48,48,0)');
+      glow.addColorStop(0,'rgba(' + glowRGB + ',0)');
+      glow.addColorStop(.75,'rgba(' + glowRGB + ',' + (.10*opacity) + ')');
+      glow.addColorStop(1,'rgba(' + glowRGB + ',0)');
       ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(x,y,spread,0,Math.PI*2); ctx.fill();
-      ctx.strokeStyle = 'rgba(232,64,57,' + (.52*opacity) + ')';
+      ctx.strokeStyle = 'rgba(' + ringRGB + ',' + (.52*opacity) + ')';
       ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(x,y,spread,0,Math.PI*2); ctx.stroke();
     }
     ctx.shadowColor = 'rgba(0,0,0,.65)'; ctx.shadowBlur = 5; ctx.shadowOffsetY = 2;
     ctx.fillStyle = '#191b20'; ctx.beginPath(); ctx.arc(x,y,radius,0,Math.PI*2); ctx.fill();
     ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
-    ctx.strokeStyle = returning ? '#bdb6ae' : '#ee5148'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.strokeStyle = returning ? '#bdb6ae' : border; ctx.lineWidth = 2; ctx.stroke();
     // Clip the existing faction motif to a pointed shield, preserving every
     // house's colours/pattern rather than inventing a second heraldry system.
     drawShieldCrest(ctx,x-8,y-9,16,19,house && house.sigil);
