@@ -224,20 +224,27 @@
     if (!('serviceWorker' in navigator)) return;
     if (location.protocol !== 'http:' && location.protocol !== 'https:') return;
     window.addEventListener('load', function () {
+      // Reload only after the new worker actually controls this page. Reloading
+      // at "installed" can still serve the old HTML/scripts from the old cache.
+      var hadController = !!navigator.serviceWorker.controller;
+      var reloading = false;
+      navigator.serviceWorker.addEventListener('controllerchange', function () {
+        if (!hadController) { hadController = true; return; }
+        if (reloading) return;
+        reloading = true;
+        window.location.reload();
+      });
       // updateViaCache:'none' zwingt den Browser, sw.js immer frisch zu laden
       // — sonst koennte ein alter SW im HTTP-Cache neue Versionen blockieren.
       navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(function (reg) {
-        // Wenn ein neuer SW installiert wird, sofort uebernehmen und neu laden.
+        // Activate waiting updates; controllerchange handles the reload.
         if (reg.waiting) reg.waiting.postMessage('skipWaiting');
         reg.addEventListener('updatefound', function () {
           var nw = reg.installing;
           if (!nw) return;
           nw.addEventListener('statechange', function () {
             if (nw.state === 'installed' && navigator.serviceWorker.controller) {
-              // Neuer SW bereit — Seite einmal automatisch reloaden, damit der
-              // Spieler nicht mit veralteten Assets weiterspielt.
-              if (window.console && console.log) console.log('Neue WoH-Version verfuegbar — Seite wird neu geladen.');
-              window.location.reload();
+              nw.postMessage('skipWaiting');
             }
           });
         });
