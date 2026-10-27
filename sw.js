@@ -5,7 +5,7 @@
  */
 'use strict';
 
-var CACHE_VERSION = 'woh-cinematic-2026102701';
+var CACHE_VERSION = 'woh-cinematic-2026102707';
 var ASSETS = [
   './',
   './index.html',
@@ -60,6 +60,7 @@ var ASSETS = [
 ASSETS = ASSETS.concat(ASSETS.filter(function (url) {
   return /\.(js|css)$/.test(url);
 }).map(function (url) { return url + '?v=2026102701'; }));
+ASSETS.push('./css/style.css?v=2026102707', './js/ui.js?v=2026102706', './js/main.js?v=2026102704');
 
 self.addEventListener('message', function (e) {
   if (e.data === 'skipWaiting') self.skipWaiting();

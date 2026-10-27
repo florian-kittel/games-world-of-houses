@@ -159,6 +159,21 @@
     });
   }
 
+  function paintBuildingIcons(container) {
+    if (!container) return;
+    Array.prototype.forEach.call(container.querySelectorAll('canvas[data-bld]'), function (c) {
+      var cinematic = S.getGraphicsMode() === 'cinematic';
+      var ratio = cinematic ? Math.min(2, window.devicePixelRatio || 1) : 1;
+      // Reused panel canvases retain pixels and transforms until resized.
+      c.width = c.height = Math.round(40 * ratio);
+      var ctx = c.getContext('2d');
+      ctx.imageSmoothingEnabled = cinematic;
+      if (cinematic) ctx.scale(ratio, ratio);
+      S.drawBuildingIcon(ctx, cinematic ? 0 : 2, cinematic ? 0 : 2,
+        cinematic ? 40 / 12 : 3, c.getAttribute('data-bld'));
+    });
+  }
+
   // Laufende Nummer eines Dorfes innerhalb seines Hauses (stabil nach id-Reihenfolge).
   function villageOrdinal(v) {
     var same = G.villagesOfHouse(state, v.houseId).slice();
@@ -232,7 +247,17 @@
     var burger = $('sidebar-toggle');
     var backdrop = $('sidebar-backdrop');
     if (burger) burger.addEventListener('click', toggleSidebar);
-    if (backdrop) backdrop.addEventListener('click', closeSidebar);
+    if (backdrop) {
+      var backdropPressed = false;
+      backdrop.addEventListener('pointerdown', function () { backdropPressed = true; });
+      backdrop.addEventListener('pointercancel', function () { backdropPressed = false; });
+      backdrop.addEventListener('click', function (e) {
+        // Das oeffnende pointerup auf der Karte kann noch einen Klick auf
+        // den gerade eingeblendeten Backdrop erzeugen (Touch/Ghost-Click).
+        if (backdropPressed || e.detail === 0) closeSidebar();
+        backdropPressed = false;
+      });
+    }
   }
 
   function toggleSidebar() {
@@ -246,10 +271,14 @@
     if (sb) sb.classList.remove('open');
     if (bd) bd.classList.remove('show');
   }
-  function openSidebarSheet() {
+  function openSidebarSheet(focusTarget) {
     var sb = $('sidebar'), bd = $('sidebar-backdrop');
     if (sb) sb.classList.add('open');
     if (bd) bd.classList.add('show');
+    if (focusTarget && sb) {
+      var panel = sb.querySelector('[data-map-target]');
+      if (panel) sb.scrollTop = Math.max(0, panel.offsetTop - sb.offsetTop - 12);
+    }
   }
 
   function bind(s) {
@@ -294,6 +323,7 @@
       }
       paintResIcons(document);
       paintUnitIcons(document);
+      paintBuildingIcons(document);
     }
   }
 
@@ -351,10 +381,10 @@
   var longPressTimer = null;
   var LONG_PRESS_MS = 500;
   var TAP_THRESHOLD_PX = 8;
-  // Doppel-Tap (Touch + Maus): zwei tap-Events innerhalb 350 ms und unter 25 px
+  // Doppel-Tap (Touch + Maus): zwei tap-Events innerhalb 450 ms und unter 25 px
   // Abstand. iOS Safari synthetisiert dblclick aus zwei Taps nicht zuverlaessig,
   // wenn touch-action:none gesetzt ist — deshalb erkennen wir es selbst.
-  var DOUBLE_TAP_MS = 350;
+  var DOUBLE_TAP_MS = 450;
   var DOUBLE_TAP_PX = 25;
   var lastTapTime = 0, lastTapX = 0, lastTapY = 0;
 
@@ -429,7 +459,8 @@
       }
       if (cam.drag) {
         var dx = e.clientX - cam.drag.sx, dy = e.clientY - cam.drag.sy;
-        if (Math.abs(dx) + Math.abs(dy) > TAP_THRESHOLD_PX) {
+        var threshold = e.pointerType === 'touch' ? 12 : TAP_THRESHOLD_PX;
+        if (Math.hypot(dx, dy) > threshold) {
           cam.moved = true;
           cancelLongPress();
         }
@@ -453,7 +484,8 @@
       if (n < 2) {
         pinchInitDist = 0; pinchCenter = null;
       }
-      if (n === 0 && wasDragging && !cam.moved) {
+      if (e.type === 'pointercancel' || cam.moved) lastTapTime = 0;
+      if (e.type !== 'pointercancel' && n === 0 && wasDragging && !cam.moved) {
         // Doppel-Tap-Erkennung: zwei Taps binnen DOUBLE_TAP_MS und nahe beieinander.
         var now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
         var dx = e.clientX - lastTapX, dy = e.clientY - lastTapY;
@@ -519,7 +551,7 @@
       } else {
         selectedStructureId = s.id; targetVillageId = null;
         renderSidebar();
-        if (openSheet) openSidebarSheet();
+        if (openSheet) openSidebarSheet(true);
       }
       return;
     }
@@ -527,10 +559,11 @@
     if (v.houseId === state.playerHouseId) {
       activeVillageId = v.id; openVillage(v.id);
     } else {
+      selectedStructureId = null;
       targetVillageId = v.id;
       renderSidebar();
       toast('Fremde Burg als Angriffsziel gewählt.');
-      if (openSheet) openSidebarSheet();
+      if (openSheet) openSidebarSheet(true);
     }
   }
 
@@ -546,7 +579,8 @@
       var d = Math.hypot(cx - w.x, cy - w.y);
       if (d < bestD) { bestD = d; best = v; }
     }
-    return (best && bestD < ts * 0.9) ? best : null;
+    var radius = e.pointerType === 'touch' ? Math.max(ts * 0.9, 22 / cam.zoom) : ts * 0.9;
+    return (best && bestD < radius) ? best : null;
   }
 
   // Hit-Test fuer Rohstoff-Strukturen (analog villageAtEvent, etwas
@@ -564,7 +598,8 @@
       var d = Math.hypot(cx - w.x, cy - w.y);
       if (d < bestD) { bestD = d; best = s; }
     }
-    return (best && bestD < ts * 0.9) ? best : null;
+    var radius = e.pointerType === 'touch' ? Math.max(ts * 0.9, 22 / cam.zoom) : ts * 0.9;
+    return (best && bestD < radius) ? best : null;
   }
 
   function handleMapClick(e) {
@@ -657,8 +692,7 @@
       '</div>';
     document.body.appendChild(div);
     document.getElementById('end-new').onclick = function () {
-      if (WOH.Persistence) WOH.Persistence.clear().then(function () { location.reload(); });
-      else location.reload();
+      api.startNewWorld();
     };
     document.getElementById('end-load').onclick = function () { location.reload(); };
   }
@@ -1462,9 +1496,12 @@
           'Reparieren <small>' + fmtTime(rt) + '</small></button></div>';
       }
     }
-    html += prodTxt + reqTxt;
+    html += '<div class="bld-details">' + prodTxt + reqTxt;
     if (!maxed) {
       html += '<div class="bld-cost">' + costStr + '</div>';
+    }
+    html += '</div>';
+    if (!maxed) {
       html += '<button class="btn sm build-btn" data-build="' + key + '" ' + (ok ? '' : 'disabled') + '>' +
         'Ausbauen →' + target + ' <small>' + fmtTime(V.buildTime(v, key, target - 1)) + '</small></button>';
     }
@@ -1739,17 +1776,7 @@
     });
     // Icons zeichnen
     paintResIcons(dom.villageBody);
-    Array.prototype.forEach.call(dom.villageBody.querySelectorAll('canvas[data-bld]'), function (c) {
-      if (S.getGraphicsMode() === 'cinematic') {
-        var ratio = Math.min(2, window.devicePixelRatio || 1);
-        c.width = c.height = Math.round(40 * ratio);
-        var cinematicCtx = c.getContext('2d'); cinematicCtx.scale(ratio, ratio);
-        S.drawBuildingIcon(cinematicCtx, 0, 0, 40 / 12, c.getAttribute('data-bld'));
-        return;
-      }
-      var ctx = c.getContext('2d'); ctx.imageSmoothingEnabled = false;
-      S.drawBuildingIcon(ctx, 2, 2, 3, c.getAttribute('data-bld'));
-    });
+    paintBuildingIcons(dom.villageBody);
     paintUnitIcons(dom.villageBody, 3, 0, 4);
     // Hover-Info-Popup für Kriegernamen (fixed positioniert -> kein Clipping).
     Array.prototype.forEach.call(dom.villageBody.querySelectorAll('.unit-name[data-uinfo]'), function (nm) {
@@ -1938,7 +1965,7 @@
     var src = sourceVillage();
     var isOwn = t.houseId === state.playerHouseId;
     var dist = src ? G.distance(src, t) : 0;
-    var html = '<div class="panel"><h3>Ziel: ' + t.name + villageTag(t) + '</h3>';
+    var html = '<div class="panel" data-map-target><h3>Ziel: ' + t.name + villageTag(t) + '</h3>';
     html += '<div class="crestline"><span class="crest sm" style="background:' + crestBg(house.sigil) + '"></span> ' + house.name + '</div>';
     html += '<div class="muted small">Entfernung ' + dist.toFixed(1) + ' Felder · Treue ' + Math.round(t.loyalty) + '%</div>';
     if (isOwn) {
@@ -2012,7 +2039,7 @@
     else if (isOwn) ownerLine = '<span class="good">eigene Struktur</span>';
     else ownerLine = '<span class="bad">' + (ownerHouse ? ownerHouse.name : 'fremd') + '</span>';
 
-    var html = '<div class="panel"><h3>⌂ ' + meta.name + ' (Stufe ' + lvl + ')</h3>';
+    var html = '<div class="panel" data-map-target><h3>⌂ ' + meta.name + ' (Stufe ' + lvl + ')</h3>';
     html += '<div class="muted small">Pos. ' + s.x + ',' + s.y + ' · ' + ownerLine +
       ' · Entfernung ' + dist.toFixed(1) + ' Felder</div>';
 

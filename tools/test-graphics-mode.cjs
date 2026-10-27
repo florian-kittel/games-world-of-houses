@@ -34,6 +34,41 @@ function setup(saved, blocked, missingCinematic) {
   return { sprites: woh.Sprites, draws, calls, stored, drawing };
 }
 (async function () {
+  // Existing castle-menu canvases must be cleared and redrawn on mode changes.
+  for (const pixelRatio of [1, 2]) {
+    let mode = 'classic', width = 40, height = 40;
+    const context = { pixels: [], transform: 1, scale(x) { this.transform *= x; } };
+    const canvas = {
+      get width() { return width; },
+      set width(value) { width = value; context.pixels = []; context.transform = 1; },
+      get height() { return height; },
+      set height(value) { height = value; context.pixels = []; context.transform = 1; },
+      getContext() { return context; },
+      getAttribute() { return 'townhall'; }
+    };
+    const woh = { Config: {}, Sprites: {
+      getGraphicsMode() { return mode; },
+      setGraphicsMode(value) { const changed = mode !== value; mode = value; return changed; },
+      drawBuildingIcon(ctx) { ctx.pixels.push(mode); }
+    } };
+    vm.runInNewContext(fs.readFileSync(path.join(root, 'js/ui.js'), 'utf8'), {
+      window: { WOH: woh, devicePixelRatio: pixelRatio },
+      document: {
+        body: { setAttribute() {} },
+        querySelector() { return null; },
+        querySelectorAll(selector) { return selector === 'canvas[data-bld]' ? [canvas] : []; }
+      }
+    });
+    for (const next of ['cinematic', 'classic', 'cinematic', 'classic']) {
+      woh.UI.setGraphicsMode(next);
+      assert.deepEqual(context.pixels, [next], 'No previous-mode pixels remain in the castle menu');
+      assert.equal(width, next === 'classic' ? 40 : 40 * pixelRatio);
+      assert.equal(height, width);
+      assert.equal(context.transform, next === 'classic' ? 1 : pixelRatio);
+      assert.equal(context.imageSmoothingEnabled, next === 'cinematic');
+    }
+  }
+  console.log('PASS: castle-menu mode changes clear previous images and reset resolution/transforms at DPR 1 and 2.');
   const test = setup();
   const map = { width: 3, height: 3, tiles: Array(9).fill('grass') };
   await test.sprites.loadAssets();

@@ -50,7 +50,7 @@ body[data-graphics-mode="classic"] #overlay-title{font-family:inherit}
 .overlay{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:24px}
 .overlay-backdrop{position:absolute;inset:0;background:rgba(4,8,11,.72);backdrop-filter:blur(3px)}
 .overlay-card{position:relative;z-index:1;width:min(1440px,96vw);
-  max-height:92vh;max-height:92dvh;display:flex;
+  max-height:100%;display:flex;
   flex-direction:column;background:linear-gradient(#16222c,#0e161c);
   border:1px solid var(--line);border-radius:10px;box-shadow:0 24px 70px rgba(0,0,0,.7);overflow:hidden}
 .overlay-head{display:flex;align-items:center;justify-content:space-between;gap:10px;
@@ -59,12 +59,12 @@ body[data-graphics-mode="classic"] #overlay-title{font-family:inherit}
 #overlay-close{background:var(--panel2);color:var(--text);border:1px solid var(--line);
   width:34px;height:34px;border-radius:6px;cursor:pointer;font-size:16px;flex-shrink:0}
 #overlay-close:hover{background:var(--red);border-color:var(--red);color:#fff}
-#village-body{overflow:auto;padding:18px}
+#village-body{min-height:0;overflow:auto;overscroll-behavior-y:contain;padding:18px}
 
 /* ---------- Kampfbericht ---------- */
 #battle-overlay{z-index:70}
 .battle-card{width:min(680px,96vw)}
-#battle-body{overflow:auto;padding:16px}
+#battle-body{min-height:0;overflow:auto;overscroll-behavior-y:contain;padding:16px}
 .battle-banner{text-align:center;font-size:18px;font-weight:700;padding:10px;border-radius:6px;margin-bottom:8px}
 .battle-banner.good{background:rgba(47,93,58,.5);color:#9fe0b8;border:1px solid var(--green)}
 .battle-banner.bad{background:rgba(125,43,43,.5);color:#e8b0b0;border:1px solid var(--red)}
@@ -138,6 +138,7 @@ body[data-graphics-mode="classic"] #overlay-title{font-family:inherit}
 
 /* ---------- Dorfansicht ---------- */
 .vv-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;max-width:1400px;margin:0 auto}
+.vv-col{min-width:0}
 @media(max-width:900px){.vv-grid{grid-template-columns:1fr}}
 /* Burgansicht-Tabs — Standard versteckt; auf schmalen Viewports via Media-Query aktiv. */
 .burg-tabs{display:none;gap:6px;margin:0 auto 14px;max-width:1400px;
@@ -183,6 +184,7 @@ body[data-graphics-mode="classic"] #overlay-title{font-family:inherit}
 .bld-ico{width:40px;height:40px;flex-shrink:0;background:#0e171f;border-radius:4px}
 .bld-meta{display:flex;flex-direction:column;line-height:1.15;min-width:0}
 .bld-meta b{font-size:13px}
+.bld-details{display:flex;flex-direction:column;gap:3px;min-width:0}
 .lvl{color:var(--gold);font-size:11px}
 .prod{color:var(--green);font-size:11px}
 .req{color:var(--red);font-size:10px;line-height:1.3}
@@ -483,9 +485,11 @@ body[data-graphics-mode="classic"] #overlay-title{font-family:inherit}
   .tb-speed .speed-btn{padding:5px 8px;min-width:32px;min-height:32px}
   /* Mil-Area: Tabelle voll, Queue darunter */
   .mil-area{flex-direction:column}
+  .mil-area .unit-table-wrap{width:100%}
   .mil-area .queue-col{flex:0 0 auto;width:100%}
   /* Bauen-Bereich: Queue oben, dann Grid */
   .bld-area{flex-direction:column}
+  .bld-area .bld-grid{width:100%;flex:0 0 auto}
   .bld-area .queue-col{flex:0 0 auto;width:100%}
 }
 
@@ -498,7 +502,15 @@ body[data-graphics-mode="classic"] #overlay-title{font-family:inherit}
   .vv-grid[data-burg-tab="military"]  > .vv-col-buildings{display:none}
   /* Gebäude-Cards volle Breite (eine Spalte) */
   .bld-grid{grid-template-columns:1fr;gap:8px}
-  .bld-card{padding:10px 12px}
+  .bld-card{padding:8px 10px;display:grid;
+    grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);
+    grid-template-areas:"identity details";
+    column-gap:8px;align-items:center}
+  .bld-top{grid-area:identity;min-width:0}
+  .bld-card .bld-name{overflow-wrap:anywhere;line-height:1.2}
+  .bld-details{grid-area:details}
+  .bld-card > .hp-row,.bld-card > .repair-active,.bld-card > .repair-box,
+  .bld-card > .build-btn{grid-column:1 / -1}
   .bld-card .btn.sm{min-height:36px;padding:8px 12px;font-size:13px}
 }
 
@@ -521,13 +533,15 @@ body[data-graphics-mode="classic"] #overlay-title{font-family:inherit}
   /* Map-Hint klein und automatisch ausblenden nach Interaktion */
   #map-hint{font-size:10px;padding:3px 6px;left:8px;bottom:8px;
     max-width:calc(100% - 60px);line-height:1.3}
-  /* Overlay-Card geht ueber den ganzen Bildschirm. dvh statt vh, damit
-     bei eingeblendeter Mobile-Browser-Chrome nichts abgeschnitten wird. */
-  .overlay-card{width:100vw;max-height:100vh;max-height:100dvh;
+  /* Die Topbar bleibt sichtbar. Die Karte passt in den verbleibenden
+     Overlay-Bereich, damit ihr Scrollende oberhalb der Browserleiste liegt. */
+  .overlay-card{width:100%;max-height:100%;
     border-radius:0;border-width:0;
     padding-top:env(safe-area-inset-top);
     padding-bottom:env(safe-area-inset-bottom)}
   .overlay{padding:0}
+  #village-overlay .overlay-card{height:100%;width:100%}
+  #village-body{flex:1 1 auto}
   #village-body{padding:10px}
   #battle-body{padding:12px}
   /* Buttons groesser fuer Touch */

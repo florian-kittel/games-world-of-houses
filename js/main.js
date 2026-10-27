@@ -10,11 +10,13 @@
   var lastTime = 0;
   var saveDirty = false;
   var lastSaveAt = 0;
+  var autosaveTimer = null;
   var OFFLINE_CAP_MS = 2 * 60 * 60 * 1000; // max. 2 h Offline-Aufholung
   var FRAME_CAP_MS = 5 * 60 * 1000;        // max. 5 min pro Frame (Tab-Schlaf)
 
   var api = {
-    requestSave: function () { saveDirty = true; }
+    requestSave: function () { saveDirty = true; },
+    startNewWorld: discardGame
   };
 
   var assetsReady = null; // Promise
@@ -34,6 +36,7 @@
   function showStartScreen(savePayload) {
     var overlay = document.getElementById('start-screen');
     var hasSave = savePayload && savePayload.state;
+    var canContinue = hasSave && !savePayload.state.gameOver;
     var diffOptions = Object.keys(C.DIFFICULTY).map(function (k) {
       var d = C.DIFFICULTY[k];
       return '<label class="diff"><input type="radio" name="diff" value="' + k + '"' +
@@ -48,7 +51,7 @@
       'erobere das Land. Eine raue Welt aus Stein, Wald und Eisen.</p>' +
       '<div class="start-graphics">' + WOH.UI.graphicsModeControl('start-graphics-mode') +
         '<small>Classic: Pixelgrafik · Cinematic: realistische Texturen. Jederzeit im Spiel wechselbar.</small></div>' +
-      (hasSave ? '<button class="btn big primary" id="btn-continue">Spiel fortsetzen</button>' +
+      (canContinue ? '<button class="btn big primary" id="btn-continue">Spiel fortsetzen</button>' +
         '<div class="save-info">Gespeichert: ' + new Date(savePayload.savedAt).toLocaleString('de-DE') + '</div>' : '') +
       '<h3>Neues Spiel</h3>' +
       '<div class="diffs">' + diffOptions + '</div>' +
@@ -63,12 +66,14 @@
       WOH.UI.setGraphicsMode(e.target.value);
     };
 
-    if (hasSave) {
+    if (canContinue) {
       document.getElementById('btn-continue').onclick = function () {
         resumeGame(savePayload);
       };
+    }
+    if (hasSave) {
       document.getElementById('btn-delete').onclick = function () {
-        if (confirm('Spielstand wirklich löschen?')) P.clear().then(function () { location.reload(); });
+        if (confirm('Spielstand wirklich löschen?')) discardGame();
       };
     }
     document.getElementById('btn-new').onclick = function () {
@@ -136,11 +141,24 @@
     });
     startAutosave();
     // Vor dem Schließen noch speichern
-    window.addEventListener('beforeunload', function () { P.save(state); });
+    window.addEventListener('beforeunload', saveCurrentGame);
     // Beim Verstecken speichern (mobil/Tabwechsel)
     document.addEventListener('visibilitychange', function () {
-      if (document.hidden) P.save(state);
+      if (document.hidden) saveCurrentGame();
     });
+  }
+
+  function saveCurrentGame() {
+    if (running && state) P.save(state);
+  }
+
+  function discardGame() {
+    // Vor dem Loeschen stoppen: Reload/Tabwechsel duerfen den alten Stand
+    // weder per Lifecycle-Handler noch per Auto-Save erneut speichern.
+    running = false;
+    saveDirty = false;
+    clearInterval(autosaveTimer);
+    return P.clear().then(function () { location.reload(); });
   }
 
   // ---------------------------------------------------------------------
@@ -161,7 +179,7 @@
   // Auto-Save (nicht-blockierend, im Intervall)
   // ---------------------------------------------------------------------
   function startAutosave() {
-    setInterval(function () {
+    autosaveTimer = setInterval(function () {
       if (!running) return;
       var due = Date.now() - lastSaveAt > C.SAVE.intervalMs;
       if (!saveDirty && !due) return;
