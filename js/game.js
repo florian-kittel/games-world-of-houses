@@ -580,10 +580,10 @@
   }
 
   function processBuildQueue(v, dt) {
-    if (!v.buildQueue.length) return;
-    var job = v.buildQueue[0];
-    job.timeLeft -= dt;
-    if (job.timeLeft <= 0) {
+    while (v.buildQueue.length) {
+      var job = v.buildQueue[0];
+      if (job.timeLeft > dt) { job.timeLeft -= dt; break; }
+      dt -= Math.max(0, job.timeLeft);
       v.buildings[job.key] = job.target;
       // Schritt 6.5: Wall/Tower fertiggestellt -> HP auf max der neuen Stufe.
       if (job.key === 'wall')  v.wallHP  = V.wallMaxHP  ? V.wallMaxHP(job.target)  : v.wallHP;
@@ -593,16 +593,18 @@
   }
 
   function processTrainQueue(v, dt) {
-    if (!v.trainingQueue.length) return;
-    var job = v.trainingQueue[0];
-    job.timeLeft -= dt;
-    // Mehrere Einheiten pro Step möglich (bei großem dt)
-    while (job.timeLeft <= 0 && job.remaining > 0) {
-      v.units[job.unit] = (v.units[job.unit] || 0) + 1;
-      job.remaining -= 1;
-      job.timeLeft += job.perTime;
+    while (v.trainingQueue.length) {
+      var job = v.trainingQueue[0];
+      if (job.timeLeft > dt) { job.timeLeft -= dt; break; }
+      dt -= Math.max(0, job.timeLeft);
+      // Restzeit auch ueber Auftragsgrenzen erhalten (schnelle/offline Ticks).
+      var completed = Math.min(job.remaining, 1 + Math.floor(dt / job.perTime));
+      v.units[job.unit] = (v.units[job.unit] || 0) + completed;
+      job.remaining -= completed;
+      dt -= (completed - 1) * job.perTime;
+      if (job.remaining > 0) { job.timeLeft = job.perTime - dt; break; }
+      v.trainingQueue.shift();
     }
-    if (job.remaining <= 0) v.trainingQueue.shift();
   }
 
   function processMovements(state) {

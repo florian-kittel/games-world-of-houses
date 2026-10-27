@@ -11,11 +11,19 @@
   var saveDirty = false;
   var lastSaveAt = 0;
   var autosaveTimer = null;
+  var simulationTimer = 0;
+  var SIMULATION_INTERVAL_MS = 125;
   var OFFLINE_CAP_MS = 2 * 60 * 60 * 1000; // max. 2 h Offline-Aufholung
   var FRAME_CAP_MS = 5 * 60 * 1000;        // max. 5 min pro Frame (Tab-Schlaf)
 
   var api = {
-    requestSave: function () { saveDirty = true; },
+    requestSave: function () { saveDirty = true; WOH.UI.invalidate(); },
+    setSpeed: function (speed) {
+      // Restzeit noch mit der bisherigen Geschwindigkeit abrechnen.
+      flushSimulation();
+      state.speedMultiplier = speed;
+      api.requestSave();
+    },
     startNewWorld: discardGame
   };
 
@@ -135,6 +143,7 @@
     (assetsReady || Promise.resolve()).then(function () {
       WOH.UI.bind(state);
       lastTime = performance.now();
+      simulationTimer = 0;
       lastSaveAt = Date.now();
       running = true;
       requestAnimationFrame(loop);
@@ -149,7 +158,7 @@
   }
 
   function saveCurrentGame() {
-    if (running && state) P.save(state);
+    if (running && state) { flushSimulation(); P.save(state); }
   }
 
   function discardGame() {
@@ -164,14 +173,30 @@
   // ---------------------------------------------------------------------
   // Hauptschleife
   // ---------------------------------------------------------------------
+  function flushSimulation() {
+    if (simulationTimer <= 0 || !state) return;
+    var elapsed = simulationTimer;
+    simulationTimer = 0;
+    G.tick(state, elapsed);
+  }
+
   function loop(now) {
     if (!running) return;
     var dt = now - lastTime;
     lastTime = now;
     if (dt < 0) dt = 0;
     if (dt > FRAME_CAP_MS) dt = FRAME_CAP_MS;
-    G.tick(state, dt);
-    WOH.UI.frame(dt);
+    // Darstellung bleibt fluessig; Wirtschaft/KI/Queues laufen maximal 8x/s.
+    // Ganze verstrichene Zeit verwenden, damit langsame Frames nicht bremsen.
+    var paused = state.gameOver || state.speedMultiplier === 0 ||
+      (state.pauseOnReport && state._reportPaused);
+    if (!paused) {
+      simulationTimer += dt;
+      if (simulationTimer >= SIMULATION_INTERVAL_MS) flushSimulation();
+    }
+    var visualOffset = paused ? 0 : simulationTimer / 1000 * C.TIME_SCALE *
+      (typeof state.speedMultiplier === 'number' ? state.speedMultiplier : 1);
+    WOH.UI.frame(dt, visualOffset);
     requestAnimationFrame(loop);
   }
 

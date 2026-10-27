@@ -38,13 +38,13 @@
     for (var hid in state.ai) {
       var house = state.houses[hid];
       if (!house || house.isPlayer) continue;
-      var villages = G.villagesOfHouse(state, hid);
-      if (!villages.length) continue;
       var brain = state.ai[hid];
       // Initialisierung (alte Saves, vor Migrationsschritt v5)
       if (typeof brain.lastAttackTime !== 'number') brain.lastAttackTime = state.gameTime || 0;
       brain.nextDecisionAt -= dt;
       if (brain.nextDecisionAt <= 0) {
+        var villages = G.villagesOfHouse(state, hid);
+        if (!villages.length) continue;
         var cfg = C.DIFFICULTY[state.difficulty];
         decide(state, hid, villages, cfg);
         brain.nextDecisionAt = cfg.decisionEvery * (0.7 + Math.random() * 0.6);

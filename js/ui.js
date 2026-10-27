@@ -19,6 +19,8 @@
   var activeStructureId = null;   // im Overlay verwaltete eigene Struktur
   var reportOpen = false;
   var panelTimer = 0;
+  var uiDirty = true, lastPanelTime = null, lastHudVillageId = null;
+  var UI_INTERVAL_MS = 125;
   var trainCounts = {};         // gemerkte Ausbildungsmengen je Einheit (überlebt Neuaufbau)
   var sendCounts = {};          // gemerkte Truppenmengen fürs Angriffs-/Unterstützungsformular
   var sendFromId = null;        // gewähltes Quell-Dorf für den Angriff
@@ -71,6 +73,8 @@
       return true;
     }
     var na = newNode.attributes, i;
+    // Nur das aktive Auswahlfeld schuetzen, niemals das ganze Panel.
+    if (oldNode.nodeName === 'SELECT' && oldNode === document.activeElement) return true;
     // Icon-Canvases werden nach dem Rendern bemalt (Groesse, Style, data-*);
     // gleiche Markup-Attribute => Bild behalten, sonst neu einsetzen.
     if (oldNode.nodeName === 'CANVAS') {
@@ -120,6 +124,9 @@
   function paintResIcons(container) {
     if (!container) return;
     Array.prototype.forEach.call(container.querySelectorAll('canvas[data-res]'), function (c) {
+      var key = S.getGraphicsMode() + ':' + c.getAttribute('data-res') + ':' + c.width + ':' + c.height;
+      if (c._paintKey === key) return;
+      c._paintKey = key;
       var ctx = c.getContext('2d'); ctx.imageSmoothingEnabled = false;
       ctx.clearRect(0, 0, c.width, c.height);
       S.drawResourceIcon(ctx, 0, 0, c.width / 16, c.getAttribute('data-res'));
@@ -136,6 +143,10 @@
     Array.prototype.forEach.call(container.querySelectorAll('canvas[data-unit]'), function (c) {
       var width = Number(c.getAttribute('data-logical-width')) || c.width;
       var height = Number(c.getAttribute('data-logical-height')) || c.height;
+      var key = [S.getGraphicsMode(), c.getAttribute('data-unit'), width, height,
+        window.innerWidth <= 600, window.devicePixelRatio || 1, ox, oy, scale].join(':');
+      if (c._paintKey === key) return;
+      c._paintKey = key;
       c.setAttribute('data-logical-width', width); c.setAttribute('data-logical-height', height);
       if (!c.hasAttribute('data-unit-scale')) {
         c.setAttribute('data-unit-ox', ox); c.setAttribute('data-unit-oy', oy); c.setAttribute('data-unit-scale', scale);
@@ -164,6 +175,9 @@
     Array.prototype.forEach.call(container.querySelectorAll('canvas[data-bld]'), function (c) {
       var cinematic = S.getGraphicsMode() === 'cinematic';
       var ratio = cinematic ? Math.min(2, window.devicePixelRatio || 1) : 1;
+      var key = S.getGraphicsMode() + ':' + ratio + ':' + c.getAttribute('data-bld');
+      if (c._paintKey === key) return;
+      c._paintKey = key;
       // Reused panel canvases retain pixels and transforms until resized.
       c.width = c.height = Math.round(40 * ratio);
       var ctx = c.getContext('2d');
@@ -283,6 +297,10 @@
 
   function bind(s) {
     state = s;
+    panelTimer = 0;
+    uiDirty = true;
+    lastPanelTime = null;
+    lastHudVillageId = null;
     terrainCanvas = S.buildTerrainCanvas(state.map, state.structures);
     activeVillageId = state.playerVillageId;
     targetVillageId = null;
@@ -653,16 +671,24 @@
   // ---------------------------------------------------------------------
   // Render (jeder Frame)
   // ---------------------------------------------------------------------
-  function frame(dtMs) {
+  function frame(dtMs, visualOffset) {
     if (!state) return;
-    renderMap();
-    updateHUD();
+    renderMap(state.gameTime + (visualOffset || 0));
     // Anstehende Kampfberichte anzeigen (einer nach dem anderen).
     if (!reportOpen && G.pendingReports && G.pendingReports.length) {
       showBattleReport(G.pendingReports.shift());
     }
     panelTimer += dtMs;
-    if (panelTimer > 400) { panelTimer = 0; refreshDynamic(); }
+    if (uiDirty || panelTimer >= UI_INTERVAL_MS) {
+      panelTimer = 0;
+      if (uiDirty || state.gameTime !== lastPanelTime || activeVillageId !== lastHudVillageId) {
+        uiDirty = false;
+        updateHUD();
+        refreshDynamic();
+        lastPanelTime = state.gameTime;
+        lastHudVillageId = activeVillageId;
+      }
+    }
     // Schritt 8.5: Sieg/Niederlage-Overlay zeigen
     if (state.gameOver && !endScreenShown) showEndScreen();
   }
@@ -708,7 +734,7 @@
     document.getElementById('end-load').onclick = function () { location.reload(); };
   }
 
-  function renderMap() {
+  function renderMap(renderTime) {
     var ctx = dom.ctx, cv = dom.canvas, ts = C.MAP.tileSize;
     ctx.setTransform(dom.pixelRatio, 0, 0, dom.pixelRatio, 0, 0);
     ctx.fillStyle = '#0c1418';
@@ -740,7 +766,7 @@
         to = { x: tv.x, y: tv.y, ownerHouseId: tv.houseId, kind: 'village' };
       }
       if (!from || !to) return;
-      var prog = (state.gameTime - m.startTime) / (m.arriveTime - m.startTime);
+      var prog = (renderTime - m.startTime) / (m.arriveTime - m.startTime);
       prog = Math.max(0, Math.min(1, prog));
       var fx = from.x * ts + ts / 2, fy = from.y * ts + ts / 2;
       var tx = to.x * ts + ts / 2, ty = to.y * ts + ts / 2;
@@ -794,7 +820,7 @@
         ownerHouse);
       // Bedroht: roter, pulsierender Ring (analog Burg-Bedrohung in Sidebar)
       if (threatened[st.id]) {
-        var pulse = 0.5 + 0.5 * Math.sin(state.gameTime * 4);
+        var pulse = 0.5 + 0.5 * Math.sin(renderTime * 4);
         ctx.strokeStyle = 'rgba(210,70,70,' + (0.55 + 0.35 * pulse).toFixed(2) + ')';
         ctx.lineWidth = 2 / cam.zoom;
         ctx.beginPath();
@@ -944,8 +970,7 @@
       btn.addEventListener('click', function () {
         var v = parseInt(btn.getAttribute('data-speed'), 10);
         if (!state || isNaN(v)) return;
-        state.speedMultiplier = v;
-        api.requestSave();
+        api.setSpeed(v);
         refreshSpeedButtons();
       });
     });
@@ -978,8 +1003,9 @@
         var val = v.resources[r];
         cell.classList.toggle('full', val >= cap);
         var valEl = cell.querySelector('.res-val');
-        if (valEl) valEl.innerHTML = fmt(val) + '<small>/' + fmt(cap) + ' · ' +
+        var html = fmt(val) + '<small>/' + fmt(cap) + ' · ' +
           (rate >= 0 ? '+' : '') + rate.toFixed(1) + '/s</small>';
+        if (valEl && valEl.innerHTML !== html) valEl.innerHTML = html;
       });
       // Pop-Anzeige mit Strukturen-Bonus-Aufschluesselung (Schritt 6)
       var pop = V.populationUsed(v, state);
@@ -989,10 +1015,12 @@
       var popEl = resBox.querySelector('.pop-val');
       if (popEl) {
         var detail = bonusFromStructs > 0 ? (' (Burg ' + fmt(capBase) + ' + Strukturen ' + fmt(bonusFromStructs) + ')') : '';
-        popEl.innerHTML = fmt(pop) + '/' + fmt(capTotal) + '<small>' + detail + '</small>';
+        var popHtml = fmt(pop) + '/' + fmt(capTotal) + '<small>' + detail + '</small>';
+        if (popEl.innerHTML !== popHtml) popEl.innerHTML = popHtml;
       }
     }
-    var clk = $('game-clock'); if (clk) clk.textContent = fmtTime(state.gameTime);
+    var clk = $('game-clock'), time = fmtTime(state.gameTime);
+    if (clk && clk.textContent !== time) clk.textContent = time;
     // Schritt 10: Pause-Hinweis an der Uhr, wenn speedMultiplier === 0
     var clkBox = clk && clk.parentElement;
     if (clkBox) clkBox.classList.toggle('paused', state.speedMultiplier === 0);
@@ -1309,26 +1337,30 @@
     renderSidebar();
   }
   // leichtgewichtige Aktualisierung (Queues, Beträge).
-  // Der jeweils fokussierte Bereich wird NICHT neu aufgebaut, sonst würden
-  // Eingabefelder (z. B. Ausbildungsmenge) beim Tippen zurückgesetzt.
+  // patchNode erhaelt aktive Eingaben. Buttons duerfen den Refresh nicht
+  // blockieren: Sie behalten nach einem Klick oft dauerhaft den Fokus.
   function refreshDynamic() {
-    var ae = document.activeElement;
-    var inBody = ae && dom.villageBody && dom.villageBody.contains(ae);
-    var inSide = ae && dom.sideTop && dom.sideTop.contains(ae);
-    if (overlayOpen && !inBody) renderOverlay();
-    if (!inSide) renderSideTop();      // Bewegungen/Ziel laufend aktualisieren
+    updateVillageSelect();
+    if (overlayOpen) renderOverlay();
+    renderSideTop();
     renderSideLog();                   // Chronik nur bei Änderung (kein Flackern)
   }
 
   function updateVillageSelect() {
     var sel = $('vill-select'); if (!sel) return;
     var own = G.villagesOfHouse(state, state.playerHouseId);
-    sel.innerHTML = '';
-    own.forEach(function (v) {
-      var o = el('option', null, v.name + villageTag(v));
-      o.value = v.id; if (v.id === activeVillageId) o.selected = true;
-      sel.appendChild(o);
-    });
+    activeVillage(); // Nach Eroberungen auf eine verbleibende eigene Burg wechseln.
+    var sig = own.map(function (v) { return [v.id, v.name, villageTag(v)]; });
+    var key = JSON.stringify(sig);
+    if (sel._optionsKey !== key && sel !== document.activeElement) {
+      sel.innerHTML = '';
+      sig.forEach(function (entry) {
+        var o = el('option'); o.textContent = entry[1] + entry[2]; o.value = entry[0];
+        sel.appendChild(o);
+      });
+      sel._optionsKey = key;
+    }
+    if (sel !== document.activeElement) sel.value = activeVillageId;
   }
 
   function renderVillageView() {
@@ -2313,6 +2345,7 @@
         updateEta();
       });
     });
+    updateEta(); // Auch nach einem Live-Refresh den berechneten Wert erhalten.
     var fromSel = dom.sidebar.querySelector('.send-from');
     if (fromSel) on(fromSel, 'change', function () {
       sendFromId = fromSel.value;
@@ -2613,6 +2646,7 @@
 
   WOH.UI = {
     init: init, bind: bind, frame: frame,
+    invalidate: function () { uiDirty = true; },
     graphicsModeControl: graphicsModeControl, setGraphicsMode: setGraphicsMode,
     refreshPanels: refreshPanels, setSaveStatus: setSaveStatus, toast: toast
   };

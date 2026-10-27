@@ -5,7 +5,7 @@
  */
 'use strict';
 
-var CACHE_VERSION = 'woh-cinematic-2026102709';
+var CACHE_VERSION = 'woh-cinematic-2026102710';
 var ASSETS = [
   './',
   './index.html',

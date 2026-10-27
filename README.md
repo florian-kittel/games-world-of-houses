@@ -41,6 +41,23 @@ Größen und Quellprüfsummen: [`docs/runtime-assets.json`](docs/runtime-assets.
 
 ## Spielprinzip
 
+Die Darstellung folgt der Bildrate des Browsers. Wirtschaft, KI und Warteschlangen
+werden unabhängig davon alle 125 ms aktualisiert (höchstens achtmal pro Sekunde).
+Verstrichene Zeit bleibt erhalten; bei 8× entspricht ein Intervall etwa einer
+Spielsekunde. Marschpositionen werden zwischen den Simulationstakten für die
+Darstellung interpoliert. Geschwindigkeitswechsel rechnen zunächst die Restzeit
+mit dem bisherigen Tempo ab.
+
+HUD und offene Menüs aktualisieren sich bei fortschreitender Spielzeit ebenfalls
+höchstens alle 125 ms; Spieleraktionen lösen eine gezielte Aktualisierung aus.
+Bei Pause entfallen regelmäßige Neuberechnungen der Anzeigen. Aktive Eingaben
+bleiben erhalten, während Counter und Verfügbarkeiten weiter aktualisiert werden.
+Unveränderte Menü-Icons werden nicht erneut gezeichnet.
+
+Regressionstest: `node tools/test-game-loop.cjs <bundled node_modules>` prüft
+Simulationsfrequenz, Counter bei fokussierten Controls, Eingabeerhalt, Icon-Cache,
+8×/Pause/Fortsetzen und Restzeit über Warteschlangenaufträge hinweg.
+
 Eine prozedural erzeugte Karte (Value-Noise) mit zufällig platzierten Dörfern. Jedes
 Dorf gehört zu genau einem Haus mit eigenständigem Namen, Wappen und Motto. Der Spieler
 übernimmt ein Haus; alle übrigen werden von einer regelbasierten KI in drei Stufen
