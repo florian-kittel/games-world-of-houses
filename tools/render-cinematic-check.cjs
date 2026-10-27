@@ -17,7 +17,7 @@ const renderer = sandbox.window.WOH.Cinematic;
   for (const [key, file] of Object.entries(renderer.assets)) {
     assert.ok(fs.existsSync(path.join(root, file)), 'Missing active asset: ' + file);
     images[key] = await loadImage(path.join(root, file));
-    assert.ok(Math.min(images[key].width, images[key].height) >= 1024, 'High-resolution source: ' + file);
+    assert.equal(images[key].width, /cine_(grass|field|water)-/.test(key) ? 768 : 512, 'Bounded runtime resolution: ' + file);
     assert.ok(sw.ASSETS.includes('./' + file), 'Offline cache includes ' + file);
     if (!/cine_(grass|field|water)-/.test(key))
       assert.equal(fs.readFileSync(path.join(root, file))[25], 6, 'RGBA cutout: ' + file);
@@ -69,7 +69,7 @@ const renderer = sandbox.window.WOH.Cinematic;
   renderer.terrain(map, images).draw(ctx, { x: 0, y: 0, width: 768, height: 576, zoom: 2, pixelRatio: 1 });
   ['castle', 'woodcutter', 'ironmine', 'stonemine', 'farmstead', 'sheepfarm'].forEach((type, i) =>
     renderer.structure(ctx, images, 58 + i * 125, 380, 48, type, 0));
-  const out = path.join(root, 'docs/previews'); fs.mkdirSync(out, { recursive: true });
+  const out = path.resolve(root, process.argv[3] || 'docs/previews'); fs.mkdirSync(out, { recursive: true });
   fs.writeFileSync(path.join(out, 'cinematic-v2-repeat.png'), c.toBuffer('image/png'));
   fs.writeFileSync(path.join(out, 'cinematic-v2-chunk-edges.png'), edgeCanvas.toBuffer('image/png'));
   const stages = createCanvas(1440, 600), stageCtx = stages.getContext('2d');

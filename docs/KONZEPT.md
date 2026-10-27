@@ -40,8 +40,8 @@ kein Server). Speicherung in IndexedDB (Auto-Save, nicht-blockierend).
 ## Grafik / Tile-Atlas
 
 - Quelle: `assets/tileset2.png` (16×16-Raster) u. a.; Manifest in
-  `assets/tiles.json`, Laufzeit in `js/atlas.js`. Beschriftete Referenzbilder
-  in `assets/reference/`.
+  `art-source/tiles.json`, Laufzeit in `js/atlas.js`. Beschriftete Referenzbilder
+  in `art-source/reference/`.
 - **Kacheln werden NIE rotiert.** Das Sheet liefert eigene Stücke für jede
   Kante, Außen- und Innenecke.
 - **Wasser/Küste** (Wasser-Blob in Gras), nach Land-Nachbarn:

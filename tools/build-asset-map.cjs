@@ -7,7 +7,7 @@ const root = path.resolve(__dirname, '..');
 const context = { window: {} };
 vm.runInNewContext(fs.readFileSync(path.join(root, 'js/atlas.js'), 'utf8'), context);
 const atlas = context.window.WOH.Atlas;
-const source = JSON.parse(fs.readFileSync(path.join(root, 'assets/tiles.json'), 'utf8'));
+const source = JSON.parse(fs.readFileSync(path.join(root, 'art-source/tiles.json'), 'utf8'));
 const entries = [];
 const names = { grass: 'Wiese', forest: 'Wald', mountain: 'Gebirge', water: 'Wasser', field: 'Acker', woodcutter: 'Holzfäller',
   ironmine: 'Eisenmine', stonemine: 'Steinbruch', farmstead: 'Hof', sheepfarm: 'Schaffarm',
@@ -52,15 +52,15 @@ for (const [id, col] of Object.entries(source.catalog.structures_with_bg)) {
     'Bauten mit Hintergrund', [col, 5 + tier], 'Vorhanden, bewusst nicht auf der Karte verwendet', names[id] + ' mit festem Boden; keine neue Generierung nötig');
 }
 const imagePaths = ['assets/tileset2.png', 'assets/tileset.png', 'assets/mountains.png', 'assets/water.png',
-  'assets/cinematic/terrain.png', 'assets/cinematic/structures.png'];
+  'art-source/cinematic/terrain.png', 'art-source/cinematic/structures.png'];
 const images = imagePaths.map(file => {
   const bytes = fs.readFileSync(path.join(root, file));
   return { file, width: bytes.readUInt32BE(16), height: bytes.readUInt32BE(20) };
 });
 const data = { schemaVersion: 1, purpose: 'Analyse und Generierungsplanung; kein Laufzeitmanifest',
   coordinateConvention: 'Nullbasiert [Spalte, Zeile], Originalzelle 16 × 16 px',
-  sources: ['js/atlas.js', 'assets/tiles.json', 'assets/reference/tileset2_labeled.png', 'js/sprites.js', 'js/ui.js', 'js/cinematic.js'],
-  knownManifestDrift: ['structures.stonemine existiert in js/atlas.js, fehlt aber in assets/tiles.json'],
+  sources: ['js/atlas.js', 'art-source/tiles.json', 'art-source/reference/tileset2_labeled.png', 'js/sprites.js', 'js/ui.js', 'js/cinematic.js'],
+  knownManifestDrift: ['structures.stonemine existiert in js/atlas.js, fehlt aber in art-source/tiles.json'],
   images, entries,
   procedural: { terrain: ['field', 'grass decorations'],
     buildingIcons: ['townhall', 'woodcutter', 'quarry', 'mine', 'farm', 'warehouse', 'barracks', 'range', 'wall', 'tower'],
@@ -91,9 +91,9 @@ data.cinematicV2 = Object.entries(cinematicContext.window.WOH.Cinematic.assets).
     level: /^(castle|woodcutter|ironmine|stonemine|farmstead|sheepfarm)-/.test(id) ? Number(id.slice(-2)) : null,
     transforms: { rotate: false, mirrorX: false, mirrorY: false } };
 });
-data.cinematicUI = JSON.parse(fs.readFileSync(path.join(root, 'assets/cinematic/ui/construction-review.json'), 'utf8'));
-data.cinematicResources = JSON.parse(fs.readFileSync(path.join(root, 'assets/cinematic/ui/resource-icons.json'), 'utf8'));
-data.cinematicUnits = JSON.parse(fs.readFileSync(path.join(root, 'assets/cinematic/ui/unit-icons.json'), 'utf8'));
+data.cinematicUI = JSON.parse(fs.readFileSync(path.join(root, 'art-source/cinematic/ui/construction-review.json'), 'utf8'));
+data.cinematicResources = JSON.parse(fs.readFileSync(path.join(root, 'art-source/cinematic/ui/resource-icons.json'), 'utf8'));
+data.cinematicUnits = JSON.parse(fs.readFileSync(path.join(root, 'art-source/cinematic/ui/unit-icons.json'), 'utf8'));
 fs.writeFileSync(jsonPath, JSON.stringify(data, null, 2) + '\n');
 const esc = s => String(s).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
 const groups = [...new Set(entries.map(e => e.group))];
@@ -107,10 +107,10 @@ function cinematicCards(items) {
 }
 const cinematicSection = '<section id="cinematic-v2"><h2>Cinematic v2 · neue Assets</h2>' +
   '<p>Einzelbilder mit fester Blick- und Lichtrichtung. Je drei Wald- und Felsvarianten, zwei Wiesenböden und je drei echte Bauzustände für Burg und fünf Produktionsarten. Die Landschaft wird ohne Drehen oder Spiegeln zusammengesetzt.</p>' +
-  '<p><a href="../assets/cinematic/v2/README.md">Darstellung und Auflösung</a> · <a href="../assets/cinematic/v2/topdown/prompts.json">Top-down-Prompts</a> · <a href="../assets/cinematic/v2/topdown/castle-roof-prompts.json">Burgprompts</a> · <a href="../assets/cinematic/v2/prompts.json">Erste Studien</a></p>' +
+  '<p><a href="../art-source/cinematic/v2/README.md">Darstellung und Auflösung</a> · <a href="../art-source/cinematic/v2/topdown/prompts.json">Top-down-Prompts</a> · <a href="../art-source/cinematic/v2/topdown/castle-roof-prompts.json">Burgprompts</a> · <a href="../art-source/cinematic/v2/prompts.json">Erste Studien</a></p>' +
   '<h3 id="cinematic-castles">Burgen · drei Ausbaustufen in Draufsicht</h3>' + cinematicCards(data.cinematicV2.filter(e => e.classicType === 'castle')) +
   '<h3 id="cinematic-shores">Wasser und natürliche Ufer</h3><p>Durchgehende, geglättete Küstenkonturen mit unregelmäßigem Erd-/Kiessaum und flachem Uferwasser. Inseln, Buchten und kleine Teiche bleiben erhalten. Die Darstellung verwendet vorhandene Wasser- und Bodenmaterialien; die Spielfelder bleiben unverändert.</p><a href="previews/cinematic-shorelines.png"><img loading="lazy" style="max-width:960px;width:100%" src="previews/cinematic-shorelines.png" alt="Cinematic-Ufer mit Bucht, Insel und kleinem Teich"></a>' +
-  '<h3 id="cinematic-mineral-rocks">Felsen rund um Minen</h3><p>Je zwei zusätzliche Varianten: dunkle, schroffe Erzfelsen und heller, kantiger Kalkstein. Alle acht angrenzenden Bergfelder erhalten den passenden Typ. Bei gemeinsamer Nachbarschaft werden beide Materialien ortsfest gemischt; sonstige Bergfelder behalten ihre bisherigen Varianten.</p><p><a href="../assets/cinematic/v2/topdown/mineral-rock-prompts.json">Generierungsprompts</a> · <a href="previews/cinematic-mineral-rocks.png">Vergleich im Gelände</a></p>' + cinematicCards(data.cinematicV2.filter(e => /^rock-(ore|quarry)-/.test(e.id))) +
+  '<h3 id="cinematic-mineral-rocks">Felsen rund um Minen</h3><p>Je zwei zusätzliche Varianten: dunkle, schroffe Erzfelsen und heller, kantiger Kalkstein. Alle acht angrenzenden Bergfelder erhalten den passenden Typ. Bei gemeinsamer Nachbarschaft werden beide Materialien ortsfest gemischt; sonstige Bergfelder behalten ihre bisherigen Varianten.</p><p><a href="../art-source/cinematic/v2/topdown/mineral-rock-prompts.json">Generierungsprompts</a> · <a href="previews/cinematic-mineral-rocks.png">Vergleich im Gelände</a></p>' + cinematicCards(data.cinematicV2.filter(e => /^rock-(ore|quarry)-/.test(e.id))) +
   '<h3>Gelände und Varianten</h3>' + cinematicCards(data.cinematicV2.filter(e => !e.level && !/^rock-(ore|quarry)-/.test(e.id))) +
   '<h3>Produktionsgebäude und Ausbaustufen</h3>' + cinematicCards(data.cinematicV2.filter(e => e.level && e.classicType !== 'castle')) + '</section>';
 const sections = groups.map(group => `<section><h2>${esc(group)}</h2><div class="cards">` + entries.filter(e => e.group === group).map(e =>
@@ -120,9 +120,9 @@ fs.writeFileSync(path.join(root, 'docs/asset-map.html'), `<!doctype html>
 <title>World of Houses – Asset-Map</title><style>
 :root{color-scheme:dark}body{margin:0;background:#12191d;color:#dddcd2;font:15px/1.55 system-ui,sans-serif}main{max-width:1400px;margin:auto;padding:32px}h1,h2{font-family:Georgia,serif;color:#dec995}h1{font-size:34px}h2{margin-top:40px}a{color:#b8d8e8}.intro{max-width:900px}nav{display:flex;gap:20px;flex-wrap:wrap}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:12px}article{padding:14px;display:flex;gap:16px;background:#1c262b;border:1px solid #354247;border-radius:8px}code{overflow-wrap:anywhere;color:#f1dca6}p{margin:5px 0}small{color:#aab9bc}.sprite{width:64px;height:64px;flex:none;background-image:url('../assets/tileset2.png');background-size:896px 640px;image-rendering:pixelated;background-color:#101315}img{max-width:100%;height:auto;border:1px solid #354247}summary{cursor:pointer;color:#dec995}details{margin:20px 0}.note{padding:16px;border-left:3px solid #b79c64;background:#1c262b}
 </style><main><h1>World of Houses · Asset-Map</h1><div class="intro"><p>Bestandsaufnahme der ursprünglichen Grafik und Grundlage für neue Assets. Die Spielgrafik wird durch diese Referenzseite nicht verändert.</p><p>${entries.length} semantische Zuordnungen, ${new Set(entries.map(e => e.cell.join(','))).size} verschiedene Originalzellen. Geteilte Bilder und ungenutzte Reserven sind absichtlich sichtbar.</p><nav><a href="ASSET-MAP.md">Analyse und Generierungsplan</a><a href="asset-map.json">Maschinenlesbarer Katalog</a><a href="../index.html">Zum Spiel</a></nav><p class="note">Koordinaten: [Spalte, Zeile], ab 0; jede Originalzelle 16 × 16 px. Alle Vorschauen behalten ihre originale Orientierung. Drei Burgbilder entsprechen Halle 1–2 / 3–4 / 5–6. Steinbruch und Eisenmine teilen ursprünglich dieselben Bilder.</p></div>
-<details><summary>Beschriftetes Originalsheet: tileset2</summary><img src="../assets/reference/tileset2_labeled.png" alt="Vollständiges beschriftetes Originalsheet mit Koordinaten"></details>
+<details><summary>Beschriftetes Originalsheet: tileset2</summary><img src="../art-source/reference/tileset2_labeled.png" alt="Vollständiges beschriftetes Originalsheet mit Koordinaten"></details>
 ${cinematicSection}
 ${sections}
-<section><h2>Weitere vorhandene Sheets</h2><p>Diese Bilder sind im Projekt vorhanden, werden aber vom Kartenrenderer nicht als Bildquelle verwendet. Sie zeigen teilweise zusammenhängende Motive über mehrere Zellen; nicht pauschal als einzelne 16-Pixel-Sprites behandeln.</p><details><summary>Große Berge und Schneeberge · mountains.png</summary><img src="../assets/reference/mountains_labeled.png" alt="Beschriftete große Gebirgsmotive"></details><details><summary>Gelände, Straßen, Mauern, Burgen und Dekoration · tileset.png</summary><img src="../assets/reference/tileset_labeled.png" alt="Beschriftetes zusätzliches Terrain- und Architektursheet"></details><details><summary>water.png · vorhanden, kein Lade- oder Animationspfad im aktuellen Renderer</summary><img src="../assets/water.png" alt="Vorhandenes Wassersheet"></details></section>
+<section><h2>Weitere vorhandene Sheets</h2><p>Diese Bilder sind im Projekt vorhanden, werden aber vom Kartenrenderer nicht als Bildquelle verwendet. Sie zeigen teilweise zusammenhängende Motive über mehrere Zellen; nicht pauschal als einzelne 16-Pixel-Sprites behandeln.</p><details><summary>Große Berge und Schneeberge · mountains.png</summary><img src="../art-source/reference/mountains_labeled.png" alt="Beschriftete große Gebirgsmotive"></details><details><summary>Gelände, Straßen, Mauern, Burgen und Dekoration · tileset.png</summary><img src="../art-source/reference/tileset_labeled.png" alt="Beschriftetes zusätzliches Terrain- und Architektursheet"></details><details><summary>water.png · vorhanden, kein Lade- oder Animationspfad im aktuellen Renderer</summary><img src="../assets/water.png" alt="Vorhandenes Wassersheet"></details></section>
 <section><h2>Menüsymbole und prozedurale Grafiken</h2><p>Cinematic nutzt zehn <a href="construction-icon-pilot.html">Gebäude-Nahansichten</a>, fünf <a href="resource-icon-preview.html">Ressourcen-/Bevölkerungssymbole</a> und fünf <a href="unit-icon-preview.html">Einheitenporträts mit Waffen</a>. Classic verwendet weiterhin seine ursprünglichen Atlas- und prozeduralen Symbole. Hauswappen mit sechs Mustern sowie Garnisons-, Auswahl-, Bedrohungs- und Marschmarkierungen entstehen im Code. Details und Abgrenzung stehen in der Analyse.</p></section></main></html>\n`);
 console.log(JSON.stringify({ entries: entries.length, uniqueCells: new Set(entries.map(e => e.cell.join(','))).size, images, outputs: ['docs/asset-map.json', 'docs/asset-map.html'] }, null, 2));

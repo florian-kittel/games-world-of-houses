@@ -8,7 +8,7 @@ function setup(saved, blocked, missingCinematic) {
   const draws = [], calls = [], stored = new Map();
   if (saved !== undefined) stored.set('woh.graphicsMode', saved);
   const woh = { Config: { MAP: { tileSize: 32 } }, Cinematic: {
-    assets: { 'cine_grass-01': 'assets/cinematic/v2/grass-01.png' },
+    assets: { 'cine_grass-01': 'assets/cinematic/map/grass-01.png' },
     isReady(images) { return !!images['cine_grass-01']; },
     terrain(map) { calls.push(['terrain', map]); return 'cinematic-terrain'; },
     structure(ctx, atlas, x, y, size, type, tier) {

@@ -4,15 +4,15 @@
   "coordinateConvention": "Nullbasiert [Spalte, Zeile], Originalzelle 16 × 16 px",
   "sources": [
     "js/atlas.js",
-    "assets/tiles.json",
-    "assets/reference/tileset2_labeled.png",
+    "art-source/tiles.json",
+    "art-source/reference/tileset2_labeled.png",
     "js/sprites.js",
     "js/ui.js",
     "js/cinematic.js",
     "js/cinematic-v2.js"
   ],
   "knownManifestDrift": [
-    "structures.stonemine existiert in js/atlas.js, fehlt aber in assets/tiles.json"
+    "structures.stonemine existiert in js/atlas.js, fehlt aber in art-source/tiles.json"
   ],
   "images": [
     {
@@ -36,12 +36,12 @@
       "height": 48
     },
     {
-      "file": "assets/cinematic/terrain.png",
+      "file": "art-source/cinematic/terrain.png",
       "width": 1254,
       "height": 1254
     },
     {
-      "file": "assets/cinematic/structures.png",
+      "file": "art-source/cinematic/structures.png",
       "width": 1254,
       "height": 1254
     }
@@ -2304,9 +2304,9 @@
   "cinematicV2": [
     {
       "id": "grass-01",
-      "file": "assets/cinematic/v2/grass-01.png",
-      "width": 1254,
-      "height": 1254,
+      "file": "assets/cinematic/map/grass-01.png",
+      "width": 768,
+      "height": 768,
       "classicType": "grass",
       "level": null,
       "transforms": {
@@ -2317,9 +2317,9 @@
     },
     {
       "id": "grass-02",
-      "file": "assets/cinematic/v2/grass-02.png",
-      "width": 1254,
-      "height": 1254,
+      "file": "assets/cinematic/map/grass-02.png",
+      "width": 768,
+      "height": 768,
       "classicType": "grass",
       "level": null,
       "transforms": {
@@ -2330,9 +2330,9 @@
     },
     {
       "id": "field-01",
-      "file": "assets/cinematic/v2/field-01.png",
-      "width": 1254,
-      "height": 1254,
+      "file": "assets/cinematic/map/field-01.png",
+      "width": 768,
+      "height": 768,
       "classicType": "field",
       "level": null,
       "transforms": {
@@ -2343,9 +2343,9 @@
     },
     {
       "id": "water-01",
-      "file": "assets/cinematic/v2/water-01.png",
-      "width": 1254,
-      "height": 1254,
+      "file": "assets/cinematic/map/water-01.png",
+      "width": 768,
+      "height": 768,
       "classicType": "water",
       "level": null,
       "transforms": {
@@ -2356,9 +2356,9 @@
     },
     {
       "id": "forest-01",
-      "file": "assets/cinematic/v2/topdown/forest-01.png",
-      "width": 1283,
-      "height": 1226,
+      "file": "assets/cinematic/map/forest-01.png",
+      "width": 512,
+      "height": 489,
       "classicType": "forest",
       "level": null,
       "transforms": {
@@ -2369,9 +2369,9 @@
     },
     {
       "id": "forest-02",
-      "file": "assets/cinematic/v2/topdown/forest-02.png",
-      "width": 1536,
-      "height": 1024,
+      "file": "assets/cinematic/map/forest-02.png",
+      "width": 512,
+      "height": 341,
       "classicType": "forest",
       "level": null,
       "transforms": {
@@ -2382,9 +2382,9 @@
     },
     {
       "id": "forest-03",
-      "file": "assets/cinematic/v2/topdown/forest-03.png",
-      "width": 1278,
-      "height": 1230,
+      "file": "assets/cinematic/map/forest-03.png",
+      "width": 512,
+      "height": 493,
       "classicType": "forest",
       "level": null,
       "transforms": {
@@ -2395,9 +2395,9 @@
     },
     {
       "id": "rock-01",
-      "file": "assets/cinematic/v2/topdown/rock-01.png",
-      "width": 1312,
-      "height": 1199,
+      "file": "assets/cinematic/map/rock-01.png",
+      "width": 512,
+      "height": 468,
       "classicType": "mountain",
       "level": null,
       "transforms": {
@@ -2408,9 +2408,9 @@
     },
     {
       "id": "rock-02",
-      "file": "assets/cinematic/v2/topdown/rock-02.png",
-      "width": 1536,
-      "height": 1024,
+      "file": "assets/cinematic/map/rock-02.png",
+      "width": 512,
+      "height": 341,
       "classicType": "mountain",
       "level": null,
       "transforms": {
@@ -2421,9 +2421,9 @@
     },
     {
       "id": "rock-03",
-      "file": "assets/cinematic/v2/topdown/rock-03.png",
-      "width": 1312,
-      "height": 1199,
+      "file": "assets/cinematic/map/rock-03.png",
+      "width": 512,
+      "height": 468,
       "classicType": "mountain",
       "level": null,
       "transforms": {
@@ -2434,9 +2434,9 @@
     },
     {
       "id": "castle-01",
-      "file": "assets/cinematic/v2/topdown/castle-01.png",
-      "width": 1312,
-      "height": 1199,
+      "file": "assets/cinematic/map/castle-01.png",
+      "width": 512,
+      "height": 468,
       "classicType": "castle",
       "level": 1,
       "transforms": {
@@ -2447,9 +2447,9 @@
     },
     {
       "id": "castle-02",
-      "file": "assets/cinematic/v2/topdown/castle-02.png",
-      "width": 1312,
-      "height": 1199,
+      "file": "assets/cinematic/map/castle-02.png",
+      "width": 512,
+      "height": 468,
       "classicType": "castle",
       "level": 2,
       "transforms": {
@@ -2460,9 +2460,9 @@
     },
     {
       "id": "castle-03",
-      "file": "assets/cinematic/v2/topdown/castle-03.png",
-      "width": 1312,
-      "height": 1199,
+      "file": "assets/cinematic/map/castle-03.png",
+      "width": 512,
+      "height": 468,
       "classicType": "castle",
       "level": 3,
       "transforms": {
@@ -2473,9 +2473,9 @@
     },
     {
       "id": "woodcutter-01",
-      "file": "assets/cinematic/v2/topdown/woodcutter-01.png",
-      "width": 1312,
-      "height": 1199,
+      "file": "assets/cinematic/map/woodcutter-01.png",
+      "width": 512,
+      "height": 468,
       "classicType": "woodcutter",
       "level": 1,
       "transforms": {
@@ -2486,9 +2486,9 @@
     },
     {
       "id": "woodcutter-02",
-      "file": "assets/cinematic/v2/topdown/woodcutter-02.png",
-      "width": 1536,
-      "height": 1024,
+      "file": "assets/cinematic/map/woodcutter-02.png",
+      "width": 512,
+      "height": 341,
       "classicType": "woodcutter",
       "level": 2,
       "transforms": {
@@ -2499,9 +2499,9 @@
     },
     {
       "id": "woodcutter-03",
-      "file": "assets/cinematic/v2/topdown/woodcutter-03.png",
-      "width": 1536,
-      "height": 1024,
+      "file": "assets/cinematic/map/woodcutter-03.png",
+      "width": 512,
+      "height": 341,
       "classicType": "woodcutter",
       "level": 3,
       "transforms": {
@@ -2512,9 +2512,9 @@
     },
     {
       "id": "ironmine-01",
-      "file": "assets/cinematic/v2/topdown/ironmine-01.png",
-      "width": 1536,
-      "height": 1024,
+      "file": "assets/cinematic/map/ironmine-01.png",
+      "width": 512,
+      "height": 341,
       "classicType": "ironmine",
       "level": 1,
       "transforms": {
@@ -2525,9 +2525,9 @@
     },
     {
       "id": "ironmine-02",
-      "file": "assets/cinematic/v2/topdown/ironmine-02.png",
-      "width": 1536,
-      "height": 1024,
+      "file": "assets/cinematic/map/ironmine-02.png",
+      "width": 512,
+      "height": 341,
       "classicType": "ironmine",
       "level": 2,
       "transforms": {
@@ -2538,9 +2538,9 @@
     },
     {
       "id": "ironmine-03",
-      "file": "assets/cinematic/v2/topdown/ironmine-03.png",
-      "width": 1312,
-      "height": 1199,
+      "file": "assets/cinematic/map/ironmine-03.png",
+      "width": 512,
+      "height": 468,
       "classicType": "ironmine",
       "level": 3,
       "transforms": {
@@ -2551,9 +2551,9 @@
     },
     {
       "id": "stonemine-01",
-      "file": "assets/cinematic/v2/topdown/stonemine-01.png",
-      "width": 1312,
-      "height": 1199,
+      "file": "assets/cinematic/map/stonemine-01.png",
+      "width": 512,
+      "height": 468,
       "classicType": "stonemine",
       "level": 1,
       "transforms": {
@@ -2564,9 +2564,9 @@
     },
     {
       "id": "stonemine-02",
-      "file": "assets/cinematic/v2/topdown/stonemine-02.png",
-      "width": 1312,
-      "height": 1199,
+      "file": "assets/cinematic/map/stonemine-02.png",
+      "width": 512,
+      "height": 468,
       "classicType": "stonemine",
       "level": 2,
       "transforms": {
@@ -2577,9 +2577,9 @@
     },
     {
       "id": "stonemine-03",
-      "file": "assets/cinematic/v2/topdown/stonemine-03.png",
-      "width": 1312,
-      "height": 1199,
+      "file": "assets/cinematic/map/stonemine-03.png",
+      "width": 512,
+      "height": 468,
       "classicType": "stonemine",
       "level": 3,
       "transforms": {
@@ -2590,9 +2590,9 @@
     },
     {
       "id": "farmstead-01",
-      "file": "assets/cinematic/v2/topdown/farmstead-01.png",
-      "width": 1312,
-      "height": 1199,
+      "file": "assets/cinematic/map/farmstead-01.png",
+      "width": 512,
+      "height": 468,
       "classicType": "farmstead",
       "level": 1,
       "transforms": {
@@ -2603,9 +2603,9 @@
     },
     {
       "id": "farmstead-02",
-      "file": "assets/cinematic/v2/topdown/farmstead-02.png",
-      "width": 1536,
-      "height": 1024,
+      "file": "assets/cinematic/map/farmstead-02.png",
+      "width": 512,
+      "height": 341,
       "classicType": "farmstead",
       "level": 2,
       "transforms": {
@@ -2616,9 +2616,9 @@
     },
     {
       "id": "farmstead-03",
-      "file": "assets/cinematic/v2/topdown/farmstead-03.png",
-      "width": 1312,
-      "height": 1199,
+      "file": "assets/cinematic/map/farmstead-03.png",
+      "width": 512,
+      "height": 468,
       "classicType": "farmstead",
       "level": 3,
       "transforms": {
@@ -2629,9 +2629,9 @@
     },
     {
       "id": "sheepfarm-01",
-      "file": "assets/cinematic/v2/topdown/sheepfarm-01.png",
-      "width": 1536,
-      "height": 1024,
+      "file": "assets/cinematic/map/sheepfarm-01.png",
+      "width": 512,
+      "height": 341,
       "classicType": "sheepfarm",
       "level": 1,
       "transforms": {
@@ -2642,9 +2642,9 @@
     },
     {
       "id": "sheepfarm-02",
-      "file": "assets/cinematic/v2/topdown/sheepfarm-02.png",
-      "width": 1536,
-      "height": 1024,
+      "file": "assets/cinematic/map/sheepfarm-02.png",
+      "width": 512,
+      "height": 341,
       "classicType": "sheepfarm",
       "level": 2,
       "transforms": {
@@ -2655,9 +2655,9 @@
     },
     {
       "id": "sheepfarm-03",
-      "file": "assets/cinematic/v2/topdown/sheepfarm-03.png",
-      "width": 1374,
-      "height": 1145,
+      "file": "assets/cinematic/map/sheepfarm-03.png",
+      "width": 512,
+      "height": 427,
       "classicType": "sheepfarm",
       "level": 3,
       "transforms": {
@@ -2668,9 +2668,9 @@
     },
     {
       "id": "rock-ore-01",
-      "file": "assets/cinematic/v2/topdown/rock-ore-01.png",
-      "width": 1312,
-      "height": 1199,
+      "file": "assets/cinematic/map/rock-ore-01.png",
+      "width": 512,
+      "height": 468,
       "classicType": "mountain",
       "level": null,
       "transforms": {
@@ -2681,9 +2681,9 @@
     },
     {
       "id": "rock-ore-02",
-      "file": "assets/cinematic/v2/topdown/rock-ore-02.png",
-      "width": 1312,
-      "height": 1199,
+      "file": "assets/cinematic/map/rock-ore-02.png",
+      "width": 512,
+      "height": 468,
       "classicType": "mountain",
       "level": null,
       "transforms": {
@@ -2694,9 +2694,9 @@
     },
     {
       "id": "rock-quarry-01",
-      "file": "assets/cinematic/v2/topdown/rock-quarry-01.png",
-      "width": 1312,
-      "height": 1199,
+      "file": "assets/cinematic/map/rock-quarry-01.png",
+      "width": 512,
+      "height": 468,
       "classicType": "mountain",
       "level": null,
       "transforms": {
@@ -2707,9 +2707,9 @@
     },
     {
       "id": "rock-quarry-02",
-      "file": "assets/cinematic/v2/topdown/rock-quarry-02.png",
-      "width": 1312,
-      "height": 1199,
+      "file": "assets/cinematic/map/rock-quarry-02.png",
+      "width": 512,
+      "height": 468,
       "classicType": "mountain",
       "level": null,
       "transforms": {

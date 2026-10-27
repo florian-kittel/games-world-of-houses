@@ -5,13 +5,13 @@ const {createCanvas,loadImage}=require(require.resolve('@napi-rs/canvas',{paths:
 const units=[['spear','Speerträger'],['sword','Schwertkämpfer'],['axe','Axtkämpfer'],['archer','Bogenschütze'],['hero','Held']];
 (async function(){
   for(const [key] of units){
-    const img=await loadImage(path.join(root,'assets/cinematic/ui/unit-'+key+'-source.png'));
+    const img=await loadImage(path.join(root,'art-source/cinematic/ui/unit-'+key+'-source.png'));
     const c=createCanvas(256,308),g=c.getContext('2d'),scale=Math.min(256/img.width,308/img.height);
     g.imageSmoothingEnabled=true;g.imageSmoothingQuality='high';
     g.drawImage(img,(256-img.width*scale)/2,(308-img.height*scale)/2,img.width*scale,img.height*scale);
-    fs.writeFileSync(path.join(root,'assets/cinematic/ui/unit-'+key+'.png'),c.toBuffer('image/png'));
+    fs.writeFileSync(path.join(root,'art-source/cinematic/ui/unit-'+key+'.png'),c.toBuffer('image/png'));
   }
-  fs.writeFileSync(path.join(root,'assets/cinematic/ui/unit-icons.json'),JSON.stringify({tool:'built-in imagegen',
+  fs.writeFileSync(path.join(root,'art-source/cinematic/ui/unit-icons.json'),JSON.stringify({tool:'built-in imagegen',
     status:'Integrated in Cinematic unit canvases',prompt:'unit-prompts.json',displaySizes:[[48,58],[36,45],[33,42]],
     icons:units.map(([key,label])=>({key,label,file:'unit-'+key+'.png',source:'unit-'+key+'-source.png',width:256,height:308}))},null,2)+'\n');
   const img=(key,w,h)=>'<img width="'+w+'" height="'+h+'" src="../assets/cinematic/ui/unit-'+key+'.png" alt="'+units.find(u=>u[0]===key)[1]+'">';
@@ -20,6 +20,6 @@ const units=[['spear','Speerträger'],['sword','Schwertkämpfer'],['axe','Axtkä
 <main><h1>Cinematic · Einheitenbilder</h1><p>Kopf und Waffe im engen Ausschnitt. Einheitliche Blickrichtung und gedeckte Materialien, mit unterschiedlichen Helmen, Kleidung und Waffensilhouetten.</p>
 <h2>Ausbildung · 48 × 58 px</h2><div class="soldiers">${units.map(([key,label])=>'<div class="row">'+img(key,48,58)+'<div><b>'+label+'</b><small>'+({spear:'Offener Helm · Speer',sword:'Geschlossener Helm · Schwert',axe:'Unbedeckter Kopf · Axt',archer:'Kapuze · Bogen und Pfeil',hero:'Stirnreif · Plattenrüstung und Schwert'}[key])+'</small></div></div>').join('')}</div>
 <h2>Garnison / Ausbildung / Details</h2><div class="cards">${units.map(([key,label])=>'<article class="card"><b>'+label+'</b><div class="sizes">'+[[33,42],[48,58],[64,77]].map(([w,h])=>'<div>'+img(key,w,h)+'<small>'+w+' × '+h+'</small></div>').join('')+'</div></article>').join('')}</div>
-<p class="note">Im Cinematic-Modus in Ausbildung, Versand, Garnison und Kampfberichten eingebunden.</p><p><a href="../index.html">Zum Spiel</a> · <a href="../assets/cinematic/ui/unit-icons.json">Assets und imagegen-Prompts</a></p></main></html>`);
+<p class="note">Im Cinematic-Modus in Ausbildung, Versand, Garnison und Kampfberichten eingebunden.</p><p><a href="../index.html">Zum Spiel</a> · <a href="../art-source/cinematic/ui/unit-icons.json">Assets und imagegen-Prompts</a></p></main></html>`);
   console.log('Prepared five 256×308 RGBA unit portraits and actual-size reference page.');
 })().catch(error=>{console.error(error);process.exitCode=1;});

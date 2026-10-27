@@ -1,0 +1,477 @@
+{
+  "format": "PNG, lossless encoding after high-quality resizing",
+  "maximumZoom": 3,
+  "maximumPixelRatio": 2,
+  "entries": [
+    {
+      "source": "art-source/cinematic/v2/grass-01.png",
+      "file": "assets/cinematic/map/grass-01.png",
+      "width": 768,
+      "height": 768,
+      "sourceBytes": 4709612,
+      "bytes": 1734307,
+      "sourceSha256": "a59fc18184a067ea3ba89cb35f329376490cb1e28c0315b5b3d4f555e7982b45"
+    },
+    {
+      "source": "art-source/cinematic/v2/grass-02.png",
+      "file": "assets/cinematic/map/grass-02.png",
+      "width": 768,
+      "height": 768,
+      "sourceBytes": 4569005,
+      "bytes": 1679928,
+      "sourceSha256": "9cc0076332497d0607dd331267fb71be9531db5f1891455763aa2eea0214eaf3"
+    },
+    {
+      "source": "art-source/cinematic/v2/field-01.png",
+      "file": "assets/cinematic/map/field-01.png",
+      "width": 768,
+      "height": 768,
+      "sourceBytes": 4281279,
+      "bytes": 1622427,
+      "sourceSha256": "326120864e0de59e113c3251de6c9b506b7a09255176907fbc062fa0a293e03b"
+    },
+    {
+      "source": "art-source/cinematic/v2/water-01.png",
+      "file": "assets/cinematic/map/water-01.png",
+      "width": 768,
+      "height": 768,
+      "sourceBytes": 2898347,
+      "bytes": 1115307,
+      "sourceSha256": "c8d469f6980c7d0a442b2e3e5cd95e4b752ba18b89c792cfbffa8477fc855c5f"
+    },
+    {
+      "source": "art-source/cinematic/v2/topdown/forest-01.png",
+      "file": "assets/cinematic/map/forest-01.png",
+      "width": 512,
+      "height": 489,
+      "sourceBytes": 2567359,
+      "bytes": 414688,
+      "sourceSha256": "27e83cb6dbe2230734252be5d2829edc312f06d7126193d6be26a1cd6e553e30"
+    },
+    {
+      "source": "art-source/cinematic/v2/topdown/forest-02.png",
+      "file": "assets/cinematic/map/forest-02.png",
+      "width": 512,
+      "height": 341,
+      "sourceBytes": 2585259,
+      "bytes": 247067,
+      "sourceSha256": "09ca90a08e968060ce87ab0c34b98e960a5f338c3aee26187d4d1e7bf86c8ef6"
+    },
+    {
+      "source": "art-source/cinematic/v2/topdown/forest-03.png",
+      "file": "assets/cinematic/map/forest-03.png",
+      "width": 512,
+      "height": 493,
+      "sourceBytes": 2974622,
+      "bytes": 489618,
+      "sourceSha256": "3fc182812306d117eeed63ac0ce77806d30b5424575e373f33673cad960481be"
+    },
+    {
+      "source": "art-source/cinematic/v2/topdown/rock-01.png",
+      "file": "assets/cinematic/map/rock-01.png",
+      "width": 512,
+      "height": 468,
+      "sourceBytes": 3093481,
+      "bytes": 482867,
+      "sourceSha256": "12d7e199a7fb918d201268c73bc2ee318437b25c152a5cee8a09963798baea46"
+    },
+    {
+      "source": "art-source/cinematic/v2/topdown/rock-02.png",
+      "file": "assets/cinematic/map/rock-02.png",
+      "width": 512,
+      "height": 341,
+      "sourceBytes": 3032353,
+      "bytes": 305752,
+      "sourceSha256": "3a38dabb48b6d76b996590effde34da692b240507ab6798996b22ed57169661b"
+    },
+    {
+      "source": "art-source/cinematic/v2/topdown/rock-03.png",
+      "file": "assets/cinematic/map/rock-03.png",
+      "width": 512,
+      "height": 468,
+      "sourceBytes": 2920561,
+      "bytes": 440288,
+      "sourceSha256": "af6565da072652ae53347987144959610e57fa96f884a744206d06d45a665d01"
+    },
+    {
+      "source": "art-source/cinematic/v2/topdown/castle-01.png",
+      "file": "assets/cinematic/map/castle-01.png",
+      "width": 512,
+      "height": 468,
+      "sourceBytes": 3386947,
+      "bytes": 511494,
+      "sourceSha256": "bb47f39d650409fcd8512d7fe4f4744ed14377f182294b3dd16ee1d87e9e997c"
+    },
+    {
+      "source": "art-source/cinematic/v2/topdown/castle-02.png",
+      "file": "assets/cinematic/map/castle-02.png",
+      "width": 512,
+      "height": 468,
+      "sourceBytes": 3305476,
+      "bytes": 507919,
+      "sourceSha256": "300ba295a7fca3b9e08489f2e9ed1cf643cb9daaa78f58cddc213c73424042b3"
+    },
+    {
+      "source": "art-source/cinematic/v2/topdown/castle-03.png",
+      "file": "assets/cinematic/map/castle-03.png",
+      "width": 512,
+      "height": 468,
+      "sourceBytes": 3190553,
+      "bytes": 500795,
+      "sourceSha256": "3e29bd2184f74a9cdec85d022929a7876ac73ac6529658b557c065378547f9aa"
+    },
+    {
+      "source": "art-source/cinematic/v2/topdown/woodcutter-01.png",
+      "file": "assets/cinematic/map/woodcutter-01.png",
+      "width": 512,
+      "height": 468,
+      "sourceBytes": 3070745,
+      "bytes": 496003,
+      "sourceSha256": "355ff1b326d85f704d6fb7b6d83890dfecfd674868293249661e986f15ead3c1"
+    },
+    {
+      "source": "art-source/cinematic/v2/topdown/woodcutter-02.png",
+      "file": "assets/cinematic/map/woodcutter-02.png",
+      "width": 512,
+      "height": 341,
+      "sourceBytes": 2602645,
+      "bytes": 263310,
+      "sourceSha256": "96f889229eb412d130bbc6e9b1a4109354cc7cdd9ec198acab34c21beeb6c094"
+    },
+    {
+      "source": "art-source/cinematic/v2/topdown/woodcutter-03.png",
+      "file": "assets/cinematic/map/woodcutter-03.png",
+      "width": 512,
+      "height": 341,
+      "sourceBytes": 3145223,
+      "bytes": 348706,
+      "sourceSha256": "c0a53185066d47244924e4d155b18527a3fb68d09fa9b0de77e0119366a397ca"
+    },
+    {
+      "source": "art-source/cinematic/v2/topdown/ironmine-01.png",
+      "file": "assets/cinematic/map/ironmine-01.png",
+      "width": 512,
+      "height": 341,
+      "sourceBytes": 2785209,
+      "bytes": 285085,
+      "sourceSha256": "35c4bad0254045e857f62d48032a32b0eb5b359345cff11d009e8110d6152da5"
+    },
+    {
+      "source": "art-source/cinematic/v2/topdown/ironmine-02.png",
+      "file": "assets/cinematic/map/ironmine-02.png",
+      "width": 512,
+      "height": 341,
+      "sourceBytes": 2677014,
+      "bytes": 275232,
+      "sourceSha256": "ee2d03b6fa2c0ecb237994ce9df67ddbb68087302d41ced3ce2ab94e49c0bb26"
+    },
+    {
+      "source": "art-source/cinematic/v2/topdown/ironmine-03.png",
+      "file": "assets/cinematic/map/ironmine-03.png",
+      "width": 512,
+      "height": 468,
+      "sourceBytes": 2935220,
+      "bytes": 488461,
+      "sourceSha256": "0aa3dcc1154f57540717dd90ea9217f2f5be4ad7d8d8450a215020b680d82c1f"
+    },
+    {
+      "source": "art-source/cinematic/v2/topdown/stonemine-01.png",
+      "file": "assets/cinematic/map/stonemine-01.png",
+      "width": 512,
+      "height": 468,
+      "sourceBytes": 2997475,
+      "bytes": 482955,
+      "sourceSha256": "b686e49043de201c57eb801aa8d929de6bd0037a08d3b232f72622ae9a9582fd"
+    },
+    {
+      "source": "art-source/cinematic/v2/topdown/stonemine-02.png",
+      "file": "assets/cinematic/map/stonemine-02.png",
+      "width": 512,
+      "height": 468,
+      "sourceBytes": 3316992,
+      "bytes": 528936,
+      "sourceSha256": "d83b7b349d81f10cc6e02d9ff8ceda4611d64e71438d8963e66cba88be169e32"
+    },
+    {
+      "source": "art-source/cinematic/v2/topdown/stonemine-03.png",
+      "file": "assets/cinematic/map/stonemine-03.png",
+      "width": 512,
+      "height": 468,
+      "sourceBytes": 3502176,
+      "bytes": 553234,
+      "sourceSha256": "52ca13a3bea7c089f6c477573f880304b676720f7103f67577fee934df887c79"
+    },
+    {
+      "source": "art-source/cinematic/v2/topdown/farmstead-01.png",
+      "file": "assets/cinematic/map/farmstead-01.png",
+      "width": 512,
+      "height": 468,
+      "sourceBytes": 3080068,
+      "bytes": 464527,
+      "sourceSha256": "55919aa840e344eeeca6aa04112c94736ae1d4be0def38ad388fb3d1672e7076"
+    },
+    {
+      "source": "art-source/cinematic/v2/topdown/farmstead-02.png",
+      "file": "assets/cinematic/map/farmstead-02.png",
+      "width": 512,
+      "height": 341,
+      "sourceBytes": 2829865,
+      "bytes": 280960,
+      "sourceSha256": "465412cf185def46111da71551331694f70c642bb4406e26acde7e768d14f5c3"
+    },
+    {
+      "source": "art-source/cinematic/v2/topdown/farmstead-03.png",
+      "file": "assets/cinematic/map/farmstead-03.png",
+      "width": 512,
+      "height": 468,
+      "sourceBytes": 3431699,
+      "bytes": 533041,
+      "sourceSha256": "131e5afa67dec71a4fb070b8a293ed5f7cc86a58b5afae8fa6e76be011d1587e"
+    },
+    {
+      "source": "art-source/cinematic/v2/topdown/sheepfarm-01.png",
+      "file": "assets/cinematic/map/sheepfarm-01.png",
+      "width": 512,
+      "height": 341,
+      "sourceBytes": 2496975,
+      "bytes": 224334,
+      "sourceSha256": "1b4c6c723f10df785a244b8b0563b8daeca7d8e8d83e03d18129f21e5ffa3d27"
+    },
+    {
+      "source": "art-source/cinematic/v2/topdown/sheepfarm-02.png",
+      "file": "assets/cinematic/map/sheepfarm-02.png",
+      "width": 512,
+      "height": 341,
+      "sourceBytes": 2682212,
+      "bytes": 254458,
+      "sourceSha256": "14d80da83b5b5336d49b41a9dba0619c2f69e7e0f157291a2acd8624ce3c5db2"
+    },
+    {
+      "source": "art-source/cinematic/v2/topdown/sheepfarm-03.png",
+      "file": "assets/cinematic/map/sheepfarm-03.png",
+      "width": 512,
+      "height": 427,
+      "sourceBytes": 3021735,
+      "bytes": 429943,
+      "sourceSha256": "d0936c18a77115953fb0ce5c68bd1ac0b473367e7d6900974f0eb4c9a6995c15"
+    },
+    {
+      "source": "art-source/cinematic/v2/topdown/rock-ore-01.png",
+      "file": "assets/cinematic/map/rock-ore-01.png",
+      "width": 512,
+      "height": 468,
+      "sourceBytes": 3294287,
+      "bytes": 504798,
+      "sourceSha256": "6669d6a083c708a5728bc8b77f58324dadeffff9c356fd44de8df92a040fe681"
+    },
+    {
+      "source": "art-source/cinematic/v2/topdown/rock-ore-02.png",
+      "file": "assets/cinematic/map/rock-ore-02.png",
+      "width": 512,
+      "height": 468,
+      "sourceBytes": 3235341,
+      "bytes": 500795,
+      "sourceSha256": "cf813a64c62a103d869a36113707a3c96830e6d94ac62f6bdce83d5bc4865cc0"
+    },
+    {
+      "source": "art-source/cinematic/v2/topdown/rock-quarry-01.png",
+      "file": "assets/cinematic/map/rock-quarry-01.png",
+      "width": 512,
+      "height": 468,
+      "sourceBytes": 3414352,
+      "bytes": 522668,
+      "sourceSha256": "339a3b369c27b77a7e6ecb5037762adfc730a0929112e46732b7d790f7a4455a"
+    },
+    {
+      "source": "art-source/cinematic/v2/topdown/rock-quarry-02.png",
+      "file": "assets/cinematic/map/rock-quarry-02.png",
+      "width": 512,
+      "height": 468,
+      "sourceBytes": 3429554,
+      "bytes": 519830,
+      "sourceSha256": "d89e7089dcb18dbe24349443dddc2790c1e075c0380d3aa03e520aace81212b3"
+    },
+    {
+      "source": "art-source/cinematic/ui/townhall-building-v3.png",
+      "file": "assets/cinematic/ui/townhall-building-v3.png",
+      "width": 256,
+      "height": 256,
+      "sourceBytes": 152584,
+      "bytes": 145868,
+      "sourceSha256": "5d8673b90e1eb313213a3435c23471c7c5c6f63aaff3e7bd667d2c87fad366fb"
+    },
+    {
+      "source": "art-source/cinematic/ui/woodcutter-close-v3.png",
+      "file": "assets/cinematic/ui/woodcutter-close-v3.png",
+      "width": 256,
+      "height": 256,
+      "sourceBytes": 152065,
+      "bytes": 145771,
+      "sourceSha256": "d3034a17f4f8650260f8492b5b4a70f56641d5ce59a1c9025ac6a6c590b264c0"
+    },
+    {
+      "source": "art-source/cinematic/ui/quarry-close-v3.png",
+      "file": "assets/cinematic/ui/quarry-close-v3.png",
+      "width": 256,
+      "height": 256,
+      "sourceBytes": 165001,
+      "bytes": 157211,
+      "sourceSha256": "2dc1e488a079cf077acb4996e40b54ee4075423bcd4cbf8a6db9e5cf431ec192"
+    },
+    {
+      "source": "art-source/cinematic/ui/ironmine-right-angle-v5.png",
+      "file": "assets/cinematic/ui/ironmine-right-angle-v5.png",
+      "width": 256,
+      "height": 256,
+      "sourceBytes": 88749,
+      "bytes": 86744,
+      "sourceSha256": "016292ab857ceeafb321adcf832eb5418ce2bad1887ff2800f3cc09f7fc0ca85"
+    },
+    {
+      "source": "art-source/cinematic/ui/farm-aligned-v4.png",
+      "file": "assets/cinematic/ui/farm-aligned-v4.png",
+      "width": 256,
+      "height": 256,
+      "sourceBytes": 168151,
+      "bytes": 160007,
+      "sourceSha256": "9dfbcb0a0f17fb31b94e5513cf1d2ec984bf6fbd0138f319776b5177837ac7e3"
+    },
+    {
+      "source": "art-source/cinematic/ui/warehouse-building-v3.png",
+      "file": "assets/cinematic/ui/warehouse-building-v3.png",
+      "width": 256,
+      "height": 256,
+      "sourceBytes": 155136,
+      "bytes": 147632,
+      "sourceSha256": "671aa6b94c20abc441ff7775dfaa1de03c4944ae97a84395bc40ce9faf38fde5"
+    },
+    {
+      "source": "art-source/cinematic/ui/barracks-aligned-v4.png",
+      "file": "assets/cinematic/ui/barracks-aligned-v4.png",
+      "width": 256,
+      "height": 256,
+      "sourceBytes": 154757,
+      "bytes": 147905,
+      "sourceSha256": "5b33ca4f4d1891eac3fcc012707b7de7d7cde9d912b4b090b65417d2d92c3182"
+    },
+    {
+      "source": "art-source/cinematic/ui/range-aligned-v4.png",
+      "file": "assets/cinematic/ui/range-aligned-v4.png",
+      "width": 256,
+      "height": 256,
+      "sourceBytes": 147054,
+      "bytes": 141243,
+      "sourceSha256": "22d8000c0a097e029d9036fd3a40b09a2309337fefbcefaddc4381aac8cdaefe"
+    },
+    {
+      "source": "art-source/cinematic/ui/wall-aligned-v4.png",
+      "file": "assets/cinematic/ui/wall-aligned-v4.png",
+      "width": 256,
+      "height": 256,
+      "sourceBytes": 139270,
+      "bytes": 133148,
+      "sourceSha256": "6720938fa75f7625725a78660f673c0e380b739ee9e4a160aa291b4900dd9f6f"
+    },
+    {
+      "source": "art-source/cinematic/ui/tower-aligned-v4.png",
+      "file": "assets/cinematic/ui/tower-aligned-v4.png",
+      "width": 256,
+      "height": 256,
+      "sourceBytes": 149152,
+      "bytes": 143833,
+      "sourceSha256": "d17d9396a134a8c45b2d0e3f889d1abde7d192c3754b22e5ce5a31946a80657f"
+    },
+    {
+      "source": "art-source/cinematic/ui/resource-food.png",
+      "file": "assets/cinematic/ui/resource-food.png",
+      "width": 256,
+      "height": 256,
+      "sourceBytes": 84091,
+      "bytes": 83844,
+      "sourceSha256": "fb0b8a4dfbf0b6a1a2231ac3f326e0f9ced2caf070aaffa4f9e78162857a13cd"
+    },
+    {
+      "source": "art-source/cinematic/ui/resource-wood.png",
+      "file": "assets/cinematic/ui/resource-wood.png",
+      "width": 256,
+      "height": 256,
+      "sourceBytes": 122783,
+      "bytes": 118353,
+      "sourceSha256": "656c9570641b13b28a74c43171a7d725033f1f838a483b451963ca1bfc9fd33c"
+    },
+    {
+      "source": "art-source/cinematic/ui/resource-stone.png",
+      "file": "assets/cinematic/ui/resource-stone.png",
+      "width": 256,
+      "height": 256,
+      "sourceBytes": 120188,
+      "bytes": 114423,
+      "sourceSha256": "ccac37c64ac78e2c6ee3fac588523a6f0d176d8944460e631f72dc919cb525b1"
+    },
+    {
+      "source": "art-source/cinematic/ui/resource-iron.png",
+      "file": "assets/cinematic/ui/resource-iron.png",
+      "width": 256,
+      "height": 256,
+      "sourceBytes": 58718,
+      "bytes": 56390,
+      "sourceSha256": "96323c84eed28600844304f3f75561868d43d8496219893dba278beef86febee"
+    },
+    {
+      "source": "art-source/cinematic/ui/resource-population.png",
+      "file": "assets/cinematic/ui/resource-population.png",
+      "width": 256,
+      "height": 256,
+      "sourceBytes": 84006,
+      "bytes": 79701,
+      "sourceSha256": "f68ca722872ee5d5b95092949469b88dd794763eeb802c4bba10182f334e3ca5"
+    },
+    {
+      "source": "art-source/cinematic/ui/unit-spear.png",
+      "file": "assets/cinematic/ui/unit-spear.png",
+      "width": 256,
+      "height": 308,
+      "sourceBytes": 144728,
+      "bytes": 139254,
+      "sourceSha256": "70daea39f38515089df5fec59eb9daec791373bb2d18aa05c64a62c84c0bf135"
+    },
+    {
+      "source": "art-source/cinematic/ui/unit-sword.png",
+      "file": "assets/cinematic/ui/unit-sword.png",
+      "width": 256,
+      "height": 308,
+      "sourceBytes": 154614,
+      "bytes": 148320,
+      "sourceSha256": "72790d02d0536d5fdf97600733ecdf29442c7ea4ab8f2ba5f801337c3871bee8"
+    },
+    {
+      "source": "art-source/cinematic/ui/unit-axe.png",
+      "file": "assets/cinematic/ui/unit-axe.png",
+      "width": 256,
+      "height": 308,
+      "sourceBytes": 171168,
+      "bytes": 163585,
+      "sourceSha256": "d4fdbe6df9d34862fe3d3c4381679859aa70f5400f5bad11772b04e810132144"
+    },
+    {
+      "source": "art-source/cinematic/ui/unit-archer.png",
+      "file": "assets/cinematic/ui/unit-archer.png",
+      "width": 256,
+      "height": 308,
+      "sourceBytes": 153907,
+      "bytes": 149818,
+      "sourceSha256": "608afc0ee6d622ab56e04b385f8ea29a243e163c952291504a727811125c71e1"
+    },
+    {
+      "source": "art-source/cinematic/ui/unit-hero.png",
+      "file": "assets/cinematic/ui/unit-hero.png",
+      "width": 256,
+      "height": 308,
+      "sourceBytes": 144912,
+      "bytes": 138806,
+      "sourceSha256": "a0b22212acd97e668e3876f6a20144f2108dd582f8512da17fa9805485e04bef"
+    }
+  ],
+  "sourceBytes": 104174675,
+  "bytes": 20611589
+}

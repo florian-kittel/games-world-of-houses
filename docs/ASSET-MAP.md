@@ -12,7 +12,7 @@ diese Umschaltung nicht verändert.
 Einzelbildern ein. Die folgenden Befunde bleiben als Analyse des ersten Prototyps
 erhalten. Den aktuellen Satz, Varianten und tatsächliche Auflösungen zeigt der
 Abschnitt „Cinematic v2“ im visuellen Katalog; technische Details stehen in
-`assets/cinematic/v2/README.md`.
+`art-source/cinematic/v2/README.md`.
 
 Diese Bestandsaufnahme lässt den vorhandenen Grafikstand bestehen. Sie beschreibt
 die ursprünglichen Assets, ihre tatsächliche Verwendung und die Anforderungen an
@@ -98,21 +98,21 @@ Umsetzung muss auch die Zwischenlayer und den Bildschirmcanvas berücksichtigen.
 | Datei | Abmessungen | Inhalt und Verwendung |
 |---|---:|---|
 | `assets/tileset2.png` | 224 × 160 | Hauptatlas, 14 × 10 Zellen zu 16 × 16 px; ursprüngliche Karte und weiterhin aktive Rohstofficons |
-| `assets/reference/tileset2_labeled.png` | beschriftete Vergrößerung | Visuelle Hilfe; nicht selbst als Spritequelle verwenden |
-| `assets/tiles.json` | JSON | Atlasdefinition plus zusätzlicher Katalog |
+| `art-source/reference/tileset2_labeled.png` | beschriftete Vergrößerung | Visuelle Hilfe; nicht selbst als Spritequelle verwenden |
+| `art-source/tiles.json` | JSON | Atlasdefinition plus zusätzlicher Katalog |
 | `js/atlas.js` | JavaScript | Tatsächlich vom Renderer gelesenes Laufzeitmanifest |
 | `assets/tileset.png` | 256 × 336 | Weitere Gelände-, Straßen-, Mauer-, Architektur- und Dekormotive; als `ts1` geladen, aber keine Zeichenaufrufe mit diesem Sheet |
 | `assets/mountains.png` | 192 × 160 | Große Fels-/Schneebergmotive über mehrere Rasterzellen; als `mtn` geladen, aber keine Zeichenaufrufe mit diesem Sheet |
 | `assets/water.png` | 480 × 48 | Vorhanden und im Service-Worker aufgeführt; kein aktueller Lade-/Animationspfad im Sprite-Renderer |
-| `assets/cinematic/terrain.png` | 1254 × 1254 | Neuer Versuch: 4 flächige Landschaftsmotive |
-| `assets/cinematic/structures.png` | 1254 × 1254 | Neuer Versuch: 4 freigestellte Gebäudemotive |
+| `art-source/cinematic/terrain.png` | 1254 × 1254 | Neuer Versuch: 4 flächige Landschaftsmotive |
+| `art-source/cinematic/structures.png` | 1254 × 1254 | Neuer Versuch: 4 freigestellte Gebäudemotive |
 
 Die Dateikommentare in `sprites.js` nennen animiertes Wasser; das entspricht
 keiner implementierten Wasseranimation. Die Wasser-Wellen des alten Renderers
 sind statisch per Hash ausgewählte Kacheln.
 
 **Manifestabweichung:** `structures.stonemine` steht in `js/atlas.js`, fehlt aber in
-`assets/tiles.json`. Die Asset-Map verwendet deshalb das Laufzeitmanifest als
+`art-source/tiles.json`. Die Asset-Map verwendet deshalb das Laufzeitmanifest als
 Primärquelle und ergänzt den Katalog. Eine spätere Manifest-Neugenerierung muss
 diese Abweichung bereinigen, damit der Steinbruch nicht verloren geht.
 
@@ -216,13 +216,13 @@ Spalten. Für Steinbruch existiert keine eigene Originalfamilie.
 
 Die Gebäudeicons der Verwaltung sind keine Bauzustände der Kartengebäude.
 Die zehn Gebäudeicons sind inzwischen für Cinematic durch freigegebene Nahansichten
-ersetzt: `assets/cinematic/ui/construction-review.json` dokumentiert die Auswahl.
+ersetzt: `art-source/cinematic/ui/construction-review.json` dokumentiert die Auswahl.
 Classic und der Rückfall bei fehlenden Bildern behalten die prozeduralen Icons.
 Cinematic verwendet für Einheiten fünf Kopf-/Waffenporträts aus
-`assets/cinematic/ui/unit-icons.json`; Classic behält seine prozeduralen Figuren.
+`art-source/cinematic/ui/unit-icons.json`; Classic behält seine prozeduralen Figuren.
 Cinematic verwendet
 für Nahrung, Holz, Stein, Eisen und Bevölkerung eigene Bilder aus
-`assets/cinematic/ui/resource-icons.json`, gemeinsam für HUD und Kostenanzeigen.
+`art-source/cinematic/ui/resource-icons.json`, gemeinsam für HUD und Kostenanzeigen.
 Die großen Gebirge in `mountains.png` und viele Motive in `tileset.png` erstrecken
 sich über mehrere Rasterzellen. Ihre Einzelzellen ergeben keine unabhängigen
 kleinen Berge; für spätere Nutzung müssten vollständige Motivgrenzen festgelegt

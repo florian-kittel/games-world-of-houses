@@ -23,7 +23,7 @@
     return true;
   }
 
-  // Tile-Atlas (aus js/atlas.js, generiert aus assets/tiles.json).
+  // Tile-Atlas (aus js/atlas.js, generiert aus art-source/tiles.json).
   var A = WOH.Atlas || {};
   var T = A.tileSize || 16;                                  // Quell-Kachelgröße
   var SHEETS = A.sheets || { ts2: 'assets/tileset2.png', mtn: 'assets/mountains.png', ts1: 'assets/tileset.png' };

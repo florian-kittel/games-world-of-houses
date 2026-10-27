@@ -3,18 +3,15 @@
   'use strict';
   var assets = {};
   ['grass-01', 'grass-02', 'field-01', 'water-01', 'forest-01', 'forest-02', 'forest-03', 'rock-01', 'rock-02', 'rock-03'].forEach(function (id) {
-    assets['cine_' + id] = 'assets/cinematic/v2/' + id + '.png';
+    assets['cine_' + id] = 'assets/cinematic/map/' + id + '.png';
   });
   ['castle', 'woodcutter', 'ironmine', 'stonemine', 'farmstead', 'sheepfarm'].forEach(function (type) {
-    for (var n = 1; n <= 3; n++) assets['cine_' + type + '-0' + n] = 'assets/cinematic/v2/' + type + '-0' + n + '.png';
+    for (var n = 1; n <= 3; n++) assets['cine_' + type + '-0' + n] = 'assets/cinematic/map/' + type + '-0' + n + '.png';
   });
   ['rock-ore-01', 'rock-ore-02', 'rock-quarry-01', 'rock-quarry-02'].forEach(function (id) {
-    assets['cine_' + id] = 'assets/cinematic/v2/' + id + '.png';
+    assets['cine_' + id] = 'assets/cinematic/map/' + id + '.png';
   });
-  // Roof/canopy plans replace the oblique studies for every raised object.
-  Object.keys(assets).forEach(function (key) {
-    if (!/^cine_(grass|field|water)-/.test(key)) assets[key] = assets[key].replace('/v2/', '/v2/topdown/');
-  });
+  // Runtime exports share one folder; originals live in art-source/cinematic/v2.
   function hash(x, y, salt) {
     var h = Math.imul(x + 173, 374761393) ^ Math.imul(y + 419, 668265263) ^ Math.imul(salt, 1597334677);
     h = Math.imul(h ^ h >>> 13, 1274126177);

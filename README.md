@@ -22,15 +22,22 @@ pro Browser gespeichert; ohne bisherige Auswahl ist Cinematic voreingestellt.
 Der Wechsel im Spiel erhält Kameraposition, Zoom, Auswahl und laufenden Spielstand.
 Wenn Browserspeicher gesperrt ist, gilt die Auswahl für die aktuelle Sitzung.
 
-Die [Asset-Map](docs/asset-map.html) zeigt die Originalgrafiken und ihre Zuordnungen;
+Die [Asset-Map](docs/asset-map.html) zeigt die Spielgrafiken und ihre Zuordnungen;
 die [Analyse](docs/ASSET-MAP.md) dokumentiert den Stand des Cinematic-Prototyps und
 die Planung weiterer Assets. Der Moduswechsel verwendet die vorhandenen Bilder.
 
-Cinematic v2 verwendet 28 einzelne hochauflösende Assets: drei Wald- und drei
-Felsvarianten, zwei Wiesenböden, Acker/Wasser sowie drei Ausbauzustände für Burg
+Cinematic v2 verwendet 32 optimierte Kartenbilder: drei Wald- und drei
+Felsvarianten, vier zusätzliche Mineralfelsen, zwei Wiesenböden, Acker/Wasser sowie drei Ausbauzustände für Burg
 und jeden aktiven Produktionstyp. Die Landschaft wird ohne Spiegeln oder Drehen
 aus überlappenden Motiven aufgebaut und beim Zoomen in passender Auflösung
-zwischengespeichert. Details und Prompts: [Cinematic v2](assets/cinematic/v2/README.md).
+zwischengespeichert. Details und Prompts: [Cinematic v2](art-source/cinematic/v2/README.md).
+
+Originale, Entwürfe und Prompts liegen unter [`art-source/`](art-source/README.md).
+`assets/` enthält ausschließlich Laufzeitdateien: Kartenobjekte mit 512 Pixeln Breite,
+Bodentexturen mit 768 Pixeln und bereits verkleinerte UI-Bilder. Die PNG-Kodierung
+ist verlustfrei; die Auflösung ist an maximal 3× Zoom und 2× Pixeldichte angepasst.
+Neu exportieren: `node tools/build-runtime-assets.cjs <bundled node_modules>`.
+Größen und Quellprüfsummen: [`docs/runtime-assets.json`](docs/runtime-assets.json).
 
 ## Spielprinzip
 
@@ -77,12 +84,12 @@ js/config.js          Balancing & Konstanten (zentral anpassbar)
 js/rng.js             Deterministischer Zufall (seed-basiert)
 js/houses.js          Hausnamen-, Wappen- und Motto-Generator
 js/mapgen.js          Prozedurale Karte, Dorfplatzierung, Standortboni
-js/atlas.js           Tile-Atlas (Laufzeit, generiert aus assets/tiles.json)
+js/atlas.js           Tile-Atlas (Laufzeit, generiert aus art-source/tiles.json)
 js/sprites.js         Grafik: lädt /assets-Spritesheets, rendert Gelände,
                       Küsten-Autotiling, Siedlungen und Ressourcen-Icons
-assets/               Pixel-Art-Sheets (tileset, tileset2, mountains, water)
-assets/tiles.json     Tile-Manifest (Kachelkoordinaten + Katalog)
-assets/reference/     Beschriftete Referenzbilder zur Tile-Identifikation
+assets/               Laufzeitbilder: Classic, optimierte Cinematic-Bilder, App-Icons
+art-source/tiles.json     Tile-Manifest (Kachelkoordinaten + Katalog)
+art-source/reference/     Beschriftete Referenzbilder zur Tile-Identifikation
 js/village.js         Gebäude-, Produktions- und Bevölkerungslogik
 js/combat.js          Kampfauflösung, Tragkapazität, Reisegeschwindigkeit
 js/game.js            Zentraler Spielzustand, Tick-Verarbeitung, Bewegungen

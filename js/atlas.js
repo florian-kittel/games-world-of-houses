@@ -1,4 +1,4 @@
-/* World of Houses - Tile-Atlas (generiert aus assets/tiles.json).
+/* World of Houses - Tile-Atlas (generiert aus art-source/tiles.json).
    Laufzeit-Manifest, da fetch() auf file:// blockiert ist. */
 window.WOH = window.WOH || {};
 window.WOH.Atlas = {

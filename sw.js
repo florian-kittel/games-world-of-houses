@@ -5,7 +5,7 @@
  */
 'use strict';
 
-var CACHE_VERSION = 'woh-cinematic-2026102707';
+var CACHE_VERSION = 'woh-cinematic-2026102708';
 var ASSETS = [
   './',
   './index.html',
@@ -29,20 +29,19 @@ var ASSETS = [
   './assets/tileset.png',
   './assets/mountains.png',
   './assets/water.png',
-  './assets/tiles.json',
   './assets/icon-192.png',
   './assets/icon-512.png',
   './assets/apple-touch-icon.png'
 ];
 ['grass-01', 'grass-02', 'field-01', 'water-01'].forEach(function (id) {
-  ASSETS.push('./assets/cinematic/v2/' + id + '.png');
+  ASSETS.push('./assets/cinematic/map/' + id + '.png');
 });
 ['forest-01', 'forest-02', 'forest-03', 'rock-01', 'rock-02', 'rock-03',
  'rock-ore-01', 'rock-ore-02', 'rock-quarry-01', 'rock-quarry-02'].forEach(function (id) {
-  ASSETS.push('./assets/cinematic/v2/topdown/' + id + '.png');
+  ASSETS.push('./assets/cinematic/map/' + id + '.png');
 });
 ['castle', 'woodcutter', 'ironmine', 'stonemine', 'farmstead', 'sheepfarm'].forEach(function (type) {
-  var folder = './assets/cinematic/v2/topdown/';
+  var folder = './assets/cinematic/map/';
   for (var level = 1; level <= 3; level++) ASSETS.push(folder + type + '-0' + level + '.png');
 });
 ['townhall-building-v3','woodcutter-close-v3','quarry-close-v3','ironmine-right-angle-v5',
@@ -61,6 +60,7 @@ ASSETS = ASSETS.concat(ASSETS.filter(function (url) {
   return /\.(js|css)$/.test(url);
 }).map(function (url) { return url + '?v=2026102701'; }));
 ASSETS.push('./css/style.css?v=2026102707', './js/ui.js?v=2026102706', './js/main.js?v=2026102704');
+ASSETS.push('./js/cinematic-v2.js?v=2026102708');
 
 self.addEventListener('message', function (e) {
   if (e.data === 'skipWaiting') self.skipWaiting();
