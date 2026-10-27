@@ -75,5 +75,41 @@ const server = http.createServer((req, res) => {
     assert.equal(await page.locator('#sidebar.open').count(), 0, 'Cancelled touch never opens actions');
     assert.deepEqual(errors, [], 'No browser errors');
     console.log('PASS: mobile double tap, double click, visible gathering/conquest actions, single selection and cancelled touch');
+    await page.close();
+
+    const desktop = await browser.newPage({ viewport: { width: 1440, height: 1000 }, serviceWorkers: 'block' });
+    desktop.setDefaultTimeout(8000);
+    await desktop.goto(`http://127.0.0.1:${server.address().port}/`);
+    await desktop.locator('#btn-new').waitFor();
+    await desktop.evaluate(() => {
+      window.prematureOpens = 0;
+      document.querySelector('#map-canvas').addEventListener('pointerup', e => {
+        if (e.pointerType === 'mouse' && document.querySelector('#village-overlay').style.display !== 'none') prematureOpens++;
+      });
+      const draw = WOH.Sprites.drawVillageMarker;
+      WOH.Sprites.drawVillageMarker = (ctx, x, y, size, house, options) => {
+        if (options.player) {
+          const m = ctx.getTransform(), rect = ctx.canvas.getBoundingClientRect();
+          window.castlePoint = {
+            x: rect.left + (m.a * x + m.c * y + m.e) * rect.width / ctx.canvas.width,
+            y: rect.top + (m.b * x + m.d * y + m.f) * rect.height / ctx.canvas.height
+          };
+        }
+        return draw(ctx, x, y, size, house, options);
+      };
+    });
+    await desktop.locator('#btn-new').click();
+    await desktop.waitForFunction(() => !!window.castlePoint);
+    await desktop.waitForTimeout(500);
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const point = await desktop.evaluate(() => castlePoint);
+      await desktop.mouse.click(point.x, point.y);
+      assert.equal(await desktop.locator('#village-overlay').isVisible(), false, 'Selecting a castle must not open it prematurely');
+      await desktop.mouse.dblclick(point.x, point.y, { delay: 100 });
+      await desktop.locator('#village-overlay').waitFor({ state: 'visible' });
+      await desktop.locator('#overlay-close').click();
+    }
+    assert.equal(await desktop.evaluate(() => prematureOpens), 0, 'Mouse opening must wait for native dblclick');
+    console.log('PASS: desktop double click repeatedly opens an already selected castle without premature opening');
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; }).finally(() => server.close());

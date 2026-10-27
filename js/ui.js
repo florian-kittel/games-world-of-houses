@@ -381,7 +381,7 @@
   var longPressTimer = null;
   var LONG_PRESS_MS = 500;
   var TAP_THRESHOLD_PX = 8;
-  // Doppel-Tap (Touch + Maus): zwei tap-Events innerhalb 450 ms und unter 25 px
+  // Doppel-Tap (Touch/Pen): zwei tap-Events innerhalb 450 ms und unter 25 px
   // Abstand. iOS Safari synthetisiert dblclick aus zwei Taps nicht zuverlaessig,
   // wenn touch-action:none gesetzt ist — deshalb erkennen wir es selbst.
   var DOUBLE_TAP_MS = 450;
@@ -486,6 +486,15 @@
       }
       if (e.type === 'pointercancel' || cam.moved) lastTapTime = 0;
       if (e.type !== 'pointercancel' && n === 0 && wasDragging && !cam.moved) {
+        // Die Maus nutzt ausschliesslich das native dblclick-Ereignis.
+        // Sonst oeffnet pointerup das Overlay vorzeitig, noch bevor der
+        // Browser den Klick bzw. Doppelklick an sein Ziel zustellen kann.
+        if (e.pointerType === 'mouse') {
+          lastTapTime = 0;
+          handleMapClick(e);
+          cam.drag = null;
+          return;
+        }
         // Doppel-Tap-Erkennung: zwei Taps binnen DOUBLE_TAP_MS und nahe beieinander.
         var now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
         var dx = e.clientX - lastTapX, dy = e.clientY - lastTapY;
@@ -519,7 +528,9 @@
     }, { passive: false });
     // Klassischer dblclick (Desktop-Maus) leitet auf gemeinsame Handler-Funktion um.
     // Touch-Geraete werden durch eigene Doppel-Tap-Logik in endPointer() bedient.
-    cv.addEventListener('dblclick', handleMapDblTap);
+    cv.addEventListener('dblclick', function (e) {
+      if (!cam.moved) handleMapDblTap(e);
+    });
   }
 
   // Doppel-Tap / Doppel-Klick auf der Karte:
